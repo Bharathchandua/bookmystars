@@ -1,0 +1,1326 @@
+/* ============================================
+   MEDIA PAGE — media-page.css
+   BookMyStars TV Channel & Magazines
+   ============================================ */
+
+:root {
+  --mp-pink:      #ec008c;
+  --mp-purple:    #6500d7;
+  --mp-dark:      #05072d;
+  --mp-grey:      #626480;
+  --mp-light-bg:  #f9f8fc;
+  --mp-border:    #ece7f3;
+  --mp-gradient:  linear-gradient(135deg, #ec008c 0%, #6500d7 100%);
+  --mp-page-margin: 36px;
+  --mp-card-thumb-height: 165px;
+}
+
+.media-page {
+  overflow-x: hidden;
+  background: #fff;
+  color: var(--mp-dark);
+  font-family: 'Inter', 'Outfit', sans-serif;
+}
+
+/* ============================================
+   1. HERO SECTION  — TRUE 3D CARDS
+   ============================================ */
+.mp-hero {
+  background: #fff;
+  padding: 20px 0 15px 0;
+  overflow: hidden;
+}
+
+.mp-hero-inner {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  max-width: 100%;
+  margin: 0;
+  padding: 0 var(--mp-page-margin);
+}
+
+/* ── LEFT COPY ── */
+.mp-hero-left {
+  flex: 0 0 500px;
+  display: flex;
+  flex-direction: column;
+  align-self: flex-start;
+  padding-top: 40px;
+}
+
+.mp-hero-badge {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--mp-pink);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.mp-hero-title {
+  font-size: 54px;
+  font-weight: 900;
+  line-height: 1.06;
+  color: #000;
+  margin: 0 0 14px 0;
+  letter-spacing: -1.5px;
+}
+
+.mp-hero-title span {
+  background: var(--mp-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.mp-hero-desc {
+  font-size: 15.5px;
+  color: #555;
+  line-height: 1.6;
+  margin: 0 0 22px 0;
+}
+
+.mp-hero-buttons {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.mp-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  background: var(--mp-gradient);
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  font-size: 13.5px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.15s;
+  white-space: nowrap;
+}
+.mp-btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+
+.mp-btn-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  background: transparent;
+  color: var(--mp-dark);
+  border: 1.5px solid #ccc;
+  border-radius: 7px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s, transform 0.15s;
+  white-space: nowrap;
+}
+.mp-btn-outline:hover { border-color: var(--mp-pink); color: var(--mp-pink); transform: translateY(-1px); }
+
+/* ============================================================
+   TRUE 3D CARD GRID
+   - perspective on parent creates the camera
+   - each card has transform-style: preserve-3d so ::before/
+     ::after pseudo-elements live in card-relative 3D space
+   - right-side face (::before) + bottom face (::after) = thickness
+   ============================================================ */
+.mp-hero-grid-wrap {
+  width: 646px;
+  flex: 0 0 646px;
+  display: grid;
+  grid-template-columns: 115px 115px 128px 142px 142px;
+  gap: 8px;
+  /* Camera setup */
+  perspective: 1500px;
+  perspective-origin: 20% 50%;
+  padding: 20px 25px 25px 15px; /* room for shadows + translated cards */
+  margin-left: auto;            /* pushes grid + magazine to the right edge */
+}
+
+/* ────── CARD BASE ────── */
+.mp-hero-card {
+  position: relative;
+  transform-style: preserve-3d;      /* children live in card’s 3D space */
+  cursor: pointer;
+  width: 115px;
+  height: 270px;
+  border-radius: 12px;
+  transition: transform 0.45s cubic-bezier(0.23, 1, 0.32, 1),
+              box-shadow 0.45s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* Column 3 (wider card size) */
+.mp-hero-card:nth-child(3),
+.mp-hero-card:nth-child(8) {
+  width: 128px;
+}
+
+/* Columns 4 & 5 (even wider card size) */
+.mp-hero-card:nth-child(4),
+.mp-hero-card:nth-child(9),
+.mp-hero-card:nth-child(5),
+.mp-hero-card:nth-child(10) {
+  width: 142px;
+}
+
+/* ────── PER-CARD 3D POSITIONS ──────
+   Leftmost is flat, then slopes positively more and more towards the right.
+   Row 1 (top row) and Row 2 (bottom row) have matched Y-rotation values.
+   translateX pulls the scaled cards closer together to maintain tight gaps.
+*/
+
+/* Row 1 (Top) */
+.mp-hero-card:nth-child(1) {
+  transform: rotateY(0deg) rotateX(2deg) scale(1) translateZ(0px) translateX(0px) translateY(0px);
+  box-shadow: 0 10px 22px rgba(0,0,0,0.35);
+}
+.mp-hero-card:nth-child(2) {
+  transform: rotateY(6deg) rotateX(2deg) scale(0.93) translateZ(-20px) translateX(-4px) translateY(10px);
+  box-shadow: -2px 10px 24px rgba(0,0,0,0.37);
+}
+.mp-hero-card:nth-child(3) {
+  transform: rotateY(12deg) rotateX(2deg) scale(0.86) translateZ(-40px) translateX(-10px) translateY(19px);
+  box-shadow: -4px 12px 26px rgba(0,0,0,0.39);
+}
+.mp-hero-card:nth-child(4) {
+  transform: rotateY(18deg) rotateX(2deg) scale(0.79) translateZ(-60px) translateX(-34px) translateY(28px);
+  box-shadow: -6px 12px 28px rgba(0,0,0,0.41);
+}
+.mp-hero-card:nth-child(5) {
+  transform: rotateY(24deg) rotateX(2deg) scale(0.72) translateZ(-80px) translateX(-78px) translateY(38px);
+  box-shadow: -8px 14px 30px rgba(0,0,0,0.43);
+}
+
+/* Row 2 (Bottom) */
+.mp-hero-card:nth-child(6) {
+  transform: rotateY(0deg) rotateX(-2deg) scale(1) translateZ(0px) translateX(0px) translateY(0px);
+  box-shadow: 0 10px 22px rgba(0,0,0,0.35);
+}
+.mp-hero-card:nth-child(7) {
+  transform: rotateY(6deg) rotateX(-2deg) scale(0.93) translateZ(-20px) translateX(-4px) translateY(-10px);
+  box-shadow: -2px 10px 24px rgba(0,0,0,0.37);
+}
+.mp-hero-card:nth-child(8) {
+  transform: rotateY(12deg) rotateX(-2deg) scale(0.86) translateZ(-40px) translateX(-10px) translateY(-19px);
+  box-shadow: -4px 12px 26px rgba(0,0,0,0.39);
+}
+.mp-hero-card:nth-child(9) {
+  transform: rotateY(18deg) rotateX(-2deg) scale(0.79) translateZ(-60px) translateX(-34px) translateY(-28px);
+  box-shadow: -6px 12px 28px rgba(0,0,0,0.41);
+}
+.mp-hero-card:nth-child(10) {
+  transform: rotateY(24deg) rotateX(-2deg) scale(0.72) translateZ(-80px) translateX(-78px) translateY(-38px);
+  box-shadow: -8px 14px 30px rgba(0,0,0,0.43);
+}
+
+/* Hover: flatten + surge forward */
+.mp-hero-card:hover {
+  box-shadow: 0 25px 50px rgba(0,0,0,0.5) !important;
+  z-index: 50;
+}
+
+/* Card 1 & 6 Hover */
+.mp-hero-card:nth-child(1):hover,
+.mp-hero-card:nth-child(6):hover {
+  transform: rotateY(0deg) rotateX(0deg) scale(1.05) translateZ(30px) translateX(0px) translateY(0px) !important;
+}
+
+/* Card 2 & 7 Hover */
+.mp-hero-card:nth-child(2):hover {
+  transform: rotateY(0deg) rotateX(0deg) scale(0.98) translateZ(10px) translateX(-4px) translateY(10px) !important;
+}
+.mp-hero-card:nth-child(7):hover {
+  transform: rotateY(0deg) rotateX(0deg) scale(0.98) translateZ(10px) translateX(-4px) translateY(-10px) !important;
+}
+
+/* Card 3 & 8 Hover */
+.mp-hero-card:nth-child(3):hover {
+  transform: rotateY(0deg) rotateX(0deg) scale(0.90) translateZ(-10px) translateX(-10px) translateY(19px) !important;
+}
+.mp-hero-card:nth-child(8):hover {
+  transform: rotateY(0deg) rotateX(0deg) scale(0.90) translateZ(-10px) translateX(-10px) translateY(-19px) !important;
+}
+
+/* Card 4 & 9 Hover */
+.mp-hero-card:nth-child(4):hover {
+  transform: rotateY(0deg) rotateX(0deg) scale(0.83) translateZ(-30px) translateX(-34px) translateY(28px) !important;
+}
+.mp-hero-card:nth-child(9):hover {
+  transform: rotateY(0deg) rotateX(0deg) scale(0.83) translateZ(-30px) translateX(-34px) translateY(-28px) !important;
+}
+
+/* Card 5 & 10 Hover */
+.mp-hero-card:nth-child(5):hover {
+  transform: rotateY(0deg) rotateX(0deg) scale(0.76) translateZ(-50px) translateX(-78px) translateY(38px) !important;
+}
+.mp-hero-card:nth-child(10):hover {
+  transform: rotateY(0deg) rotateX(0deg) scale(0.76) translateZ(-50px) translateX(-78px) translateY(-38px) !important;
+}
+
+/* ────── LEFT SIDE FACE (thickness) ────── */
+.mp-hero-card::before {
+  content: '';
+  position: absolute;
+  top: 6px;
+  right: 100%;            /* starts at card’s left edge */
+  width: 12px;           /* = card thickness */
+  height: calc(100% - 12px);
+  transform-origin: right center;
+  transform: rotateY(-90deg);
+  background: linear-gradient(
+    to bottom,
+    rgba(90, 60, 100, 0.95)  0%,
+    rgba(45, 25, 55, 0.98)  40%,
+    rgba(15, 8,  20, 1.00) 100%
+  );
+  border-radius: 6px 0 0 6px;
+}
+
+/* ────── BOTTOM FACE ────── */
+.mp-hero-card::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 100%;             /* starts at card’s bottom edge */
+  width: calc(100% - 12px);
+  height: 10px;
+  transform-origin: top center;
+  transform: rotateX(-90deg);
+  background: linear-gradient(
+    to right,
+    rgba(20, 10, 25, 0.95) 0%,
+    rgba(40, 20, 50, 0.90) 100%
+  );
+  border-radius: 0 0 6px 6px;
+}
+
+/* ────── FRONT FACE WRAPPER ──────
+   overflow:hidden on THIS element clips the photo to border-radius.
+   Must NOT have overflow:hidden on .mp-hero-card itself (kills preserve-3d). */
+.mp-hero-card-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #0d0d0d;
+  /* Push 1px forward so face renders strictly in front of side faces */
+  transform: translateZ(0.5px);
+}
+
+.mp-hero-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  display: block;
+  transition: transform 0.4s ease;
+}
+.mp-hero-card:hover .mp-hero-card-img { transform: scale(1.04); }
+
+/* Dark-to-transparent bottom gradient overlay */
+.mp-hero-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(0,0,0,0.95) 0%,
+    rgba(0,0,0,0.35) 45%,
+    rgba(0,0,0,0.00) 100%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Cinematic glossy sheen — light from top-left */
+.mp-hero-card-sheen {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    130deg,
+    rgba(255,255,255,0.22) 0%,
+    rgba(255,255,255,0.08) 28%,
+    rgba(255,255,255,0.00) 55%,
+    rgba(0,0,0,0.06)       100%
+  );
+  pointer-events: none;
+  z-index: 2;
+  border-radius: 12px;
+}
+
+/* Top edge highlight — simulates light catching the top rim */
+.mp-hero-card-face::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1.5px;
+  background: linear-gradient(
+    to right,
+    rgba(255,255,255,0.75) 0%,
+    rgba(255,255,255,0.30) 50%,
+    rgba(255,255,255,0.05) 100%
+  );
+  z-index: 5;
+  border-radius: 12px 12px 0 0;
+}
+
+/* Left edge highlight */
+.mp-hero-card-face::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: 1.5px;
+  background: linear-gradient(
+    to bottom,
+    rgba(255,255,255,0.60) 0%,
+    rgba(255,255,255,0.15) 60%,
+    rgba(255,255,255,0.00) 100%
+  );
+  z-index: 5;
+  border-radius: 12px 0 0 12px;
+}
+
+/* Card label */
+.mp-hero-card-label {
+  position: absolute;
+  bottom: 12px;
+  left: 0; right: 0;
+  text-align: center;
+  color: #fff;
+  font-size: 8.5px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 1.45;
+  z-index: 6;
+  padding: 0 7px;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.95), 0 2px 14px rgba(0,0,0,0.80);
+}
+
+/* ────── MAGAZINE COVER ────── */
+.mp-hero-magazine {
+  flex: 0 0 330px;
+  align-self: flex-start;
+  perspective: 1000px;
+  margin-left: -70px;
+  padding-top: 15px; /* matches grid padding-top visually */
+}
+
+.mp-magazine-img {
+  width: 100%;
+  height: 480px;
+  object-fit: cover;
+  display: block;
+  border-radius: 8px 12px 12px 8px;
+  /* 3D tilt matching scene camera angle */
+  transform: rotateY(-18deg) rotateX(3deg) translateZ(30px);
+  /* Realistic drop shadows for premium 3D look */
+  box-shadow:
+    0 15px 35px rgba(0, 0, 0, 0.4),
+    0 5px 15px rgba(0, 0, 0, 0.2);
+  transition: transform 0.45s cubic-bezier(0.23, 1, 0.32, 1),
+              box-shadow 0.45s cubic-bezier(0.23, 1, 0.32, 1);
+}
+.mp-hero-magazine:hover .mp-magazine-img {
+  transform: rotateY(-6deg) rotateX(1deg) translateZ(60px) scale(1.03);
+  box-shadow:
+    0 25px 50px rgba(0, 0, 0, 0.5),
+    0 8px 20px rgba(0, 0, 0, 0.25);
+}
+
+
+/* ============================================
+   2. STATS STRIP (CONTAINER VIEW)
+   ============================================ */
+.mp-stats-strip {
+  margin: 12px var(--mp-page-margin) 16px var(--mp-page-margin);
+  background: #fff;
+  border: 1.5px solid var(--mp-border);
+  border-radius: 20px;
+  box-shadow: 0 12px 35px rgba(101, 0, 217, 0.05);
+  padding: 26px 40px;
+}
+
+.mp-stats-inner {
+  max-width: 100%;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.mp-stat-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  justify-content: center;
+}
+.mp-stat-item:not(:last-child) {
+  border-right: 1px solid var(--mp-border);
+}
+
+.mp-stat-icon-wrap {
+  width: 60px;
+  height: 60px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(236, 0, 140, 0.08) 0%, rgba(101, 0, 217, 0.08) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mp-pink);
+  flex-shrink: 0;
+}
+
+.mp-stat-info strong {
+  display: block;
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--mp-dark);
+  line-height: 1.1;
+  margin-bottom: 2px;
+}
+.mp-stat-info small {
+  display: block;
+  font-size: 12.5px;
+  color: var(--mp-grey);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+/* ============================================
+   3. EXPLORE CATEGORIES
+   ============================================ */
+.mp-categories {
+  padding: 0 0 30px 0;
+  margin: 0 var(--mp-page-margin);
+}
+
+.mp-section-header {
+  text-align: center;
+  margin-bottom: 36px;
+}
+
+.mp-section-header h2 {
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--mp-dark);
+  margin: 0;
+  letter-spacing: -0.3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.mp-section-header h2::before,
+.mp-section-header h2::after {
+  content: '';
+  flex: 1;
+  max-width: 80px;
+  height: 2px;
+  background: var(--mp-gradient);
+  border-radius: 2px;
+}
+
+.mp-categories-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 18px;
+}
+
+.mp-cat-card {
+  background: #fff;
+  border: 1.5px solid var(--mp-border);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
+  cursor: pointer;
+}
+.mp-cat-card:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(101,0,215,0.12); border-color: var(--mp-pink); }
+
+.mp-cat-card-img { width: 100%; height: 130px; object-fit: cover; object-position: top center; display: block; }
+
+.mp-cat-card-body { padding: 12px 14px 14px; }
+
+.mp-cat-icon-wrap { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; flex-shrink: 0; }
+
+.mp-cat-title { font-size: 13px; font-weight: 900; color: var(--mp-dark); margin: 0 0 5px; line-height: 1.25; }
+.mp-cat-desc  { font-size: 11px; color: var(--mp-grey); line-height: 1.5; margin: 0 0 10px; }
+
+.mp-cat-explore {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--mp-pink);
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 0;
+  transition: gap 0.2s;
+}
+.mp-cat-explore:hover { gap: 8px; }
+
+/* ============================================
+   4. THREE-COLUMN SECTION
+   ============================================ */
+.mp-three-col {
+  background: #ffffff;
+  padding: 40px 0 20px 0;
+}
+
+.mp-three-col-inner {
+  margin: 0 var(--mp-page-margin);
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 24px;
+}
+
+/* ── BOX CONTAINER FOR EACH COLUMN ── */
+.mp-col-container {
+  background: #ffffff;
+  border: 1.5px solid var(--mp-border);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 8px 24px rgba(101, 0, 217, 0.03);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.mp-col-container:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(101, 0, 217, 0.07);
+}
+
+.mp-col-container.events-container {
+  background: #ffffff; /* White background explicitly as requested */
+}
+
+.mp-col-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+.mp-col-header h3 { font-size: 13.5px; font-weight: 900; color: var(--mp-dark); margin: 0; }
+
+.mp-view-all { font-size: 11.5px; font-weight: 700; color: var(--mp-pink); text-decoration: none; display: flex; align-items: center; gap: 3px; white-space: nowrap; border: none; background: none; cursor: pointer; padding: 0; transition: gap 0.2s; }
+.mp-view-all:hover { gap: 6px; }
+
+/* Desktop view defaults */
+.desktop-only-btn {
+  display: flex !important;
+}
+.mobile-only-btn {
+  display: none !important;
+}
+
+.mp-col-footer-btn {
+  display: flex;
+  justify-content: center;
+  margin-top: 18px;
+  width: 100%;
+}
+
+.mp-view-all-centered {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--mp-pink);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  border: 1.5px solid var(--mp-border);
+  border-radius: 20px;
+  background: #ffffff;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s, gap 0.2s;
+  box-shadow: 0 2px 6px rgba(101,0,217,0.02);
+}
+
+.mp-view-all-centered:hover {
+  background: var(--mp-pink);
+  border-color: var(--mp-pink);
+  color: #ffffff;
+  gap: 8px;
+}
+
+.mp-tv-episodes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+/* ── THUMB WRAP & BASE CARD STRUCTURE ── */
+.mp-card-thumb-wrap {
+  position: relative;
+  width: 100%;
+  height: var(--mp-card-thumb-height);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #111;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.mp-ep-card, .mp-event-card {
+  cursor: pointer;
+}
+
+.mp-ep-card:hover .mp-card-thumb-wrap,
+.mp-event-card:hover .mp-card-thumb-wrap {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 24px rgba(101, 0, 217, 0.14);
+}
+
+.mp-ep-thumb, .mp-event-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ── PLAY BUTTON OVERLAY ── */
+.mp-card-play-btn {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 5;
+}
+
+/* ── DURATION BADGE ── */
+.mp-card-duration {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #ffffff;
+  background: rgba(0, 0, 0, 0.65);
+  padding: 3px 6px;
+  border-radius: 5px;
+  backdrop-filter: blur(4px);
+  z-index: 5;
+}
+
+/* ── CARD INFO TEXTS (UNDERNEATH) ── */
+.mp-card-info {
+  padding: 10px 4px 4px 4px;
+}
+
+.mp-card-title {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #111118;
+  margin: 0 0 4px 0;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-height: 36px;
+}
+
+.mp-card-sub {
+  display: block;
+  font-size: 11.5px;
+  color: #727488;
+  font-weight: 700;
+}
+
+/* ── MAGAZINE CARDS (HIGH FIDELITY COVERS) ── */
+.mp-magazines-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.mp-mag-card {
+  cursor: pointer;
+}
+
+.mp-mag-cover {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 10 / 18; /* Restored to original tall card aspect ratio */
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  background: #111;
+}
+
+.mp-mag-card:hover .mp-mag-cover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 32px rgba(101, 0, 217, 0.18);
+}
+
+.mp-mag-bg-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.mp-mag-gradient-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.45) 0%,
+    rgba(0, 0, 0, 0.0) 30%,
+    rgba(0, 0, 0, 0.0) 65%,
+    rgba(0, 0, 0, 0.95) 100%
+  );
+  z-index: 1;
+}
+
+.mp-mag-header {
+  position: absolute;
+  top: 14px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 900;
+  color: #ffffff;
+  z-index: 2;
+  letter-spacing: -0.5px;
+}
+
+.mp-mag-header span {
+  color: var(--mp-pink);
+}
+
+.mp-mag-footer {
+  position: absolute;
+  bottom: 14px;
+  left: 14px;
+  right: 14px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  z-index: 2;
+  gap: 8px;
+}
+
+.mp-mag-label {
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  line-height: 1.25;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+
+.mp-mag-barcode {
+  background: #ffffff;
+  padding: 4px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+/* ── EVENT GRID ── */
+.mp-events-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+/* Carousel arrows */
+.mp-carousel-wrap {
+  position: relative;
+}
+
+.mp-carousel-arrow {
+  position: absolute;
+  top: 36%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1.5px solid var(--mp-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.10);
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+  color: var(--mp-dark);
+}
+
+.mp-carousel-arrow:hover {
+  background: var(--mp-pink);
+  border-color: var(--mp-pink);
+  color: #ffffff;
+}
+
+.mp-carousel-arrow.prev {
+  left: -16px;
+}
+
+.mp-carousel-arrow.next {
+  right: -16px;
+}
+
+/* ============================================
+   5. WHY CHOOSE
+   ============================================ */
+.mp-why { padding: 20px 0; margin: 0 var(--mp-page-margin); }
+
+.mp-why-grid { display: grid; grid-template-columns: repeat(6,1fr); gap: 22px; margin-top: 36px; }
+
+.mp-why-item { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; }
+.mp-why-icon { width: 52px; height: 52px; border-radius: 14px; background: linear-gradient(135deg,rgba(236,0,140,0.10) 0%,rgba(101,0,215,0.10) 100%); display: flex; align-items: center; justify-content: center; color: var(--mp-pink); flex-shrink: 0; }
+.mp-why-title { font-size: 12.5px; font-weight: 900; color: var(--mp-dark); margin: 0 0 4px; line-height: 1.3; }
+.mp-why-desc  { font-size: 11px; color: var(--mp-grey); line-height: 1.5; margin: 0; }
+
+/* ============================================
+   6. CTA SECTION
+   ============================================ */
+.mp-cta {
+  background: var(--mp-gradient) !important;
+  margin: 20px var(--mp-page-margin) 24px var(--mp-page-margin) !important;
+  padding: 48px 54px !important;
+  border-radius: 20px !important;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 12px 35px rgba(101, 0, 217, 0.12);
+}
+.mp-cta-inner {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 36px;
+}
+
+.mp-cta-left {
+  flex: 0 0 180px;
+  display: flex;
+  align-items: center;
+}
+.mp-cta-camera {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  height: 100%;
+  width: auto;
+  object-fit: contain;
+  object-position: left center;
+  display: block;
+  transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+  z-index: 2;
+  transform: scale(1.22);
+  transform-origin: left center;
+}
+.mp-cta-left:hover .mp-cta-camera,
+.mp-cta-camera:hover {
+  transform: scale(1.32);
+}
+
+.mp-cta-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.mp-cta-title { font-size: 28px; font-weight: 900; color: #fff; margin: 0 0 10px; line-height: 1.15; }
+.mp-cta-desc  { font-size: 13.5px; color: rgba(255,255,255,0.85); margin: 0 0 22px; line-height: 1.6; }
+
+.mp-cta-buttons { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+
+.mp-cta-btn-white { padding: 10px 20px; background: #fff; color: var(--mp-pink); border: none; border-radius: 7px; font-size: 12.5px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; transition: transform 0.2s, box-shadow 0.2s; }
+.mp-cta-btn-white:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.2); }
+
+.mp-cta-btn-outline-white { padding: 9px 18px; background: transparent; color: #fff; border: 2px solid rgba(255,255,255,0.5); border-radius: 7px; font-size: 12.5px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; transition: background 0.2s, border-color 0.2s, transform 0.2s; }
+.mp-cta-btn-outline-white:hover { background: rgba(255,255,255,0.12); border-color: #fff; transform: translateY(-2px); }
+
+.mp-cta-right {
+  flex: 0 0 320px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+}
+.mp-cta-magazines-group {
+  position: absolute;
+  right: -20px;
+  top: 0;
+  bottom: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding-right: 50px;
+  perspective: 1000px;
+  z-index: 2;
+}
+.mp-cta-mag-item {
+  position: relative;
+  width: 150px;
+  height: 210px;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.4s ease;
+  transform-style: preserve-3d;
+}
+.mp-cta-mag-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transform: scale(1.0);
+  transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+}
+.mp-cta-mag-item:hover img {
+  transform: scale(1.10);
+}
+.mp-cta-mag-item.left {
+  transform: rotateY(22deg) translateZ(-40px) translateX(85px) scale(0.85);
+  z-index: 3;
+}
+.mp-cta-mag-item.middle {
+  transform: rotateY(12deg) translateZ(-20px) translateX(40px) scale(0.92);
+  z-index: 4;
+}
+.mp-cta-mag-item.right {
+  transform: rotateY(-8deg) translateZ(10px) scale(1.02);
+  z-index: 5;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+}
+
+/* Individual hovering zoom transitions */
+.mp-cta-mag-item:hover {
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+  z-index: 10;
+}
+.mp-cta-mag-item.left:hover {
+  transform: rotateY(0deg) translateZ(30px) translateX(55px) scale(1.05);
+}
+.mp-cta-mag-item.middle:hover {
+  transform: rotateY(0deg) translateZ(40px) translateX(20px) scale(1.1);
+}
+.mp-cta-mag-item.right:hover {
+  transform: rotateY(0deg) translateZ(50px) scale(1.15);
+}
+
+/* Auto-loop active highlights */
+.mp-cta-mag-item.active-loop {
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+  z-index: 10;
+}
+.mp-cta-mag-item.left.active-loop {
+  transform: rotateY(0deg) translateZ(30px) translateX(55px) scale(1.05);
+}
+.mp-cta-mag-item.middle.active-loop {
+  transform: rotateY(0deg) translateZ(40px) translateX(20px) scale(1.1);
+}
+.mp-cta-mag-item.right.active-loop {
+  transform: rotateY(0deg) translateZ(50px) scale(1.15);
+}
+.mp-cta-mag-item.active-loop img {
+  transform: scale(1.10);
+}
+
+/* ============================================
+   7. TRUST STRIP
+   ============================================ */
+.mp-trust { padding: 20px 0; background: #fff; }
+.mp-trust-inner { margin: 0 var(--mp-page-margin); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.mp-trust-item { display: flex; flex-direction: column; align-items: center; gap: 12px; flex: 1; text-align: center; }
+.mp-trust-icon { color: var(--mp-pink); display: flex; align-items: center; justify-content: center; }
+.mp-trust-label { font-size: 11px; font-weight: 700; color: var(--mp-grey); line-height: 1.35; }
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 1200px) {
+  :root { --mp-page-margin: 20px; --mp-card-thumb-height: 140px; }
+  .mp-hero-inner { gap: 14px; }
+  .mp-hero-left  { flex: 0 0 380px; }
+  .mp-hero-title { font-size: 42px; }
+  .mp-hero-magazine { flex: 0 0 200px; }
+  .mp-magazine-img  { height: 330px; }
+  .mp-categories-grid { grid-template-columns: repeat(4,1fr); }
+  .mp-why-grid { grid-template-columns: repeat(3,1fr); }
+}
+
+
+
+/* ============================================================
+   ALL iPAD SIZES — max 1100px
+   iPad Pro, iPad Air, iPad Mini: same layout
+   Centered text, flat 5-col grid, no 3D, hover/touch resets
+   ============================================================ */
+@media (max-width: 1100px) {
+  :root { --mp-page-margin: 16px; --mp-card-thumb-height: 190px; }
+  /* ─── Hero: collapse to centered column ─── */
+  .mp-hero { padding: 30px 0 20px; }
+  .mp-hero-inner { flex-direction: column !important; gap: 0 !important; }
+  .mp-hero-left {
+    flex: none !important;
+    width: 100% !important;
+    padding-top: 20px !important;
+    align-items: center !important;
+    text-align: center !important;
+  }
+  .mp-hero-title { font-size: 30px; letter-spacing: -0.5px; }
+  .mp-hero-badge { font-size: 13px; margin-bottom: 10px; }
+  .mp-hero-desc  { font-size: 14px; line-height: 1.6; }
+  .mp-hero-buttons {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+  /* ─── 5-col flat grid, no 3D ─── */
+  .mp-hero-grid-wrap {
+    width: 100% !important;
+    flex: none !important;
+    grid-template-columns: repeat(5, 1fr) !important;
+    perspective: none !important;
+    padding: 16px 0 16px 0 !important;
+    margin: 20px 0 0 0 !important;
+  }
+  .mp-hero-card {
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 1 / 1.45 !important;
+    transform: none !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+  }
+  .mp-hero-card::before, .mp-hero-card::after { display: none !important; }
+  .mp-hero-card:nth-child(n) {
+    transform: none !important;
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 1 / 1.45 !important;
+    translate: none !important;
+  }
+  .mp-hero-card-face { transform: none !important; }
+  .mp-hero-card-label { font-size: 7.5px !important; bottom: 8px !important; padding: 0 4px !important; }
+  .mp-hero-magazine { display: none !important; }
+  /* ─── Hover resets (touch devices) ─── */
+  .mp-hero-card:hover,
+  .mp-hero-card:nth-child(n):hover { transform: none !important; box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important; }
+  .mp-hero-card:hover .mp-hero-card-img,
+  .mp-hero-card:nth-child(n):hover .mp-hero-card-img { transform: none !important; }
+  .mp-cat-card:hover { transform: none !important; box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important; border-color: var(--mp-border) !important; }
+  .mp-cat-card:hover .mp-cat-card-img { transform: none !important; }
+  .mp-ep-card:hover .mp-card-thumb-wrap,
+  .mp-event-card:hover .mp-card-thumb-wrap { transform: none !important; box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important; }
+  .mp-ep-card:hover .mp-ep-thumb,
+  .mp-event-card:hover .mp-event-thumb { transform: none !important; }
+  .mp-mag-card:hover .mp-mag-cover { transform: none !important; box-shadow: 0 6px 18px rgba(0,0,0,0.12) !important; }
+  .mp-mag-card:hover .mp-mag-bg-img { transform: none !important; }
+  /* ─── Active touch feedback ─── */
+  .mp-hero-card:active { transform: scale(1.015) !important; box-shadow: 0 6px 16px rgba(0,0,0,0.2) !important; }
+  .mp-cat-card:active { transform: scale(1.01) !important; box-shadow: 0 6px 16px rgba(101,0,215,0.1) !important; border-color: var(--mp-pink) !important; }
+  .mp-ep-card:active .mp-card-thumb-wrap,
+  .mp-event-card:active .mp-card-thumb-wrap { transform: scale(1.015) !important; box-shadow: 0 6px 16px rgba(101,0,217,0.1) !important; }
+  .mp-mag-card:active .mp-mag-cover { transform: scale(1.015) !important; box-shadow: 0 8px 18px rgba(101,0,217,0.12) !important; }
+  /* ─── Tablet shared layout rules ─── */
+  .desktop-only-btn { display: none !important; }
+  .mobile-only-btn  { display: flex !important; }
+  .mp-col-header { justify-content: flex-start !important; }
+  .mp-col-header h3 { white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; width: 100% !important; }
+  .mp-stats-strip { margin: 10px var(--mp-page-margin) 12px var(--mp-page-margin); padding: 20px 16px; }
+  .mp-stats-inner  { flex-wrap: wrap; gap: 14px; }
+  .mp-stat-item    { flex: 0 0 30%; border-right: none; }
+  .mp-section-header { margin-bottom: 20px !important; }
+  .mp-categories { padding: 0 0 10px 0 !important; }
+  .mp-categories-grid { grid-template-columns: repeat(3, 1fr); }
+  .mp-cat-card      { display: flex; flex-direction: column; height: 100%; }
+  .mp-cat-card-body { display: flex; flex-direction: column; flex: 1; }
+  .mp-cat-explore   { margin-top: auto; }
+  .mp-three-col { padding: 12px 0 20px 0 !important; }
+  .mp-three-col-inner { grid-template-columns: 1fr; gap: 20px !important; }
+  .mp-tv-episodes   { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .mp-magazines-row { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .mp-events-grid   { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .mp-why-grid { grid-template-columns: repeat(3, 1fr); }
+  .mp-cta { padding: 36px 24px !important; margin: 12px var(--mp-page-margin) !important; }
+  .mp-cta-inner { flex-wrap: wrap; }
+  .mp-cta-left  { display: none; }
+  .mp-cta-right { display: none; }
+}
+
+/* ============================================================
+   iPAD PRO FONT OVERRIDE — 992px to 1100px only
+   Slightly larger hero text than iPad Air / iPad Mini
+   ============================================================ */
+@media (min-width: 992px) and (max-width: 1100px) {
+  .mp-hero-title { font-size: 40px !important; letter-spacing: -0.8px !important; }
+  .mp-hero-badge { font-size: 15px !important; }
+  .mp-hero-desc  { font-size: 16px !important; line-height: 1.7 !important; }
+  .mp-btn-primary, .mp-btn-outline {
+    font-size: 15px !important;
+    padding: 12px 22px !important;
+  }
+}
+
+/* ============================================
+   IPAD MINI / TABLET — 577px to 768px tweaks
+   (Base tablet rules already in @media(max-width:991px))
+   ============================================ */
+@media (max-width: 768px) {
+  :root { --mp-card-thumb-height: 160px; }
+  .mp-hero       { padding: 30px 0 20px; }
+  .mp-hero-title { font-size: 30px; }
+  .mp-hero-left {
+    align-items: center;
+    text-align: center;
+  }
+  /* Tablet: buttons in a row (not grid) */
+  .mp-hero-buttons {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+  /* Tablet: 5-column hero grid (keep 5x2 layout) */
+  .mp-hero-grid-wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    grid-template-columns: repeat(5, 1fr) !important;
+    margin: 16px 0 0 0 !important;
+    padding: 16px 0 16px 0 !important;
+  }
+  .mp-hero-card {
+    height: auto !important;
+    aspect-ratio: 1 / 1.45 !important;
+  }
+  .mp-hero-card:nth-child(n) {
+    height: auto !important;
+    aspect-ratio: 1 / 1.45 !important;
+  }
+  /* Tablet: 3-column categories grid */
+  .mp-categories-grid { grid-template-columns: repeat(3, 1fr) !important; }
+  /* Tablet: 3-column Why Choose grid */
+  .mp-why-grid { grid-template-columns: repeat(3, 1fr) !important; }
+  .mp-cta-title  { font-size: 24px; }
+  .mp-stats-strip { margin: 10px var(--mp-page-margin) 16px var(--mp-page-margin); padding: 18px 16px; }
+  /* Tablet: 3-column stats strip */
+  .mp-stats-inner {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 14px !important;
+  }
+  .mp-stat-item {
+    flex: none !important;
+    border-right: none !important;
+    justify-content: flex-start !important;
+  }
+  .mp-stat-icon-wrap { width: 48px; height: 48px; border-radius: 10px; }
+  .mp-stat-icon-wrap svg { width: 24px !important; height: 24px !important; }
+  .mp-stat-info strong { font-size: 20px; }
+  .mp-stat-info small { font-size: 11.5px; }
+  .mp-categories { padding: 0 0 10px 0 !important; }
+  .mp-why        { padding: 15px 0 !important; }
+  .mp-cta        { padding: 32px 20px !important; margin: 12px var(--mp-page-margin) !important; }
+  .mp-trust      { padding: 18px 0; }
+  .mp-trust-inner { flex-wrap: nowrap; gap: 8px; justify-content: space-around; }
+  .mp-trust-item { flex: 1; min-width: 0; }
+  .mp-trust-item:last-child {
+    flex: 1 !important;
+    max-width: unset !important;
+  }
+  /* Tablet: 2-column carousel grids (shows 2 cards side by side) */
+  .mp-tv-episodes { grid-template-columns: repeat(2, 1fr) !important; gap: 12px; }
+  .mp-magazines-row { grid-template-columns: repeat(2, 1fr) !important; gap: 12px; }
+  .mp-mag-cover { max-width: 200px; margin: 0 auto; }
+  .mp-events-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 12px; }
+  /* Tablet: keep 16:9 thumb for better card display */
+  .mp-card-thumb-wrap { height: auto !important; aspect-ratio: 16 / 9 !important; }
+  .mp-carousel-arrow { top: 35% !important; }
+  .magazines-container .mp-carousel-arrow { top: 45% !important; }
+}
+
+/* ============================================
+   MOBILE ONLY — max 576px
+   (Hero 2-col grid, 2-col stats, 1-col carousels)
+   ============================================ */
+@media (max-width: 576px) {
+  .mp-hero-title { font-size: 26px; }
+  .mp-hero-left  { flex: none; }
+  /* Mobile: 2-by-1 hero buttons grid */
+  .mp-hero-buttons {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+  .mp-hero-buttons > *:nth-child(3) {
+    grid-column: span 2 !important;
+  }
+  /* Mobile: 2-column hero grid */
+  .mp-hero-grid-wrap {
+    grid-template-columns: repeat(2, 1fr) !important;
+    margin: 16px 0 0 0 !important;
+    padding: 12px 0 12px 0 !important;
+  }
+  .mp-hero-card-label {
+    font-size: 8px !important;
+    bottom: 8px !important;
+  }
+  .mp-section-header h2::before,
+  .mp-section-header h2::after {
+    display: none !important;
+  }
+  /* Mobile: 2-column categories */
+  .mp-categories-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px; }
+  .mp-col-container { padding: 16px !important; }
+  /* Mobile: 2-column Why Choose grid */
+  .mp-why-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .mp-cta { padding: 28px 16px !important; margin: 12px var(--mp-page-margin) !important; }
+  .mp-cta-buttons { flex-direction: column; }
+  /* Mobile: 2-column stats */
+  .mp-stats-inner {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 16px 20px !important;
+  }
+  /* Mobile: 1-column carousels */
+  .mp-tv-episodes { grid-template-columns: repeat(1, 1fr) !important; gap: 16px; }
+  .mp-magazines-row { grid-template-columns: repeat(1, 1fr) !important; gap: 12px; }
+  .mp-mag-cover { max-width: 240px; margin: 0 auto; }
+  .mp-events-grid { grid-template-columns: repeat(1, 1fr) !important; gap: 16px; }
+  .mp-card-thumb-wrap { height: auto !important; aspect-ratio: 16 / 9 !important; }
+  .mp-carousel-arrow { top: 35% !important; }
+  .magazines-container .mp-carousel-arrow { top: 50% !important; }
+  /* Mobile: trust strip 2-column wrap */
+  .mp-trust-inner { flex-wrap: wrap !important; gap: 14px !important; }
+  .mp-trust-item { flex: 0 0 45% !important; }
+  .mp-trust-item:last-child {
+    flex: 0 0 100% !important;
+    max-width: 100% !important;
+  }
+}

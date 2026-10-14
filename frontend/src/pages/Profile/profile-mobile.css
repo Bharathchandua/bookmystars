@@ -1,0 +1,404 @@
+@media (max-width: 1200px) {
+  .prof-reviews-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 900px) {
+  .prof-layout { flex-direction: column; }
+  .prof-right-sidebar { width: 100%; }
+  .prof-header-card { flex-wrap: wrap; }
+  .prof-bio-col { width: 100%; }
+  .prof-reviews-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Responsive overrides for new tabs ── */
+@media (max-width: 1100px) {
+  .ptab-grid { grid-template-columns: repeat(3, 1fr); }
+  .vids-grid  { grid-template-columns: repeat(2, 1fr); }
+  .rates-grid { grid-template-columns: repeat(2, 1fr); }
+  .meas-groups { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 768px) {
+  .ptab-grid  { grid-template-columns: repeat(2, 1fr); }
+  .vids-grid  { grid-template-columns: 1fr; }
+  .rates-grid { grid-template-columns: 1fr; }
+  .wexp-card-top { flex-direction: column; }
+  .rev-summary-card { flex-direction: column; gap: 20px; }
+}
+
+/* Responsive & Mobile-friendly Styles */
+@media (max-width: 1024px) {
+  .ptab-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .prof-layout {
+    flex-direction: column !important;
+  }
+  .prof-right-sidebar {
+    width: 100% !important;
+  }
+
+  .prof-reviews-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .vids-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+@media (max-width: 700px) {
+  .prof-card-main {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 16px !important;
+  }
+
+  .prof-photo-col {
+    width: 190px !important;
+    height: 250px !important;
+    margin: 0 auto !important;
+    flex-shrink: 0 !important;
+  }
+
+  .prof-main-photo {
+    border-radius: 12px !important;
+  }
+
+  .prof-card-right {
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 768px) {
+
+  .prof-card-top {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+
+  .prof-info-col {
+    flex: 1.15 !important;
+    width: 55% !important;
+    min-width: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    text-align: left !important;
+  }
+
+  .prof-name-row {
+    align-items: center !important;
+    gap: 4px !important;
+    width: 100% !important;
+  }
+
+  .prof-name {
+    font-size: 16px !important;
+  }
+
+  .prof-role-label {
+    font-size: 11.5px !important;
+    margin-bottom: 4px !important;
+  }
+
+  .prof-stars-row {
+    flex-wrap: wrap !important;
+    gap: 4px !important;
+    align-items: center !important;
+    width: 100% !important;
+  }
+
+  .prof-rating-num {
+    font-size: 12px !important;
+  }
+
+  .prof-rating-cnt {
+    font-size: 10px !important;
+  }
+
+  .prof-meta-list {
+    align-items: flex-start !important;
+  }
+
+  .prof-meta-row {
+    font-size: 11px !important;
+    gap: 4px !important;
+  }
+
+  .prof-rate-row {
+    font-size: 11.5px !important;
+  }
+
+  .prof-rate-note {
+    font-size: 10px !important;
+    margin-left: 0 !important;
+    text-align: left !important;
+  }
+
+  .prof-bio-col {
+    flex: 0.85 !important;
+    width: 45% !important;
+    min-width: 0 !important;
+    padding-top: 0 !important;
+    align-items: flex-start !important;
+    text-align: left !important;
+  }
+
+  .prof-bio-text {
+    font-size: 11px !important;
+    line-height: 1.45 !important;
+    color: #64748b !important;
+    margin-bottom: 6px !important;
+  }
+
+  .prof-bio-text br {
+    display: none !important;
+  }
+
+  .prof-view-more-btn {
+    font-size: 11px !important;
+    align-self: flex-start !important;
+  }
+
+  .prof-card-tags {
+    padding-left: 0 !important;
+    justify-content: center !important;
+    flex-wrap: wrap !important;
+    margin-top: 14px !important;
+    width: 100% !important;
+  }
+
+  .prof-tag-extra {
+    margin-top: 4px !important;
+  }
+
+  /* Portfolio highlights inside overview */
+  .prof-port-nav-btn--left {
+    margin-right: -8px !important;
+  }
+  .prof-port-nav-btn--right {
+    margin-left: -8px !important;
+  }
+  .prof-portfolio-img {
+    height: 130px !important;
+  }
+
+  .prof-stats-bar {
+    justify-content: center !important;
+    gap: 20px !important;
+    margin-top: 12px !important;
+  }
+
+  /* Reviews summary */
+  .prof-reviews-layout {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 20px !important;
+  }
+  .prof-rating-summary {
+    min-width: unset !important;
+    width: 100% !important;
+  }
+  .prof-reviews-grid {
+    grid-template-columns: 1fr !important;
+    width: 100% !important;
+  }
+
+  /* Tab Bar flex wrap layout on mobile */
+  .prof-tab-bar {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px 10px !important;
+    overflow-x: visible !important;
+    width: 100% !important;
+    justify-content: flex-start !important;
+  }
+
+  .prof-tab-btn {
+    width: auto !important;
+    text-align: center !important;
+    padding: 6px 10px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    white-space: nowrap !important;
+    line-height: 1.25 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-bottom: 2px solid transparent !important;
+    height: 34px !important;
+  }
+
+  .prof-tab-btn.prof-tab-btn--active {
+    border-bottom: 2px solid #e91e8c !important;
+    font-weight: 700 !important;
+  }
+
+  .meas-groups {
+    grid-template-columns: 1fr !important;
+  }
+
+  .ptab-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .prof-avail-tab-container {
+    grid-template-columns: 1fr !important;
+  }
+
+}
+
+@media (max-width: 480px) {
+  .ptab-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .ptab-photo-img {
+    height: 260px !important;
+  }
+  .vids-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+}
+
+@media (max-width: 1024px) {
+  /* Header Extras adjustments to keep everything on one line on tablets too */
+  .prof-header-extras {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    gap: 6px !important;
+    width: auto !important;
+    margin: 0 !important;
+  }
+
+  .prof-share-btn {
+    font-size: 0 !important; /* Hides text nodes */
+    padding: 0 !important;
+    width: 34px !important;
+    height: 34px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 8px !important;
+    min-width: unset !important;
+  }
+
+  .prof-share-btn svg {
+    margin: 0 !important;
+    width: 14px !important;
+    height: 14px !important;
+  }
+
+  .prof-icon-btn {
+    width: 34px !important;
+    height: 34px !important;
+    border-radius: 8px !important;
+  }
+
+  .prof-icon-btn svg {
+    width: 15px !important;
+    height: 15px !important;
+  }
+}
+
+/* Fix profile page layout and photo stretching on iPad and tablet viewports */
+@media (min-width: 769px) and (max-width: 1024px) {
+  /* Prevent profile photo stretching */
+  .prof-card-main {
+    align-items: flex-start !important;
+  }
+
+  .prof-photo-col {
+    width: 210px !important;
+    height: 280px !important;
+  }
+
+  /* Prevent right-side cards from stretching vertically */
+  .prof-layout {
+    align-items: flex-start !important;
+  }
+
+  .prof-book-card,
+  .prof-sidebar-card {
+    flex: none !important;
+  }
+
+  /* Make sure tabs don't hide or overflow on tablet screen widths */
+  .prof-tab-bar {
+    flex-wrap: wrap !important;
+    overflow-x: visible !important;
+    gap: 8px 10px !important;
+  }
+
+  .prof-tab-btn {
+    padding: 8px 10px !important;
+    font-size: 11px !important;
+  }
+}
+
+/* Stacking info and bio only on iPad Pro portrait (exactly 1024px) to prevent squishing */
+@media (min-width: 1024px) and (max-width: 1024px) {
+  /* Stack details and bio to prevent squishing and reduce container height */
+  .prof-card-top {
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+
+  .prof-info-col,
+  .prof-bio-col {
+    width: 100% !important;
+    flex: none !important;
+  }
+
+  .prof-bio-col {
+    padding-top: 8px !important;
+  }
+
+  .prof-bio-text br {
+    display: none !important;
+  }
+
+  /* Move tags to the left side border and wrap them */
+  .prof-card-tags {
+    padding-left: 0 !important;
+    justify-content: flex-start !important;
+    flex-wrap: wrap !important;
+    margin-top: 14px !important;
+    width: 100% !important;
+  }
+}
+
+/* Force Overview grid layout on tablet/iPad viewports: About full-width, others 2 per row */
+@media (min-width: 769px) and (max-width: 1200px) {
+  .prof-overview-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  .prof-overview-grid > :nth-child(1) {
+    grid-column: span 2 !important;
+  }
+  .prof-overview-grid > :nth-child(n+2) {
+    grid-column: span 1 !important;
+  }
+}
+
+/* Stacking all Overview cards vertically on mobile */
+@media (max-width: 768px) {
+  .prof-overview-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+  }
+  .prof-overview-grid > * {
+    grid-column: unset !important;
+    width: 100% !important;
+  }
+}

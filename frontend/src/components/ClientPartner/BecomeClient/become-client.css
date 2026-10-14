@@ -1,0 +1,992 @@
+/* =============================================
+   BECOME A CLIENT PAGE — become-client.css
+   ============================================= */
+
+/* Page wrapper */
+.bc-page {
+  overflow-x: hidden;
+  background: #ffffff;
+  color: #05072d;
+}
+
+/* =============================================
+   1. HERO SECTION
+   ============================================= */
+.bc-hero {
+  width: 100%;
+  background: #ffffff;
+  padding-top: 0;
+  overflow: hidden;
+}
+
+.bc-hero-inner {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  min-height: 580px;
+}
+
+/* Left: Copy */
+.bc-hero-copy {
+  flex: 1;
+  padding: 32px 40px 155px calc((100vw - 1420px) / 2 + 40px);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: linear-gradient(to right, #ffffff calc(100% - 180px), transparent calc(100% - 180px));
+  z-index: 2;
+}
+
+@media (max-width: 1420px) {
+  .bc-hero-copy {
+    padding-left: 36px;
+  }
+}
+
+/* Breadcrumb */
+.bc-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #626480;
+  margin-bottom: 60px;
+}
+
+.bc-breadcrumb a {
+  color: #626480;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.bc-breadcrumb a:hover {
+  color: #ec008c;
+}
+
+.bc-breadcrumb span {
+  color: #a0a3bd;
+}
+
+/* Title */
+.bc-title {
+  font-size: 72px;
+  font-weight: 900;
+  line-height: 1.08;
+  color: #05072d;
+  margin: 0 0 40px 0;
+  letter-spacing: -1.5px;
+}
+
+.bc-title-pink {
+  color: #ec008c;
+  position: relative;
+  display: inline-block;
+}
+
+.bc-title-pink::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -6px;
+  width: 56px;
+  height: 3px;
+  background: #ec008c;
+  border-radius: 2px;
+}
+
+/* Description */
+.bc-description {
+  font-size: 21px;
+  line-height: 1.7;
+  color: #3a3d5c;
+  max-width: 620px;
+  margin-bottom: 40px;
+}
+
+/* Stats row */
+.bc-stats-row {
+  position: absolute;
+  bottom: 100px;
+  left: calc((100vw - 1420px) / 2 + 40px);
+  display: flex;
+  align-items: center;
+  gap: 48px;
+  flex-wrap: nowrap;
+  width: max-content;
+  z-index: 5;
+}
+
+@media (max-width: 1420px) {
+  .bc-stats-row {
+    left: 36px;
+  }
+}
+
+.bc-stat {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.bc-stat-icon {
+  color: #7c3aed;
+  flex-shrink: 0;
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.bc-stat:hover .bc-stat-icon {
+  transform: rotate(6deg) scale(1.15);
+}
+
+.bc-stat strong {
+  display: block;
+  font-size: 26px;
+  font-weight: 900;
+  color: #05072d;
+  line-height: 1;
+}
+
+.bc-stat small {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #626480;
+  margin-top: 3px;
+}
+
+.bc-stat-divider {
+  width: 1px;
+  height: 36px;
+  background: #e2d9f3;
+  flex-shrink: 0;
+}
+
+/* Right: Image column */
+.bc-hero-img-col {
+  position: relative;
+  flex: 1.4;
+  align-self: stretch;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  margin-left: -180px;
+  z-index: 1;
+}
+
+.bc-hero-img-col::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: 
+    linear-gradient(to right, #ffffff 0%, rgba(255, 255, 255, 0) 80px),
+    linear-gradient(to top, #ffffff 0%, rgba(255, 255, 255, 0) 80px);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.bc-hero-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  display: block;
+  min-height: 500px;
+}
+
+/* Hero Responsive */
+@media (max-width: 1100px) {
+  .bc-title {
+    font-size: 52px;
+  }
+}
+
+@media (max-width: 768px) {
+  .bc-hero-inner {
+    flex-direction: column;
+  }
+  .bc-hero-copy {
+    padding: 32px 20px 24px 20px;
+    background: #fff;
+  }
+  .bc-hero-img-col {
+    width: 100%;
+    height: 360px;
+    position: relative;
+    margin-left: 0;
+    overflow: hidden;
+  }
+  .bc-hero-img {
+    min-height: 100%;
+    max-width: 100%;
+  }
+  .bc-hero-img-col::before {
+    width: 100%;
+    height: 100%;
+    background: 
+      linear-gradient(to bottom, #ffffff 0%, rgba(255, 255, 255, 0) 80px),
+      linear-gradient(to top, #ffffff 0%, rgba(255, 255, 255, 0) 80px);
+  }
+  .bc-title {
+    font-size: 40px;
+    margin-bottom: 28px;
+  }
+  .bc-title-pink::after {
+    width: 32px;
+    bottom: -4px;
+  }
+  .bc-breadcrumb {
+    font-size: 11px !important;
+    margin-left: 16px !important;
+    justify-content: flex-start !important;
+    align-self: flex-start !important;
+    width: auto !important;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .bc-stats-row {
+    position: static;
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .bc-stat {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .bc-stat-icon {
+    width: 22px !important;
+    height: 22px !important;
+  }
+  .bc-stat strong {
+    font-size: 16px;
+  }
+  .bc-stat small {
+    font-size: 11px;
+    line-height: 1.25;
+    max-width: 75px;
+    white-space: normal;
+  }
+  .bc-stat-divider {
+    display: none;
+  }
+  .bc-description {
+    font-size: 15px;
+    line-height: 1.6;
+    margin-bottom: 28px;
+  }
+}
+
+@media (max-width: 480px) {
+  .bc-title {
+    font-size: 32px;
+  }
+}
+
+
+/* =============================================
+   2. SERVICES ROW (4 separate tall cards)
+   ============================================= */
+.bc-services-row {
+  background: #ffffff;
+  padding: 36px 0;
+}
+
+.bc-services-inner {
+  max-width: 1420px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.bc-service-card {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 24px 18px;
+  background: #ffffff;
+  border: 1px solid #e8e0f4;
+  border-radius: 14px;
+  box-shadow: 0 4px 18px rgba(91, 0, 215, 0.06);
+  min-height: 140px;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  cursor: default;
+}
+
+.bc-service-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(91, 0, 215, 0.12);
+  border-color: rgba(91, 0, 215, 0.25);
+}
+
+.bc-service-icon {
+  width: 58px;
+  height: 58px;
+  min-width: 58px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ec008c, #5b00d7);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 14px rgba(236, 0, 140, 0.25);
+}
+
+.bc-service-text {
+  flex: 1;
+}
+
+.bc-service-text h3 {
+  font-size: 14.5px;
+  font-weight: 800;
+  color: #05072d;
+  margin: 0 0 6px 0;
+  line-height: 1.3;
+}
+
+.bc-service-text p {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #626480;
+  margin: 0;
+}
+
+/* Services Row Responsive */
+@media (max-width: 1000px) {
+  .bc-services-inner {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .bc-services-inner {
+    grid-template-columns: 1fr;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+}
+
+
+/* =============================================
+   3. "BOOKMYSTARS PROVIDES" SECTION
+   ============================================= */
+.bc-provides {
+  background: #fff;
+  padding: 50px 0 16px 0;
+}
+
+.bc-provides-inner {
+  max-width: 1420px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* Header with decorative lines */
+.bc-provides-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 36px;
+  justify-content: center;
+}
+
+.bc-provides-line {
+  flex: 1;
+  max-width: 120px;
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent, #ec008c);
+}
+
+.bc-provides-header .bc-provides-line:last-child {
+  background: linear-gradient(90deg, #ec008c, transparent);
+}
+
+.bc-provides-title {
+  font-size: 24px;
+  font-weight: 900;
+  color: #05072d;
+  white-space: nowrap;
+  margin: 0;
+}
+
+/* 3 Cards Grid */
+.bc-provides-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+}
+
+.bc-provide-card {
+  border: 1px solid #e8e0f4;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 8px 20px rgba(22, 0, 42, 0.06);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 520px;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.bc-provide-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 16px 36px rgba(22, 0, 42, 0.1);
+  border-color: rgba(91, 0, 215, 0.25);
+}
+
+.bc-provide-img-wrap {
+  height: 360px;
+  overflow: hidden;
+  background: #f5f0fb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.bc-provide-img-wrap img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+  border-radius: 8px;
+}
+
+.bc-provide-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex-grow: 1;
+}
+
+.bc-provide-category {
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  color: #ec008c;
+}
+
+.bc-provide-desc {
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: #626480;
+  margin: 0;
+  flex-grow: 1;
+}
+
+.bc-provide-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14.5px;
+  font-weight: 900;
+  color: #ec008c;
+  text-decoration: none;
+  margin-top: 4px;
+  transition: gap 0.2s;
+}
+
+.bc-provide-link:hover {
+  gap: 10px;
+}
+
+/* Color customizations for the first card */
+.bc-provides-grid .bc-provide-card:first-child .bc-provide-category {
+  color: #A162FC;
+}
+
+.bc-provides-grid .bc-provide-card:first-child .bc-provide-link {
+  color: #A162FC;
+}
+
+/* Color customizations for the third card */
+.bc-provides-grid .bc-provide-card:nth-child(3) .bc-provide-category {
+  color: #004BE0;
+}
+
+.bc-provides-grid .bc-provide-card:nth-child(3) .bc-provide-link {
+  color: #004BE0;
+}
+
+/* Provides Responsive */
+@media (max-width: 900px) {
+  .bc-provides-grid {
+    grid-template-columns: 1fr;
+    max-width: 440px;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .bc-provides-header {
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+  .bc-provides-line {
+    display: none;
+  }
+  .bc-provides-title {
+    white-space: normal;
+    text-align: center;
+    font-size: 20px;
+  }
+  .bc-provide-img-wrap {
+    height: 240px;
+  }
+  .bc-provide-card {
+    min-height: auto;
+  }
+}
+
+
+/* =============================================
+   4. CTA BANNER SECTION
+   ============================================= */
+.bc-cta {
+  background: #ffffff;
+  padding: 16px 0 48px 0;
+}
+
+.bc-cta-inner {
+  max-width: 1372px;
+  margin: 0 auto;
+  padding: 36px 44px;
+  background: #f8f6ff;
+  border: 1px solid #ede6f8;
+  border-radius: 16px;
+  box-shadow: 0 8px 30px rgba(91, 0, 215, 0.04);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.bc-cta-icon {
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ec008c, #5b00d7);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.bc-cta-text {
+  flex: 1;
+}
+
+.bc-cta-text h3 {
+  font-size: 18px;
+  font-weight: 900;
+  color: #05072d;
+  margin: 0 0 5px 0;
+  line-height: 1.3;
+}
+
+.bc-cta-text p {
+  font-size: 13px;
+  color: #626480;
+  line-height: 1.5;
+  margin: 0;
+  max-width: 540px;
+}
+
+.bc-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 22px;
+  background: #fff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #05072d;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.bc-cta-btn:hover {
+  border-color: #5b00d7;
+  color: #5b00d7;
+  transform: translateY(-1px);
+}
+
+/* CTA Responsive */
+@media (max-width: 768px) {
+  .bc-cta {
+    padding: 24px 0;
+  }
+  .bc-cta-inner {
+    flex-wrap: wrap;
+    justify-content: center;
+    text-align: center;
+    padding: 30px 20px;
+    margin: 0 20px;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .bc-cta-text p {
+    max-width: 100%;
+  }
+}
+
+
+.bc-stats-banner {
+  background: #ffffff;
+  padding: 16px 0 48px 0;
+}
+
+.bc-stats-banner-inner {
+  max-width: 1372px;
+  margin: 0 auto;
+  padding: 56px 48px;
+  background: linear-gradient(90deg, #7C0C9A 0%, #33219F 100%);
+  border-radius: 16px;
+  box-shadow: 0 8px 30px rgba(51, 33, 159, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.bc-stats-banner-inner:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 40px rgba(51, 33, 159, 0.24);
+}
+
+.bc-stats-banner-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.bc-stats-banner-item:hover {
+  transform: scale(1.05);
+}
+
+.bc-stats-banner-icon {
+  color: rgba(255, 255, 255, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), color 0.3s ease;
+}
+
+.bc-stats-banner-item:hover .bc-stats-banner-icon {
+  transform: rotate(6deg) scale(1.15);
+  color: #ffffff;
+}
+
+.bc-stats-banner-text strong {
+  display: block;
+  font-size: 26px;
+  font-weight: 900;
+  color: #fff;
+  line-height: 1;
+}
+
+.bc-stats-banner-text small {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: 3px;
+}
+
+.bc-stats-banner-divider {
+  width: 1px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.3);
+  transition: opacity 0.3s ease;
+}
+
+/* Stats Banner Responsive */
+@media (max-width: 833px) {
+  .bc-stats-banner-inner {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 32px 48px;
+    padding: 32px;
+    margin: 0 24px;
+  }
+  .bc-stats-banner-divider {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .bc-stats-banner {
+    padding: 16px 0 32px 0;
+  }
+  .bc-stats-banner-inner {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 32px 20px;
+    padding: 30px 24px;
+    margin: 0 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .bc-stats-banner-inner {
+    padding: 30px 16px;
+    gap: 24px 12px;
+    margin: 0 16px;
+  }
+  .bc-stats-banner-item {
+    gap: 10px;
+  }
+  .bc-stats-banner-text strong {
+    font-size: 20px;
+  }
+  .bc-stats-banner-text small {
+    font-size: 11px;
+  }
+}
+
+/* =============================================
+   5. IPAD SERIES RESPONSIVE LAYOUT (768px to 833px)
+   ============================================= */
+@media (min-width: 768px) and (max-width: 833px) {
+  /* Hero Section */
+  .bc-hero-inner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .bc-hero-copy {
+    padding: 48px 40px 32px 40px;
+    background: #fff;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .bc-breadcrumb {
+    font-size: 11px !important;
+    margin-left: 16px !important;
+    justify-content: flex-start !important;
+    align-self: flex-start !important;
+    width: auto !important;
+  }
+  .bc-hero-img-col {
+    width: 100%;
+    height: 420px;
+    position: relative;
+    margin-left: 0;
+    overflow: hidden;
+  }
+  .bc-hero-img {
+    min-height: 100%;
+    max-width: 100%;
+  }
+  .bc-title {
+    font-size: 52px;
+  }
+  .bc-description {
+    font-size: 17px;
+    line-height: 1.6;
+    margin-bottom: 32px;
+    max-width: 100%;
+  }
+  .bc-stats-row {
+    position: static;
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 24px;
+    margin-top: 16px;
+  }
+  .bc-stat-divider {
+    display: block !important;
+  }
+  .bc-stat {
+    flex: 1;
+    justify-content: center;
+  }
+
+  /* Services Section */
+  .bc-services-inner {
+    grid-template-columns: 1fr;
+    max-width: 640px;
+    margin: 0 auto;
+    gap: 20px;
+    padding: 0;
+  }
+  .bc-service-card {
+    flex-direction: row;
+    align-items: center;
+    text-align: left;
+    padding: 24px;
+    min-height: auto;
+    gap: 20px;
+  }
+  .bc-service-icon {
+    width: 60px !important;
+    height: 60px !important;
+    min-width: 60px !important;
+    margin: 0;
+  }
+  .bc-service-text {
+    width: auto;
+    flex: 1;
+  }
+  .bc-service-text h3 {
+    font-size: 16.5px;
+    margin: 0 0 6px 0;
+  }
+  .bc-service-text p {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* Provides Section */
+  .bc-provides-grid {
+    grid-template-columns: 1fr;
+    max-width: 640px;
+    margin: 0 auto;
+    gap: 32px;
+  }
+  .bc-provides-header {
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+  .bc-provides-line {
+    display: none;
+  }
+  .bc-provides-title {
+    white-space: normal;
+    text-align: center;
+    font-size: 26px;
+  }
+  .bc-provide-img-wrap {
+    height: 340px;
+    padding: 24px;
+  }
+  .bc-provide-card {
+    min-height: auto;
+  }
+  .bc-provide-body {
+    padding: 32px;
+  }
+  .bc-provide-category {
+    font-size: 16px;
+  }
+  .bc-provide-desc {
+    font-size: 15.5px;
+    line-height: 1.65;
+  }
+  .bc-provide-link {
+    font-size: 15.5px;
+  }
+
+  /* CTA Section */
+  .bc-cta-inner {
+    flex-direction: column;
+    text-align: center;
+    padding: 40px;
+    gap: 24px;
+    margin: 0 32px;
+  }
+  .bc-cta-text p {
+    margin: 0 auto;
+    max-width: 100%;
+  }
+  .bc-cta-btn {
+    align-self: center;
+  }
+
+  /* Stats Banner Section */
+  .bc-stats-banner-inner {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    justify-content: space-between !important;
+    padding: 28px 24px;
+    margin: 0 24px;
+  }
+  .bc-stats-banner-item {
+    gap: 10px;
+  }
+  .bc-stats-banner-text strong {
+    font-size: 22px;
+  }
+  .bc-stats-banner-text small {
+    font-size: 11px;
+  }
+  .bc-stats-banner-divider {
+    display: block !important;
+  }
+}
+
+/* =============================================
+   6. IPAD PRO PORTRAIT RESPONSIVE LAYOUT (834px to 1024px)
+   ============================================= */
+@media (min-width: 834px) and (max-width: 1024px) {
+  .bc-hero-copy {
+    padding-top: 64px !important;
+  }
+  .bc-title {
+    font-size: 40px !important;
+    margin-bottom: 24px !important;
+  }
+  .bc-title-pink::after {
+    width: 44px !important;
+  }
+  .bc-description {
+    font-size: 15px !important;
+    max-width: 390px !important;
+    line-height: 1.6 !important;
+    margin-bottom: 32px !important;
+  }
+  .bc-stats-row {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 16px 20px !important;
+    bottom: 95px !important;
+    width: max-content !important;
+    position: absolute !important;
+  }
+  .bc-stats-row .bc-stat:nth-child(3) {
+    grid-column: 1 / span 2 !important;
+    justify-self: center !important;
+  }
+  .bc-stat {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+  .bc-stat strong {
+    font-size: 18px !important;
+  }
+  .bc-stat small {
+    font-size: 10.5px !important;
+  }
+  .bc-stat-icon {
+    width: 24px !important;
+    height: 24px !important;
+  }
+}

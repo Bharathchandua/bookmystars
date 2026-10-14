@@ -1,0 +1,2316 @@
+/* ============================================================
+   MAKEOVER SERVICES PAGE — makeover.css
+   Prestige aesthetics, modern typography, glassmorphism
+   ============================================================ */
+
+:root {
+  --mo-pink: #DB0095;
+  --mo-purple: #8100C3;
+  --mo-dark: #05072d;
+  --mo-grey: #626480;
+  --mo-border: #ece7f3;
+  --mo-light: #f9f8fc;
+  --mo-gradient: linear-gradient(135deg, #DB0095 0%, #8100C3 100%);
+  --mo-shadow-sm: 0 4px 12px rgba(129, 0, 195, 0.04);
+  --mo-shadow-md: 0 8px 24px rgba(129, 0, 195, 0.08);
+  --mo-shadow-lg: 0 16px 40px rgba(129, 0, 195, 0.15);
+}
+
+/* ── Base Page Layout ── */
+.mo-page-wrapper {
+  overflow-x: hidden;
+  background-color: #ffffff;
+  color: var(--mo-dark);
+  font-family: 'Inter', 'Outfit', system-ui, sans-serif;
+}
+
+.mo-page-content {
+  padding-top: 0;
+  width: 100%;
+}
+
+.text-mo-pink { color: var(--mo-pink); }
+.text-mo-purple { color: var(--mo-purple); }
+
+/* ── 1. HERO SECTION ── */
+.mo-hero-section {
+  position: relative;
+  background: #ffffff;
+  overflow: hidden;
+  width: 100%;
+}
+
+.mo-hero-container {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  min-height: 640px;
+}
+
+.mo-hero-left {
+  flex: 1.1;
+  min-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 40px 0px 40px 50px;
+  z-index: 10;
+  background-color: #ffffff;
+}
+
+.mo-hero-right {
+  flex: 1.7;
+  position: relative;
+  align-self: stretch;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  /* Fade image pixels at left and bottom edges */
+  -webkit-mask-image:
+    linear-gradient(to right,  transparent 0%, black 22%),
+    linear-gradient(to top,    transparent 0%, black 20%);
+  -webkit-mask-composite: destination-in;
+  mask-image:
+    linear-gradient(to right,  transparent 0%, black 22%),
+    linear-gradient(to top,    transparent 0%, black 20%);
+  mask-composite: intersect;
+}
+
+/* Overlay div no longer needed but kept harmless */
+.mo-hero-image-overlay {
+  display: none;
+}
+
+.mo-hero-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
+}
+
+/* Hero Content Styling */
+.mo-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--mo-grey);
+  margin-bottom: 24px;
+}
+
+.mo-breadcrumb a {
+  color: var(--mo-grey);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.mo-breadcrumb a:hover {
+  color: var(--mo-pink);
+}
+
+.mo-badge-wrap {
+  margin-bottom: 20px;
+}
+
+.mo-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--mo-pink);
+  border: 1.5px solid rgba(219, 0, 149, 0.4);
+  padding: 6px 20px;
+  border-radius: 50px;
+  letter-spacing: 2px;
+  background: rgba(219, 0, 149, 0.05);
+  box-shadow: 0 0 16px rgba(219, 0, 149, 0.1);
+}
+
+.mo-main-title {
+  font-size: 62px;
+  font-weight: 900;
+  line-height: 1.1;
+  color: var(--mo-dark);
+  margin: 0 0 20px 0;
+  letter-spacing: -2px;
+}
+
+.mo-hero-desc {
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--mo-grey);
+  margin: 0 0 38px 0;
+  max-width: 520px;
+}
+
+/* Hero Benefits Row */
+.mo-hero-benefits {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 24px;
+  margin-bottom: 48px;
+  width: 125%;
+  position: relative;
+  z-index: 15;
+}
+
+.mo-benefit-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.mo-benefit-icon-wrap {
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mo-pink);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.mo-benefit-item h5 {
+  font-size: 13.5px;
+  font-weight: 800;
+  margin: 0 0 2px 0;
+  color: var(--mo-dark);
+}
+
+.mo-benefit-item p {
+  font-size: 11.5px;
+  color: #3b3c54;
+  margin: 0;
+  line-height: 1.45;
+}
+
+/* Hero Buttons */
+.mo-hero-buttons {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+button.btn-mo-find,
+.btn-mo-find {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--mo-gradient);
+  color: #fff;
+  border: none;
+  border-radius: 10px !important;
+  padding: 13px 30px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.3px;
+  box-shadow: 0 4px 20px rgba(219, 0, 149, 0.3);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  text-decoration: none;
+}
+
+button.btn-mo-find:hover,
+.btn-mo-find:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 30px rgba(219, 0, 149, 0.45);
+}
+
+button.btn-mo-works,
+.btn-mo-works {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  color: var(--mo-dark);
+  border: 1.5px solid var(--mo-border);
+  border-radius: 10px !important;
+  padding: 12px 30px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+  text-decoration: none;
+}
+
+button.btn-mo-works:hover,
+.btn-mo-works:hover {
+  transform: translateY(-3px);
+  border-color: var(--mo-pink);
+}
+
+.mo-play-icon-circle {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(219, 0, 149, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mo-pink);
+}
+
+/* ── Stat Boxes — Top Right Corner of Hero Image ── */
+.mo-stat-boxes {
+  position: absolute;
+  top: 55px;
+  right: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 20;
+}
+
+.mo-stat-box {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  width: 165px;
+  border-radius: 14px;
+  background: rgba(10, 5, 40, 0.38);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1.5px solid rgba(255, 255, 255, 0.13);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  padding: 12px 14px;
+}
+
+.mo-stat-box:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 32px rgba(219, 0, 149, 0.28);
+}
+
+.mo-stat-box-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mo-pink);
+  flex-shrink: 0;
+}
+
+.mo-stat-box-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.mo-stat-box-value {
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #DB0095, #8100C3);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.mo-stat-box-label {
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.78);
+  font-weight: 500;
+  line-height: 1.3;
+  margin-top: 3px;
+}
+
+/* ── 2. CATEGORIES SECTION ── */
+.mo-categories-section {
+  background: #ffffff;
+  padding: 40px 0 20px;
+}
+
+.mo-categories-container {
+  width: calc(100% - 80px);
+  max-width: 1420px;
+  margin: 0 auto;
+}
+
+.mo-section-header {
+  text-align: center;
+  margin-bottom: 36px;
+}
+
+.mo-section-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--mo-dark);
+  margin-bottom: 10px;
+  letter-spacing: -0.5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  width: 100%;
+}
+
+/* Decorative side lines with dots */
+.mo-title-line {
+  display: inline-block;
+  width: 50px;
+  height: 2px;
+  background: var(--mo-pink);
+  position: relative;
+}
+
+.mo-title-line::before {
+  content: "";
+  position: absolute;
+  top: -2.5px;
+  width: 7px;
+  height: 7px;
+  background: var(--mo-pink);
+  border-radius: 50%;
+}
+
+.mo-section-title .mo-title-line:first-child::before {
+  left: 0;
+}
+
+.mo-section-title .mo-title-line:last-child::before {
+  right: 0;
+}
+
+.mo-section-subtitle {
+  font-size: 14px;
+  color: var(--mo-grey);
+  margin: 0;
+}
+
+.mo-categories-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.mo-category-card {
+  display: flex;
+  height: 230px;
+  background: #ffffff;
+  border: 1.5px solid var(--mo-border);
+  border-radius: 20px;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  box-shadow: var(--mo-shadow-sm);
+}
+
+.mo-category-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--mo-shadow-md);
+  border-color: rgba(219, 0, 149, 0.3);
+}
+
+.mo-category-card-left {
+  flex: 1.25;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.mo-category-card-right {
+  flex: 1;
+  height: 100%;
+  position: relative;
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 15%);
+  mask-image: linear-gradient(to right, transparent 0%, black 15%);
+}
+
+.mo-category-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mo-category-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.mo-category-icon-wrap {
+  width: 60px;
+  height: 60px;
+  border-radius: 16px;
+  background: rgba(129, 0, 195, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mo-purple);
+  flex-shrink: 0;
+}
+
+.mo-category-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--mo-dark);
+  margin: 0;
+  line-height: 1.25;
+}
+
+.mo-category-desc {
+  font-size: 14.5px;
+  color: var(--mo-grey);
+  line-height: 1.45;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.mo-category-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--mo-pink);
+  text-decoration: none;
+  margin-top: auto;
+  transition: gap 0.2s;
+  white-space: nowrap;
+}
+
+.mo-category-card:hover .mo-category-link {
+  gap: 10px;
+}
+
+/* ── 3. PARTNER NETWORK ── */
+.mo-partner-section {
+  background: #ffffff;
+  padding: 30px 0 10px;
+}
+
+.mo-partner-container {
+  width: calc(100% - 80px);
+  max-width: 1420px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.mo-partner-title {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--mo-dark);
+  margin-bottom: 8px;
+  letter-spacing: -0.5px;
+}
+
+.mo-partner-subtitle {
+  font-size: 17px;
+  color: var(--mo-grey);
+  margin: 0 0 8px 0;
+}
+
+.mo-logos-marquee {
+  overflow: hidden;
+  width: 100%;
+  padding: 25px 0 35px;
+  background: #ffffff;
+  position: relative;
+  margin-top: 4px;
+}
+
+/* Gradients on the side for blending edge fade */
+.mo-logos-marquee::before,
+.mo-logos-marquee::after {
+  content: "";
+  height: 100%;
+  width: 120px;
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  pointer-events: none;
+}
+
+.mo-logos-marquee::before {
+  left: 0;
+  background: linear-gradient(to right, #ffffff 0%, transparent 100%);
+}
+
+.mo-logos-marquee::after {
+  right: 0;
+  background: linear-gradient(to left, #ffffff 0%, transparent 100%);
+}
+
+.mo-logos-marquee:hover .mo-logos-track {
+  animation-play-state: paused;
+}
+
+.mo-logos-track {
+  display: flex;
+  width: max-content;
+  animation: scrollMarquee 190s linear infinite;
+  gap: 50px;
+  align-items: center;
+}
+
+.mo-logo-item {
+  height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mo-logo-item img {
+  height: 100%;
+  width: auto;
+  max-width: 300px;
+  object-fit: contain;
+  transition: transform 0.2s ease;
+  /* Prevent subpixel rendering blur during marquee animation */
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translate3d(0, 0, 0);
+  -webkit-transform: translate3d(0, 0, 0);
+}
+
+.mo-logo-item img:hover {
+  transform: scale(1.1) translate3d(0, 0, 0);
+}
+
+@keyframes scrollMarquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+/* ── 4. HOW IT WORKS ── */
+.mo-works-section {
+  background: #ffffff;
+  padding: 10px 0 30px;
+}
+
+.mo-works-container {
+  width: calc(100% - 80px);
+  max-width: 1420px;
+  margin: 0 auto;
+}
+
+.mo-works-timeline {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  position: relative;
+  margin-top: 24px;
+  padding: 0 40px;
+}
+
+.mo-timeline-line {
+  position: absolute;
+  top: 30px;
+  left: 12%;
+  right: 12%;
+  height: 0;
+  border-top: 2px dotted rgba(129, 0, 195, 0.35);
+  background: none;
+  z-index: 1;
+}
+
+.mo-timeline-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  flex: 1;
+  position: relative;
+  z-index: 5;
+}
+
+.mo-node-circle {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #FDF2FA;
+  border: 1.5px solid rgba(219, 0, 149, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mo-pink);
+  box-shadow: 0 4px 12px rgba(219, 0, 149, 0.04);
+  margin-bottom: 16px;
+  transition: transform 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
+  position: relative;
+  z-index: 6;
+}
+
+.mo-timeline-node:hover .mo-node-circle {
+  transform: scale(1.08);
+  background: #FBE5F5;
+  box-shadow: 0 6px 16px rgba(219, 0, 149, 0.12);
+}
+
+.mo-node-step {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--mo-pink);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.mo-node-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--mo-dark);
+  margin: 0 0 6px 0;
+}
+
+.mo-node-desc {
+  font-size: 12px;
+  color: var(--mo-grey);
+  line-height: 1.45;
+  margin: 0;
+  max-width: 160px;
+}
+
+/* ── 5. WHY CHOOSE ── */
+.mo-why-section {
+  background: #ffffff;
+  padding: 30px 0;
+}
+
+.mo-why-section .mo-section-header {
+  margin-bottom: 16px;
+}
+
+.mo-why-container {
+  width: calc(100% - 80px);
+  max-width: 1420px;
+  margin: 0 auto;
+}
+
+.mo-why-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  margin-top: 16px;
+  background: #ffffff;
+  border: 1.5px solid var(--mo-border);
+  border-radius: 20px;
+  padding: 24px 32px;
+  box-shadow: var(--mo-shadow-sm);
+}
+
+.mo-why-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  flex: 1;
+  transition: transform 0.25s ease;
+}
+
+.mo-why-card:hover {
+  transform: translateY(-2px);
+}
+
+.mo-why-icon {
+  color: var(--mo-purple);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mo-why-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--mo-dark);
+  margin: 0;
+  line-height: 1.35;
+  text-align: center;
+  max-width: 140px;
+}
+
+/* ── 6. STATS BAR ── */
+.mo-stats-section {
+  background: #ffffff;
+  padding: 30px 0;
+}
+
+.mo-stats-container {
+  width: calc(100% - 80px);
+  max-width: 1420px;
+  margin: 0 auto;
+  background: var(--mo-gradient);
+  padding: 40px 48px;
+  border-radius: 24px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 24px;
+}
+
+.mo-stat-item {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: transform 0.25s ease, background-color 0.25s ease;
+  cursor: pointer;
+}
+
+.mo-stat-item:hover {
+  transform: translateY(-3px);
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.mo-stat-icon {
+  color: rgba(255, 255, 255, 0.85);
+  flex-shrink: 0;
+}
+
+.mo-stat-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.mo-stat-value {
+  font-size: 24px;
+  font-weight: 900;
+  color: #ffffff;
+  line-height: 1.1;
+}
+
+.mo-stat-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.75);
+  font-weight: 500;
+}
+
+/* ── 7. FOOTER CTA ── */
+.mo-cta-section {
+  background: #ffffff;
+  padding: 30px 0 12px;
+}
+
+.mo-cta-container {
+  width: calc(100% - 80px);
+  max-width: 1420px;
+  margin: 0 auto;
+  position: relative;
+  height: 180px;
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, #09004d 0%, #150075 50%, #0d0052 100%);
+  box-shadow: 0 8px 32px rgba(129, 0, 195, 0.15);
+}
+
+.mo-cta-right-content {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+}
+
+.mo-cta-left-img {
+  flex: 0 0 36%;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  -webkit-mask-image: linear-gradient(to right, black 75%, transparent 100%);
+  mask-image: linear-gradient(to right, black 75%, transparent 100%);
+}
+
+.mo-cta-left-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  display: block;
+}
+
+.mo-cta-center-text {
+  flex: 1;
+  padding: 24px 24px 0 24px;
+  align-self: flex-start;
+  text-align: left;
+  color: #ffffff;
+}
+
+.mo-cta-title {
+  font-size: 34px;
+  font-weight: 800;
+  margin: 0 0 6px 0;
+  letter-spacing: -0.5px;
+  color: #ffffff;
+  line-height: 1.2;
+}
+
+.mo-cta-desc {
+  font-size: 16px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0;
+}
+
+.mo-cta-right-btn {
+  padding-right: 40px;
+  flex-shrink: 0;
+}
+
+.btn-mo-cta-find {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: #DB0095;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  padding: 16px 32px;
+  font-size: 15.5px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(219, 0, 149, 0.3);
+  transition: transform 0.2s ease, background-color 0.2s ease;
+  text-decoration: none;
+}
+
+.btn-mo-cta-find:hover {
+  transform: translateY(-2px);
+  background: #f0009c;
+}
+
+/* ── 8. TRUST BADGES ── */
+.mo-trust-section {
+  background: #ffffff;
+  padding: 12px 0 30px;
+}
+
+.mo-trust-container {
+  width: calc(100% - 80px);
+  max-width: 1420px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 40px;
+}
+
+.mo-trust-badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--mo-dark);
+  position: relative;
+  padding-right: 24px;
+}
+
+/* Vertical divider line */
+.mo-trust-badge::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 15%;
+  bottom: 15%;
+  width: 1px;
+  background-color: var(--mo-border);
+}
+
+.mo-trust-badge:last-child {
+  padding-right: 0;
+}
+
+.mo-trust-badge:last-child::after {
+  display: none;
+}
+
+.mo-trust-badge span {
+  max-width: 110px;
+  line-height: 1.25;
+  display: inline-block;
+  text-align: left;
+}
+
+.mo-trust-icon-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: #FFF2FA;
+  border: 1px solid rgba(219, 0, 149, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mo-pink);
+  flex-shrink: 0;
+}
+
+/* ── RESPONSIVE DESIGN ── */
+
+/* ====================================================
+   iPad Landscape / Large Tablet  (≤ 1200px)
+   ==================================================== */
+@media (max-width: 1200px) {
+  .mo-categories-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+
+  .mo-why-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px 24px;
+    padding: 24px;
+  }
+
+  .mo-stats-container {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    padding: 32px 32px;
+  }
+
+  .mo-stat-value {
+    font-size: 20px;
+  }
+}
+
+/* ====================================================
+   iPad Portrait / Small Tablet  (≤ 991px)
+   ==================================================== */
+@media (max-width: 991px) {
+  /* ── Hero ── */
+  .mo-hero-container {
+    flex-direction: column;
+    min-height: auto;
+  }
+
+  .mo-hero-left {
+    min-width: 0;
+    width: 100%;
+    padding: 36px 28px 28px;
+    align-items: center;
+    text-align: center;
+  }
+
+  .mo-hero-desc {
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 480px;
+  }
+
+  .mo-main-title {
+    font-size: 42px;
+    letter-spacing: -1.5px;
+  }
+
+  .mo-hero-benefits {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px 20px;
+    margin: 0 auto 28px auto;
+    text-align: left;
+    width: 100%;
+  }
+
+  .mo-benefit-item {
+    flex: 0 0 calc(50% - 10px);
+    max-width: 220px;
+  }
+
+  .mo-hero-buttons {
+    justify-content: center;
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  button.btn-mo-find,
+  .btn-mo-find,
+  button.btn-mo-works,
+  .btn-mo-works {
+    width: 100%;
+    max-width: 280px;
+    justify-content: center;
+  }
+
+  .mo-hero-right {
+    width: 100%;
+    height: 320px;
+    /* Remove masks on mobile — they cause layout issues */
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  /* Stat boxes — top-right corner, ultra compact */
+  .mo-stat-boxes {
+    top: 12px;
+    bottom: auto;
+    right: 10px;
+    flex-direction: column;
+    gap: 4px;
+    align-items: flex-end;
+  }
+
+  .mo-stat-box {
+    width: auto;
+    max-width: 82px;      /* narrow width */
+    min-width: 0;
+    padding: 4px 7px;
+    gap: 5px;
+    border-radius: 8px;
+  }
+
+  .mo-stat-box-icon svg {
+    width: 11px;
+    height: 11px;
+    flex-shrink: 0;
+  }
+
+  .mo-stat-box-value {
+    font-size: 11px;
+  }
+
+  .mo-stat-box-label {
+    font-size: 7px;
+    margin-top: 0;
+    white-space: normal;  /* allow label to wrap */
+    line-height: 1.2;
+  }
+
+  /* ── Section containers ── */
+  .mo-categories-container,
+  .mo-partner-container,
+  .mo-works-container,
+  .mo-why-container,
+  .mo-stats-container,
+  .mo-cta-container,
+  .mo-trust-container {
+    width: calc(100% - 48px);
+  }
+
+  /* ── Categories ── */
+  .mo-categories-section {
+    padding: 32px 0 16px;
+  }
+
+  .mo-categories-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  /* On tablet/mobile: horizontal row — text left, image right */
+  .mo-category-card {
+    flex-direction: row;
+    height: 215px;
+    position: relative;
+  }
+
+  /* Left text area — content at top, Explore button pinned to bottom */
+  .mo-category-card-left {
+    order: 0;
+    flex: 1;
+    padding: 10px 10px 10px 14px;
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-between;  /* pushes Explore to bottom */
+    overflow: hidden;
+  }
+
+  /* Title row: icon + title at TOP, near border, no right-padding needed */
+  .mo-category-title-row {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 10px;
+    padding-right: 0;
+    overflow: hidden;
+    margin-top: 0;         /* hug the top border */
+    margin-bottom: 4px;
+  }
+
+  /* Hide the <br /> so "Film & TV Makeover" is a single line */
+  .mo-category-title br {
+    display: none;
+  }
+
+  .mo-category-title {
+    font-size: 14px;
+    font-weight: 800;
+    white-space: nowrap;      /* force single line */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0;
+  }
+
+  /* Explore button — bottom of card, full width of text column */
+  .mo-category-link {
+    position: static;
+    margin-top: auto;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--mo-pink);
+    background: rgba(219, 0, 149, 0.06);
+    border: 1px solid rgba(219, 0, 149, 0.22);
+    border-radius: 8px;
+    padding: 5px 10px;
+    gap: 4px;
+    white-space: nowrap;
+    width: 100%;
+    justify-content: center;
+    display: flex;
+    align-items: center;
+    overflow: hidden;       /* clip long text, not the icon */
+  }
+
+  /* Keep the arrow icon always visible — never let it shrink away */
+  .mo-category-link svg {
+    flex-shrink: 0;
+    width: 13px;
+    height: 13px;
+  }
+
+  /* Description paragraph — left-aligned, starts under the "F" in title */
+  .mo-category-desc {
+    display: block;
+    text-align: left;
+    padding-left: 50px;
+    padding-right: 6px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    white-space: normal;
+    overflow: visible;
+    -webkit-line-clamp: unset;
+    margin-bottom: 8px;   /* gap between paragraph and Explore button */
+  }
+
+  /* Image — right side, vertical, full card height */
+  .mo-category-card-right {
+    order: 1;
+    flex: 0 0 38%;
+    height: 100%;
+    width: auto;
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 18%);
+    mask-image: linear-gradient(to right, transparent 0%, black 18%);
+  }
+
+  /* Icon wrap — compact on mobile */
+  .mo-category-icon-wrap {
+    width: 40px;
+    height: 40px;
+    border-radius: 11px;
+    flex-shrink: 0;
+  }
+
+  .mo-category-icon-wrap svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  /* ── Section header text ── */
+  .mo-section-title {
+    font-size: 24px;
+    gap: 12px;
+  }
+
+  .mo-title-line {
+    width: 32px;
+  }
+
+  /* ── Partner logos ── */
+  .mo-partner-title {
+    font-size: 26px;
+  }
+
+  .mo-partner-subtitle {
+    font-size: 15px;
+  }
+
+  .mo-logo-item {
+    height: 100px;
+  }
+
+  .mo-logo-item img {
+    max-width: 200px;
+  }
+
+  /* ── How It Works ── */
+  .mo-works-section {
+    padding: 6px 0 24px;
+  }
+
+  .mo-works-timeline {
+    flex-direction: column;
+    gap: 28px;
+    padding: 0;
+  }
+
+  .mo-timeline-line {
+    top: 26px;
+    bottom: 26px;
+    left: 26px;
+    right: auto;
+    width: 0;
+    height: calc(100% - 52px);
+    border-left: 2px dotted rgba(129, 0, 195, 0.35);
+    background: none;
+  }
+
+  .mo-timeline-node {
+    flex-direction: row;
+    text-align: left;
+    align-items: flex-start;
+    gap: 16px;
+    width: 100%;
+  }
+
+  .mo-node-circle {
+    margin-bottom: 0;
+    flex-shrink: 0;
+    width: 52px;
+    height: 52px;
+  }
+
+  .mo-node-text-block {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 2px 6px;
+    align-items: baseline;
+    flex: 1;
+  }
+
+  .mo-node-title {
+    display: contents;
+  }
+
+  .mo-node-number {
+    grid-column: 1;
+    grid-row: 1;
+    color: var(--mo-pink);
+    font-weight: 800;
+    font-size: 15px;
+  }
+
+  .mo-node-text {
+    grid-column: 2;
+    grid-row: 1;
+    color: var(--mo-dark);
+    font-weight: 800;
+    font-size: 15px;
+  }
+
+  .mo-node-desc {
+    grid-column: 2;
+    grid-row: 2;
+    max-width: 100%;
+    margin: 0;
+  }
+
+  /* ── Why Choose ── */
+  .mo-why-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px 20px;
+    padding: 20px;
+  }
+
+  .mo-why-card {
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .mo-why-title {
+    max-width: 100%;
+    font-size: 13px;
+    text-align: center;
+  }
+
+  /* ── Stats ── */
+  .mo-stats-container {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    padding: 28px 24px;
+  }
+
+  .mo-stat-value {
+    font-size: 20px;
+  }
+
+  .mo-stat-label {
+    font-size: 11px;
+  }
+
+  /* ── Footer CTA ── */
+  .mo-cta-section {
+    padding: 24px 0 12px;
+  }
+
+  .mo-cta-container {
+    flex-direction: row;
+    height: 185px;
+    padding: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0;
+  }
+
+  .mo-cta-left-img {
+    display: block;
+    flex: 0 0 35%;
+    height: 100%;
+    -webkit-mask-image: linear-gradient(to right, black 75%, transparent 100%);
+    mask-image: linear-gradient(to right, black 75%, transparent 100%);
+  }
+
+  .mo-cta-right-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 16px 20px;
+    gap: 12px;
+    height: 100%;
+    box-sizing: border-box;
+  }
+
+  .mo-cta-center-text {
+    flex: none;
+    padding: 0;
+    text-align: left;
+    align-self: stretch;
+  }
+
+  .mo-cta-title {
+    font-size: 19px;
+    line-height: 1.25;
+    margin-bottom: 4px;
+  }
+
+  .mo-cta-desc {
+    font-size: 11.5px;
+    line-height: 1.4;
+  }
+
+  .mo-cta-desc br {
+    display: none;
+  }
+
+  .mo-cta-right-btn {
+    padding-right: 0;
+    width: 100%;
+    display: flex;
+    justify-content: flex-start;
+  }
+
+  .btn-mo-cta-find {
+    width: auto;
+    max-width: 100%;
+    font-size: 11px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* ── Trust Badges ── */
+  .mo-trust-section {
+    padding: 16px 0 20px;
+  }
+
+  .mo-trust-container {
+    gap: 20px 32px;
+    justify-content: center;
+  }
+
+  .mo-trust-badge {
+    padding-right: 0;
+    flex: 0 0 calc(50% - 16px);
+    justify-content: center;
+  }
+
+  .mo-trust-badge::after {
+    display: none;
+  }
+
+  .mo-trust-icon-circle {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* ====================================================
+   Mobile Landscape / Large Phone  (≤ 768px)
+   ==================================================== */
+@media (max-width: 768px) {
+  /* ── Hero ── */
+  .mo-hero-left {
+    padding: 28px 20px 24px;
+  }
+
+  .mo-main-title {
+    font-size: 34px;
+    letter-spacing: -1px;
+  }
+
+  .mo-hero-desc {
+    font-size: 15px;
+  }
+
+  .mo-hero-right {
+    height: 280px;
+  }
+
+  /* Stat boxes: keep compact from 991px block, just shrink further */
+  .mo-stat-box {
+    padding: 5px 9px;
+  }
+
+  .mo-stat-box-value {
+    font-size: 13px;
+  }
+
+  .mo-stat-box-label {
+    font-size: 8.5px;
+  }
+
+  /* ── Section spacing ── */
+  .mo-categories-section,
+  .mo-works-section,
+  .mo-why-section,
+  .mo-stats-section,
+  .mo-cta-section {
+    padding-top: 24px;
+    padding-bottom: 16px;
+  }
+
+  .mo-works-section {
+    padding-top: 4px;
+  }
+
+  /* ── Categories ── */
+  /* card layout controlled by 991px block; just adjust font sizes */
+  .mo-category-card {
+    height: 215px;
+  }
+
+  .mo-category-title {
+    font-size: 14px;
+  }
+
+  /* ── Partner logos ── */
+  .mo-partner-title {
+    font-size: 22px;
+    margin-bottom: 6px;
+  }
+
+  .mo-partner-subtitle {
+    font-size: 14px;
+    margin-bottom: 6px;
+  }
+
+  .mo-logo-item {
+    height: 80px;
+  }
+
+  .mo-logo-item img {
+    max-width: 160px;
+  }
+
+  .mo-logos-track {
+    gap: 30px;
+    animation-duration: 130s;
+  }
+
+  /* ── Stats ── */
+  .mo-stats-container {
+    grid-template-columns: repeat(2, 1fr);
+    padding: 20px 16px;
+    gap: 12px;
+    border-radius: 18px;
+  }
+
+  .mo-stat-item {
+    padding: 14px 16px;
+    gap: 12px;
+  }
+
+  .mo-stat-value {
+    font-size: 18px;
+  }
+
+  /* ── CTA ── */
+  .mo-cta-title {
+    font-size: 22px;
+  }
+
+  .mo-cta-desc {
+    font-size: 14px;
+  }
+
+  /* ── Trust badges ── */
+  .mo-trust-badge {
+    flex: 0 0 calc(50% - 16px);
+    font-size: 13px;
+  }
+
+  .mo-trust-icon-circle {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+/* ====================================================
+   iPad Mini Specific Styles (481px to 768px)
+   ==================================================== */
+@media (min-width: 481px) and (max-width: 768px) {
+  .mo-category-card {
+    height: 220px;
+  }
+
+  .mo-category-title {
+    font-size: 20px;
+  }
+
+  .mo-category-icon-wrap {
+    width: 60px;
+    height: 60px;
+    border-radius: 16px;
+  }
+
+  .mo-category-icon-wrap svg {
+    width: 34px;
+    height: 34px;
+  }
+
+  .mo-category-desc {
+    font-size: 15px;
+    padding-left: 70px;
+  }
+
+  /* ── How It Works (Centered for iPad Mini) ── */
+  .mo-works-timeline {
+    flex-direction: column;
+    gap: 36px;
+    align-items: center;
+  }
+
+  .mo-timeline-line {
+    top: 30px;
+    bottom: 30px;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%);
+    width: 0;
+    height: calc(100% - 60px);
+    border-left: 2px dotted rgba(129, 0, 195, 0.35);
+    border-top: none !important;
+  }
+
+  .mo-timeline-node {
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    width: 100%;
+    gap: 12px !important;
+  }
+
+  .mo-node-circle {
+    margin-bottom: 0 !important;
+  }
+
+  .mo-node-text-block {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    max-width: 280px;
+  }
+
+  .mo-node-title {
+    display: block !important;
+    font-size: 16px !important;
+    margin-bottom: 4px !important;
+  }
+
+  .mo-node-number {
+    display: inline !important;
+    position: static !important;
+    color: var(--mo-pink) !important;
+    font-weight: 800 !important;
+  }
+
+  .mo-node-text {
+    display: inline !important;
+    position: static !important;
+    color: var(--mo-dark) !important;
+    font-weight: 800 !important;
+  }
+
+  .mo-node-desc {
+    display: block !important;
+    text-align: center !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+  }
+
+  /* ── Stats Bar (2x2 + Centered Last Item for iPad Mini) ── */
+  .mo-stats-container {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+
+  .mo-stats-container > .mo-stat-item:last-child {
+    grid-column: span 2 !important;
+    justify-self: center !important;
+    width: calc(50% - 6px) !important;
+  }
+
+  /* ── Hero Stat Boxes (Enlarged for iPad Mini) ── */
+  .mo-stat-boxes {
+    top: 20px !important;
+    right: 20px !important;
+    gap: 10px !important;
+  }
+
+  .mo-stat-box {
+    width: 155px !important;
+    max-width: none !important;
+    padding: 10px 12px !important;
+    border-radius: 12px !important;
+    gap: 10px !important;
+  }
+
+  .mo-stat-box-icon svg {
+    width: 22px !important;
+    height: 22px !important;
+  }
+
+  .mo-stat-box-value {
+    font-size: 18px !important;
+  }
+
+  .mo-stat-box-label {
+    font-size: 10px !important;
+    line-height: 1.2 !important;
+    white-space: normal !important;
+  }
+}
+
+/* ====================================================
+   iPad Air & Pro Specific Styles (769px to 1024px)
+   ==================================================== */
+@media (min-width: 769px) and (max-width: 1024px) {
+  /* ── Hero (Stacked and Centered like iPad Mini but scaled) ── */
+  .mo-hero-container {
+    flex-direction: column !important;
+    min-height: auto !important;
+  }
+
+  .mo-hero-left {
+    min-width: 0 !important;
+    width: 100% !important;
+    padding: 44px 36px 32px !important;
+    align-items: center !important;
+    text-align: center !important;
+  }
+
+  .mo-main-title {
+    font-size: 48px !important;
+    line-height: 1.15 !important;
+    letter-spacing: -1.5px !important;
+  }
+
+  .mo-hero-desc {
+    font-size: 17px !important;
+    margin: 0 auto 36px auto !important;
+    max-width: 520px !important;
+  }
+
+  .mo-hero-benefits {
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    gap: 16px 28px !important;
+    margin: 0 auto 36px auto !important;
+    text-align: left !important;
+    width: 100% !important;
+  }
+
+  .mo-benefit-item {
+    flex: 0 0 calc(50% - 14px) !important;
+    max-width: 240px !important;
+  }
+
+  .mo-hero-buttons {
+    justify-content: center !important;
+    width: 100% !important;
+    gap: 16px !important;
+  }
+
+  .mo-hero-right {
+    width: 100% !important;
+    height: 380px !important;
+    -webkit-mask-image: none !important;
+    mask-image: none !important;
+  }
+
+  /* ── Hero Stat Boxes ── */
+  .mo-stat-boxes {
+    top: 24px !important;
+    right: 24px !important;
+    gap: 12px !important;
+  }
+
+  .mo-stat-box {
+    width: 170px !important;
+    max-width: none !important;
+    padding: 12px 16px !important;
+    border-radius: 14px !important;
+    gap: 12px !important;
+  }
+
+  .mo-stat-box-icon svg {
+    width: 24px !important;
+    height: 24px !important;
+  }
+
+  .mo-stat-box-value {
+    font-size: 20px !important;
+  }
+
+  .mo-stat-box-label {
+    font-size: 11px !important;
+    line-height: 1.25 !important;
+    white-space: normal !important;
+  }
+
+  /* ── Categories (1 Column, Larger Text & Icons) ── */
+  .mo-categories-grid {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+  }
+
+  .mo-category-card {
+    flex-direction: row !important;
+    height: 230px !important;
+  }
+
+  .mo-category-card-left {
+    padding: 16px 16px 16px 20px !important;
+  }
+
+  .mo-category-title {
+    font-size: 22px !important;
+  }
+
+  .mo-category-icon-wrap {
+    width: 64px !important;
+    height: 64px !important;
+    border-radius: 16px !important;
+  }
+
+  .mo-category-icon-wrap svg {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .mo-category-desc {
+    font-size: 16px !important;
+    padding-left: 76px !important; /* 64px icon wrap + 12px gap = 76px */
+    margin-bottom: 12px !important;
+  }
+
+  .mo-category-link {
+    font-size: 13px !important;
+    border-radius: 10px !important;
+    padding: 6px 14px !important;
+  }
+
+  /* ── How It Works (Horizontal & Polished - Single Row for iPad Air & Pro) ── */
+  .mo-works-timeline {
+    flex-direction: row !important;
+    gap: 16px !important;
+    justify-content: space-between !important;
+    padding: 0 20px !important;
+  }
+
+  .mo-timeline-line {
+    display: block !important;
+    top: 30px !important;
+    left: 10% !important;
+    right: 10% !important;
+    height: 0 !important;
+    width: auto !important;
+    border-top: 2px dotted rgba(129, 0, 195, 0.35) !important;
+    border-left: none !important;
+  }
+
+  .mo-timeline-node {
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    flex: 1 !important;
+    gap: 0 !important;
+    width: auto !important;
+  }
+
+  .mo-node-circle {
+    width: 60px !important;
+    height: 60px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .mo-node-text-block {
+    display: block !important;
+    text-align: center !important;
+    max-width: 100% !important;
+  }
+
+  .mo-node-title {
+    display: block !important;
+    font-size: 15px !important;
+    margin-bottom: 6px !important;
+  }
+
+  .mo-node-number {
+    display: inline !important;
+    position: static !important;
+    color: var(--mo-pink) !important;
+    font-weight: 800 !important;
+  }
+
+  .mo-node-text {
+    display: inline !important;
+    position: static !important;
+    color: var(--mo-dark) !important;
+    font-weight: 800 !important;
+  }
+
+  .mo-node-desc {
+    display: block !important;
+    text-align: center !important;
+    max-width: 160px !important;
+    margin: 0 auto !important;
+    font-size: 12px !important;
+  }
+
+  /* ── Stats Bar (2x2 + Centered Last Item) ── */
+  .mo-stats-container {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 16px !important;
+    padding: 36px 28px !important;
+  }
+
+  .mo-stat-item {
+    grid-column: span 1 !important;
+    padding: 16px 20px !important;
+  }
+
+  .mo-stats-container > .mo-stat-item:last-child {
+    grid-column: span 2 !important;
+    justify-self: center !important;
+    width: calc(50% - 8px) !important;
+  }
+}
+
+/* ====================================================
+   iPad Pro Specific Styles (835px to 1024px)
+   ==================================================== */
+@media (min-width: 835px) and (max-width: 1024px) {
+  /* ── Hero (Stacked and Centered, Scaled for iPad Pro) ── */
+  .mo-hero-container {
+    flex-direction: column !important;
+    min-height: auto !important;
+  }
+
+  .mo-hero-left {
+    min-width: 0 !important;
+    width: 100% !important;
+    padding: 54px 44px 38px !important;
+    align-items: center !important;
+    text-align: center !important;
+  }
+
+  .mo-main-title {
+    font-size: 54px !important;
+    line-height: 1.15 !important;
+    letter-spacing: -2px !important;
+  }
+
+  .mo-hero-desc {
+    font-size: 18px !important;
+    margin: 0 auto 40px auto !important;
+    max-width: 580px !important;
+  }
+
+  .mo-hero-benefits {
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    gap: 20px 32px !important;
+    margin: 0 auto 40px auto !important;
+    text-align: left !important;
+    width: 100% !important;
+  }
+
+  .mo-benefit-item {
+    flex: 0 0 calc(50% - 16px) !important;
+    max-width: 260px !important;
+  }
+
+  .mo-benefit-item h5 {
+    font-size: 15.5px !important;
+  }
+
+  .mo-benefit-item p {
+    font-size: 13.5px !important;
+  }
+
+  .mo-hero-buttons {
+    justify-content: center !important;
+    width: 100% !important;
+    gap: 20px !important;
+  }
+
+  .mo-hero-right {
+    width: 100% !important;
+    height: 420px !important;
+    -webkit-mask-image: none !important;
+    mask-image: none !important;
+  }
+
+  /* ── Hero Stat Boxes (iPad Pro Size) ── */
+  .mo-stat-boxes {
+    top: 30px !important;
+    right: 30px !important;
+    gap: 14px !important;
+  }
+
+  .mo-stat-box {
+    width: 180px !important;
+    max-width: none !important;
+    padding: 14px 18px !important;
+    border-radius: 16px !important;
+    gap: 14px !important;
+  }
+
+  .mo-stat-box-icon svg {
+    width: 26px !important;
+    height: 26px !important;
+  }
+
+  .mo-stat-box-value {
+    font-size: 22px !important;
+  }
+
+  .mo-stat-box-label {
+    font-size: 12px !important;
+    line-height: 1.25 !important;
+    white-space: normal !important;
+  }
+
+  /* ── Categories (2 Columns, Side-by-Side Cards) ── */
+  .mo-categories-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 20px !important;
+  }
+
+  .mo-category-card {
+    flex-direction: row !important;
+    height: 230px !important;
+  }
+
+  .mo-category-card-left {
+    padding: 16px 16px 16px 20px !important;
+  }
+
+  .mo-category-title {
+    font-size: 19px !important;
+  }
+
+  .mo-category-icon-wrap {
+    width: 56px !important;
+    height: 56px !important;
+    border-radius: 14px !important;
+  }
+
+  .mo-category-icon-wrap svg {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .mo-category-desc {
+    font-size: 14px !important;
+    padding-left: 68px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .mo-category-link {
+    font-size: 13px !important;
+    border-radius: 10px !important;
+    padding: 6px 14px !important;
+  }
+}
+
+/* ====================================================
+   Mobile Portrait  (≤ 480px)
+   ==================================================== */
+@media (max-width: 480px) {
+  /* ── Hero ── */
+  .mo-hero-left {
+    padding: 24px 16px 20px;
+  }
+
+  .mo-main-title {
+    font-size: 28px;
+    letter-spacing: -0.5px;
+  }
+
+  .mo-hero-desc {
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .mo-hero-right {
+    height: 240px;
+  }
+
+  /* ── Hero stat boxes: even smaller on tiny screens ── */
+  .mo-stat-box {
+    padding: 4px 8px;
+  }
+
+  .mo-benefit-item {
+    flex: 0 0 100%;
+  }
+
+  button.btn-mo-find,
+  .btn-mo-find,
+  button.btn-mo-works,
+  .btn-mo-works {
+    max-width: 100%;
+    width: 100%;
+    padding: 12px 20px;
+    font-size: 14px;
+  }
+
+  /* ── Section containers ── */
+  .mo-categories-container,
+  .mo-partner-container,
+  .mo-works-container,
+  .mo-why-container,
+  .mo-stats-container,
+  .mo-cta-container,
+  .mo-trust-container {
+    width: calc(100% - 32px);
+  }
+
+  /* ── Section headers ── */
+  .mo-section-title {
+    font-size: 20px;
+    gap: 10px;
+  }
+
+  .mo-title-line {
+    width: 24px;
+  }
+
+  .mo-section-subtitle {
+    font-size: 13px;
+  }
+
+  /* ── Categories: inherit layout from 991px — just shrink image + icon ── */
+  .mo-categories-section {
+    padding: 20px 0 12px;
+  }
+
+  /* Card height smaller on tiny phones, image stays right side */
+  .mo-category-card {
+    height: 195px;
+  }
+
+  .mo-category-card-right {
+    height: 100%;
+    flex: 0 0 36%;
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 20%);
+    mask-image: linear-gradient(to right, transparent 0%, black 20%);
+  }
+
+  .mo-category-icon-wrap {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+  }
+
+  .mo-category-icon-wrap svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .mo-category-title-row {
+    padding-right: 120px;
+  }
+
+  .mo-category-title {
+    font-size: 13px;
+  }
+
+  /* ── Partner logos ── */
+  .mo-partner-title {
+    font-size: 20px;
+  }
+
+  .mo-logo-item {
+    height: 65px;
+  }
+
+  .mo-logo-item img {
+    max-width: 130px;
+  }
+
+  .mo-logos-track {
+    gap: 24px;
+    animation-duration: 110s;
+  }
+
+  /* ── How It Works ── */
+  .mo-timeline-node {
+    gap: 12px;
+  }
+
+  .mo-node-circle {
+    width: 46px;
+    height: 46px;
+  }
+
+  .mo-timeline-line {
+    left: 23px;
+    top: 23px;
+    bottom: 23px;
+    height: calc(100% - 46px);
+  }
+
+  .mo-node-number,
+  .mo-node-text {
+    font-size: 14px;
+  }
+
+  .mo-node-desc {
+    font-size: 12px;
+  }
+
+  /* ── Why Choose ── */
+  .mo-why-row {
+    grid-template-columns: 1fr;
+    padding: 16px 14px;
+    gap: 14px;
+  }
+
+  .mo-why-card {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* ── Stats ── */
+  .mo-stats-container {
+    grid-template-columns: 1fr;
+    padding: 16px 14px;
+    gap: 10px;
+    border-radius: 16px;
+  }
+
+  .mo-stat-item {
+    padding: 12px 14px;
+  }
+
+  .mo-stat-value {
+    font-size: 20px;
+  }
+
+  /* ── CTA ── */
+  .mo-cta-container {
+    padding: 0;
+    height: 185px;
+  }
+
+  .mo-cta-left-img {
+    flex: 0 0 32%;
+  }
+
+  .mo-cta-right-content {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .mo-cta-title {
+    font-size: 15px;
+  }
+
+  .mo-cta-desc {
+    font-size: 10.5px;
+    line-height: 1.35;
+  }
+
+  .btn-mo-cta-find {
+    font-size: 10px;
+    padding: 6px 12px;
+  }
+
+  /* ── Trust Badges ── */
+  .mo-trust-container {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 14px 16px;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .mo-trust-badge {
+    flex: 0 0 calc(50% - 8px);
+    width: auto;
+    max-width: none;
+    justify-content: center;
+    font-size: 12px;
+  }
+
+  .mo-trust-badge span {
+    max-width: 85px;
+    font-size: 11px;
+  }
+
+  .mo-trust-icon-circle {
+    width: 36px;
+    height: 36px;
+  }
+}
+

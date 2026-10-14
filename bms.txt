@@ -1,0 +1,8 @@
+i want like when we send a user this website link initially he should register the link through register page and then he should be navigated
+to the profle dashboard or he should should be navigated to the login page which ever u thing is the best industrial standard way of doing 
+i dk and then there he should have all the tabs to edit this is for the talent and when it comes to professional he should also have same way
+of register and login and he should be able to see all the talent profile that are available and his profile dashboard like public account 
+and if want to communicate he needs to send request like we send request in the instagram or something like that if the artists accept they 
+can be able to communicate this is the one way and then when it comes to the talent if he want to communicates with any of the professionals 
+or want to share their profile to them they can share with dm describing them but if the professionals are intersted they can see that and 
+communicate here professional are like directors ,producers and talent is like actor,model,singer,dancers like that etc
