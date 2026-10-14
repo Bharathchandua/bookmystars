@@ -949,8 +949,15 @@ export default function Profile() {
   const [workExpCount, setWorkExpCount] = useState(0);
   const [isPendingVerification, setIsPendingVerification] = useState(false);
   const [isAutoPromoted, setIsAutoPromoted] = useState(false);
+  const [promotionBannerDismissed, setPromotionBannerDismissed] = useState(false);
   const [targetSkillForWork, setTargetSkillForWork] = useState(null);
   const [targetSkillFilter, setTargetSkillFilter] = useState("All");
+
+  const handleDismissPromotionBanner = () => {
+    setPromotionBannerDismissed(true);
+    const userKey = (storedUser?.email || storedUser?.userId || "user").toLowerCase();
+    localStorage.setItem(`bms_promoted_dismissed_${userKey}`, "true");
+  };
 
   const handleOpenAddWorkForSkill = (skill) => {
     setTargetSkillFilter(skill);
@@ -1087,6 +1094,11 @@ export default function Profile() {
           setYearsExperience(expYears);
 
           const rawAccountType = (data.accountType || storedUser?.accountType || "TALENT").toUpperCase();
+          const userKey = (storedUser?.email || storedUser?.userId || "user").toLowerCase();
+          const alreadyDismissed = localStorage.getItem(`bms_promoted_dismissed_${userKey}`) === "true";
+          if (alreadyDismissed) {
+            setPromotionBannerDismissed(true);
+          }
 
           if (rawAccountType === "PROFESSIONAL" && expYears < 1 && totalWorks === 0) {
             setIsPendingVerification(true);
@@ -1413,8 +1425,8 @@ export default function Profile() {
               </div>
             )}
 
-            {/* Auto-Promotion Banner for Talents with >= 1 Yr Experience */}
-            {isAutoPromoted && (
+            {/* Auto-Promotion Banner for Talents with >= 1 Yr Experience (Shown once, dismissible) */}
+            {(isAutoPromoted && !promotionBannerDismissed) && (
               <div style={{
                 background: "#f0fdf4",
                 border: "1.5px solid #bbf7d0",
@@ -1423,17 +1435,38 @@ export default function Profile() {
                 marginBottom: "20px",
                 display: "flex",
                 alignItems: "center",
+                justifyContent: "space-between",
                 gap: "12px"
               }}>
-                <span style={{ fontSize: "22px" }}>🎉</span>
-                <div>
-                  <div style={{ fontSize: "13.5px", fontWeight: "800", color: "#166534" }}>
-                    Promoted to Professional!
-                  </div>
-                  <div style={{ fontSize: "12px", color: "#15803d" }}>
-                    Congratulations! You have verified industry experience with completed work and have been automatically upgraded to <strong>Professional</strong> status!
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <span style={{ fontSize: "22px" }}>🎉</span>
+                  <div>
+                    <div style={{ fontSize: "13.5px", fontWeight: "800", color: "#166534" }}>
+                      Promoted to Professional!
+                    </div>
+                    <div style={{ fontSize: "12px", color: "#15803d" }}>
+                      Congratulations! You have verified industry experience with completed work and have been automatically upgraded to <strong>Professional</strong> status!
+                    </div>
                   </div>
                 </div>
+                <button
+                  type="button"
+                  onClick={handleDismissPromotionBanner}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: "#166534",
+                    padding: "4px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: "6px"
+                  }}
+                  title="Dismiss notification"
+                >
+                  <X size={18} />
+                </button>
               </div>
             )}
 
