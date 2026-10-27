@@ -1,5 +1,6 @@
 import PagesButton from "../common/PagesButton";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import AppLayout from "../Layout/AppLayout.jsx";
 import MiniCalendar from "../Dashboard/MiniCalendar.jsx";
 import "./auditions.css";
@@ -27,231 +28,99 @@ import {
   Sparkles,
   Search,
   Check,
-  ChevronDown
+  ChevronDown,
+  MessageSquare,
+  Loader2,
+  ExternalLink,
+  UserCheck,
+  UserX
 } from "lucide-react";
+import {
+  getPublicCastingCalls,
+  getMyCastingCalls,
+  getReceivedCastingApplications,
+  getIncomingBookingRequests,
+  getMyCastingApplications,
+  updateApplicantStatus,
+  updateBookingRequestStatus,
+  getFullImageUrl,
+  getStoredUser
+} from "../../features/bms/api";
+import { showSuccess, showError, showWarning } from "../../shared/utils/alert";
 
 export default function Auditions() {
-  // Tabs State
+  const navigate = useNavigate();
+  const storedUser = getStoredUser();
+
+  // Tabs State: "auditions" (calls for me), "castings" (applicants on my posts), "my-applications" (applications I sent)
   const [activeTab, setActiveTab] = useState("auditions");
 
   // Filters State
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState("All Types");
   const [selectedStatus, setSelectedStatus] = useState("All Status");
   const [sortBy, setSortBy] = useState("Newest First");
 
-  // Filter Dropdown Toggles (Custom dropdown simulation)
+  // Filter Dropdowns
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showSortDropdown, setShowSortDropdown] = useState(false);
 
+  // Live Database State
+  const [loading, setLoading] = useState(true);
+  const [publicCastings, setPublicCastings] = useState([]);
+  const [myCastingCalls, setMyCastingCalls] = useState([]);
+  const [receivedApplicants, setReceivedApplicants] = useState([]);
+  const [auditionInvites, setAuditionInvites] = useState([]);
+  const [myApplications, setMyApplications] = useState([]);
+
   // Modals State
   const [selectedAudition, setSelectedAudition] = useState(null);
+  const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [selectedApplication, setSelectedApplication] = useState(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showCalendarModal, setShowCalendarModal] = useState(false);
   const [uploadFileType, setUploadFileType] = useState("Video");
   const [uploadSuccess, setUploadSuccess] = useState(false);
-  const [applySuccess, setApplySuccess] = useState(false);
+  const [updatingAction, setUpdatingAction] = useState(false);
 
-  // Mock data for Audition Invites
-  const initialAuditions = [
-    {
-      id: 1,
-      project: "The Last Chapter",
-      type: "Feature Film",
-      role: "Lead Role",
-      character: "Arjun Sharma",
-      deadline: "15 May 2024",
-      dateObj: new Date("2024-05-15"),
-      location: "Mumbai",
-      poster: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=300&auto=format&fit=crop&q=80",
-      description: "An emotional drama detailing the final moments of a family business empire. Arjun Sharma is a complex, brooding protagonist dealing with trust issues.",
-      castingDirector: "Karan Johar / Dharma Casting",
-      requirements: "Prepare a 2-minute dramatic monologue. Experience in emotional acting preferred."
-    },
-    {
-      id: 2,
-      project: "City Lights",
-      type: "Web Series",
-      role: "Supporting Role",
-      character: "Rohan Mehta",
-      deadline: "18 May 2024",
-      dateObj: new Date("2024-05-18"),
-      location: "Mumbai",
-      poster: "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=300&auto=format&fit=crop&q=80",
-      description: "A fast-paced crime thriller set in the underbelly of South Mumbai. Rohan Mehta is a witty hacker who aids the local detective agency.",
-      castingDirector: "Mukesh Chhabra Casting Co.",
-      requirements: "Slight comedic timing and standard Hindi speaking proficiency. Self-tape audition required."
-    },
-    {
-      id: 3,
-      project: "Love Stories",
-      type: "Short Film",
-      role: "Lead Role",
-      character: "Vikram Singh",
-      deadline: "20 May 2024",
-      dateObj: new Date("2024-05-20"),
-      location: "Delhi",
-      poster: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=300&auto=format&fit=crop&q=80",
-      description: "An anthology of modern romance set across different metropolitan cities in India. Vikram is an old-school romantic seeking his lost pen pal.",
-      castingDirector: "Shanoo Sharma / Yash Raj Films",
-      requirements: "Fluent English and Hindi. Prepare the romantic scene sides attached in the invite download."
-    },
-    {
-      id: 4,
-      project: "Corporate Tales",
-      type: "Ad Film",
-      role: "Supporting Role",
-      character: "Aditya Verma",
-      deadline: "22 May 2024",
-      dateObj: new Date("2024-05-22"),
-      location: "Mumbai",
-      poster: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=300&auto=format&fit=crop&q=80",
-      description: "A premium TV commercial campaign for a leading digital banking solution. Aditya represents a tech-savvy young manager.",
-      castingDirector: "Aditya Birla Group / Red Ice Films",
-      requirements: "Sharp corporate look, formal attire for the audition tape. Slate height and hand profiles."
-    },
-    {
-      id: 5,
-      project: "Dream Project",
-      type: "Music Video",
-      role: "Lead Role",
-      character: "Karan Malhotra",
-      deadline: "25 May 2024",
-      dateObj: new Date("2024-05-25"),
-      location: "Mumbai",
-      poster: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&auto=format&fit=crop&q=80",
-      description: "A high-production music video for a romantic acoustic single by a leading Bollywood playback singer.",
-      castingDirector: "T-Series Casting Team",
-      requirements: "Strong expression mapping and screen presence. Lip-sync test during physical audition."
+  // Load all live database records
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [allCastings, myPosts, receivedApps, incomingBookings, mySubmitted] = await Promise.all([
+        getPublicCastingCalls().catch(() => []),
+        getMyCastingCalls().catch(() => []),
+        getReceivedCastingApplications().catch(() => []),
+        getIncomingBookingRequests().catch(() => []),
+        getMyCastingApplications().catch(() => [])
+      ]);
+
+      setPublicCastings(Array.isArray(allCastings) ? allCastings : []);
+      setMyCastingCalls(Array.isArray(myPosts) ? myPosts : []);
+      setReceivedApplicants(Array.isArray(receivedApps) ? receivedApps : []);
+      setAuditionInvites(Array.isArray(incomingBookings) ? incomingBookings : []);
+      setMyApplications(Array.isArray(mySubmitted) ? mySubmitted : []);
+    } catch (err) {
+      console.warn("Error loading auditions & castings hub data:", err);
+    } finally {
+      setLoading(false);
     }
-  ];
-
-  // Mock data for Casting Opportunities (Castings Tab)
-  const castingCalls = [
-    {
-      id: 101,
-      project: "Historical Epic: Maurya",
-      type: "Feature Film",
-      role: "Lead General",
-      character: "Senapati Pushyamitra",
-      deadline: "30 May 2024",
-      dateObj: new Date("2024-05-30"),
-      location: "Mumbai",
-      poster: "https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=300&auto=format&fit=crop&q=80",
-      description: "A grand scale period drama centered on the Maurya dynasty. Senapati Pushyamitra is a battle-hardened commander who values loyalty.",
-      castingDirector: "Tess Joseph Casting",
-      requirements: "Requires athletic physique, basic martial arts training, and commanding voice modulation."
-    },
-    {
-      id: 102,
-      project: "The Tech Billionaire",
-      type: "Web Series",
-      role: "Co-Lead",
-      character: "Siddharth Roy",
-      deadline: "02 June 2024",
-      dateObj: new Date("2024-06-02"),
-      location: "Delhi",
-      poster: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=300&auto=format&fit=crop&q=80",
-      description: "A dramatic look at the boom-and-bust cycle of digital startups in India. Siddharth is a brilliant developer who makes moral compromises.",
-      castingDirector: "Nandini Shrikent Casting",
-      requirements: "Age range 24-30. Fluent English speaker. Experience in intense character dialogue."
-    },
-    {
-      id: 103,
-      project: "Perfume Launch Campaign",
-      type: "Ad Film",
-      role: "Main Model",
-      character: "Groomed Lead",
-      deadline: "05 June 2024",
-      dateObj: new Date("2024-06-05"),
-      location: "Mumbai",
-      poster: "https://images.unsplash.com/photo-1547887537-6158d64c35b3?w=300&auto=format&fit=crop&q=80",
-      description: "A luxury lifestyle brand commercial to be shot in Europe. Needs a strong modeling portfolio.",
-      castingDirector: "Elle Models Casting Department",
-      requirements: "Height 5'11\" or above. Premium grooming, sleek look, self-tape walking profile."
-    }
-  ];
-
-  // Mock data for Recent Applications
-  const initialApplications = [
-    {
-      id: 1,
-      project: "Urban Dreams",
-      type: "Web Series",
-      appliedDate: "10 May 2024",
-      dateObj: new Date("2024-05-10"),
-      status: "Under Review",
-      role: "Lead",
-      thumbnail: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=150&auto=format&fit=crop&q=80",
-      history: [
-        { title: "Application Submitted", date: "10 May 2024", done: true },
-        { title: "Profile Viewed by Mukesh Chhabra Co.", date: "12 May 2024", done: true },
-        { title: "Casting Director Reviewing Audition Tape", date: "Ongoing", done: false }
-      ]
-    },
-    {
-      id: 2,
-      project: "The Journey",
-      type: "Feature Film",
-      appliedDate: "8 May 2024",
-      dateObj: new Date("2024-05-08"),
-      status: "Shortlisted",
-      role: "Supporting",
-      thumbnail: "https://images.unsplash.com/photo-1492446845049-9c50cc313f00?w=150&auto=format&fit=crop&q=80",
-      history: [
-        { title: "Application Submitted", date: "8 May 2024", done: true },
-        { title: "Profile and Showreel Checked", date: "9 May 2024", done: true },
-        { title: "Shortlisted for Round 2 Callbacks", date: "11 May 2024", done: true }
-      ]
-    },
-    {
-      id: 3,
-      project: "Digital World",
-      type: "Ad Film",
-      appliedDate: "5 May 2024",
-      dateObj: new Date("2024-05-05"),
-      status: "Submitted",
-      role: "Lead",
-      thumbnail: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=150&auto=format&fit=crop&q=80",
-      history: [
-        { title: "Application Submitted", date: "5 May 2024", done: true },
-        { title: "Pending Director Opening", date: "Pending", done: false }
-      ]
-    }
-  ];
-
-  // Dynamic filter application
-  const filterList = (list) => {
-    let result = [...list];
-
-    // Filter by Type
-    if (selectedType !== "All Types") {
-      result = result.filter(item => item.type === selectedType);
-    }
-
-    // Filter by Status (For Applications)
-    if (selectedStatus !== "All Status" && list[0]?.status !== undefined) {
-      result = result.filter(item => item.status === selectedStatus);
-    }
-
-    // Sort
-    if (sortBy === "Newest First") {
-      result.sort((a, b) => b.dateObj - a.dateObj);
-    } else if (sortBy === "Oldest First") {
-      result.sort((a, b) => a.dateObj - b.dateObj);
-    } else if (sortBy === "Deadline (Soonest)") {
-      result.sort((a, b) => a.dateObj - b.dateObj);
-    }
-
-    return result;
   };
 
-  const filteredAuditions = filterList(initialAuditions);
-  const filteredCastings = filterList(castingCalls);
-  const filteredApplications = filterList(initialApplications);
+  useEffect(() => {
+    loadData();
 
-  // Close dropdowns on click outside
+    const handleCreated = () => loadData();
+    window.addEventListener("opportunity_created", handleCreated);
+    window.addEventListener("opportunity_applied", handleCreated);
+    return () => {
+      window.removeEventListener("opportunity_created", handleCreated);
+      window.removeEventListener("opportunity_applied", handleCreated);
+    };
+  }, []);
+
+  // Close dropdowns on outside click
   useEffect(() => {
     const handleOutsideClick = () => {
       setShowTypeDropdown(false);
@@ -262,26 +131,176 @@ export default function Auditions() {
     return () => window.removeEventListener("click", handleOutsideClick);
   }, []);
 
-  // Upload handler simulation
-  const handleUploadSubmit = (e) => {
-    e.preventDefault();
-    setUploadSuccess(true);
-    setTimeout(() => {
-      setUploadSuccess(false);
-      setShowUploadModal(false);
-    }, 1800);
-  };
-
-  // Apply handler simulation
-  const handleApplySubmit = () => {
-    setApplySuccess(true);
-    setTimeout(() => {
-      setApplySuccess(false);
+  // ─── Actions for Audition Calls (Tab 1) ──────────────────────────────────
+  const handleUpdateBookingStatus = async (requestId, newStatus) => {
+    try {
+      setUpdatingAction(true);
+      await updateBookingRequestStatus(requestId, newStatus);
+      showSuccess(
+        newStatus === "ACCEPTED" ? "Audition Confirmed!" : "Call Declined",
+        newStatus === "ACCEPTED"
+          ? "You have accepted this audition call. The casting director has been notified."
+          : "You have declined this audition call."
+      );
       setSelectedAudition(null);
-    }, 1800);
+      loadData();
+    } catch (err) {
+      showError("Action Failed", err.message || "Could not update audition status.");
+    } finally {
+      setUpdatingAction(false);
+    }
   };
 
-  // Header extras upload button custom component
+  // ─── Actions for Applicants on My Castings (Tab 2) ────────────────────────
+  const handleUpdateApplicantStatus = async (appId, newStatus) => {
+    try {
+      setUpdatingAction(true);
+      await updateApplicantStatus(appId, newStatus);
+      showSuccess(
+        "Status Updated",
+        `Applicant has been marked as ${newStatus}.`
+      );
+      setSelectedCandidate(null);
+      loadData();
+    } catch (err) {
+      showError("Action Failed", err.message || "Could not update applicant status.");
+    } finally {
+      setUpdatingAction(false);
+    }
+  };
+
+  // ─── Dynamic Filtering for Audition Calls (Tab 1) ─────────────────────────
+  const getFilteredAuditions = () => {
+    let list = [...auditionInvites];
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(
+        item =>
+          (item.projectTitle || "").toLowerCase().includes(q) ||
+          (item.professionalName || "").toLowerCase().includes(q) ||
+          (item.professionalCompany || "").toLowerCase().includes(q) ||
+          (item.location || "").toLowerCase().includes(q)
+      );
+    }
+
+    if (selectedType !== "All Types") {
+      list = list.filter(item => (item.projectType || "") === selectedType);
+    }
+
+    if (selectedStatus !== "All Status") {
+      if (selectedStatus === "Pending / Under Review") {
+        list = list.filter(item => item.status === "PENDING");
+      } else if (selectedStatus === "Selected / Accepted") {
+        list = list.filter(item => item.status === "ACCEPTED");
+      } else if (selectedStatus === "Declined / Rejected") {
+        list = list.filter(item => item.status === "DECLINED");
+      }
+    }
+
+    if (sortBy === "Newest First") {
+      list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    } else if (sortBy === "Oldest First") {
+      list.sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+    } else if (sortBy === "Deadline (Soonest)") {
+      list.sort((a, b) => new Date(a.bookingDate || 0) - new Date(b.bookingDate || 0));
+    }
+
+    return list;
+  };
+
+  // ─── Dynamic Filtering for Applicants on My Posts (Tab 2) ─────────────────
+  const getFilteredApplicants = () => {
+    let list = [...receivedApplicants];
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(
+        item =>
+          (item.applicantName || "").toLowerCase().includes(q) ||
+          (item.castingCallTitle || "").toLowerCase().includes(q) ||
+          (item.applicantLocation || "").toLowerCase().includes(q)
+      );
+    }
+
+    if (selectedStatus !== "All Status") {
+      if (selectedStatus === "Pending / Under Review") {
+        list = list.filter(item => item.status === "APPLIED" || item.status === "UNDER_REVIEW");
+      } else if (selectedStatus === "Shortlisted") {
+        list = list.filter(item => item.status === "SHORTLISTED");
+      } else if (selectedStatus === "Selected / Accepted") {
+        list = list.filter(item => item.status === "SELECTED");
+      } else if (selectedStatus === "Declined / Rejected") {
+        list = list.filter(item => item.status === "REJECTED");
+      }
+    }
+
+    if (sortBy === "Newest First") {
+      list.sort((a, b) => new Date(b.appliedAt || 0) - new Date(a.appliedAt || 0));
+    } else if (sortBy === "Oldest First") {
+      list.sort((a, b) => new Date(a.appliedAt || 0) - new Date(b.appliedAt || 0));
+    }
+
+    return list;
+  };
+
+  // ─── Dynamic Filtering for My Applications (Tab 3) ────────────────────────
+  const getFilteredApplications = () => {
+    let list = myApplications.map(app => {
+      let statusLabel = "Submitted";
+      if (app.status === "UNDER_REVIEW") statusLabel = "Under Review";
+      else if (app.status === "SHORTLISTED") statusLabel = "Shortlisted";
+      else if (app.status === "SELECTED") statusLabel = "Selected";
+      else if (app.status === "REJECTED") statusLabel = "Declined";
+
+      const matchedPost = publicCastings.find(c => c.id === app.castingCallId) || myCastingCalls.find(c => c.id === app.castingCallId);
+      const poster = matchedPost?.posterUrl 
+        ? (matchedPost.posterUrl.startsWith("http") ? matchedPost.posterUrl : getFullImageUrl(matchedPost.posterUrl))
+        : `https://ui-avatars.com/api/?name=${encodeURIComponent(app.castingCallTitle || "Audition")}&background=f1f5f9&color=475569&bold=true`;
+
+      return {
+        id: app.id,
+        project: app.castingCallTitle || "Casting Project",
+        type: matchedPost?.projectType || "Audition Application",
+        appliedDate: app.appliedAt ? new Date(app.appliedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "Recently",
+        dateObj: new Date(app.appliedAt || Date.now()),
+        status: statusLabel,
+        role: app.coverNote ? (app.coverNote.length > 30 ? app.coverNote.slice(0, 30) + "..." : app.coverNote) : (matchedPost?.roleType || "Audition Submission"),
+        proposedRate: app.proposedRate,
+        thumbnail: poster,
+        history: [
+          { title: "Application Submitted to Director", date: app.appliedAt ? new Date(app.appliedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "Submitted", done: true },
+          { title: "Candidate Profile & Portfolio Inspected", date: app.status !== "APPLIED" ? "Reviewed" : "Pending", done: app.status !== "APPLIED" },
+          { title: `Application Status: ${statusLabel}`, date: app.updatedAt ? new Date(app.updatedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "Ongoing", done: app.status === "SHORTLISTED" || app.status === "SELECTED" }
+        ],
+        raw: app
+      };
+    });
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(item => item.project.toLowerCase().includes(q) || item.role.toLowerCase().includes(q));
+    }
+
+    if (selectedStatus !== "All Status") {
+      list = list.filter(item => item.status === selectedStatus);
+    }
+
+    return list;
+  };
+
+  const filteredAuditions = getFilteredAuditions();
+  const filteredApplicants = getFilteredApplicants();
+  const filteredApplications = getFilteredApplications();
+
+  // Metric Stats Calculations (100% database driven)
+  const totalOpportunitiesCount = publicCastings.length;
+  const auditionInvitesCount = auditionInvites.length;
+  const applicationsSentCount = myApplications.length;
+  const callbacksCount = receivedApplicants.filter(a => a.status === "SHORTLISTED").length + myApplications.filter(a => a.status === "SHORTLISTED").length;
+  const bookingsCount = auditionInvites.filter(b => b.status === "ACCEPTED").length + receivedApplicants.filter(a => a.status === "SELECTED").length;
+
+  // Header extras upload button (preserving original layout)
   const headerExtrasNode = (
     <PagesButton
       onClick={() => setShowUploadModal(true)}
@@ -297,7 +316,7 @@ export default function Auditions() {
     <AppLayout
       pageTitle="Auditions & Castings"
       subTitle="Find opportunities and manage your auditions"
-      searchPlaceholder="Search auditions, projects..."
+      searchPlaceholder="Search auditions, projects, talents..."
       headerExtras={headerExtrasNode}
     >
       <div className="ac-container">
@@ -315,19 +334,19 @@ export default function Auditions() {
                   onClick={() => setActiveTab("auditions")}
                   className={`ac-tab-btn ${activeTab === "auditions" ? "active" : ""}`}
                 >
-                  Auditions
+                  Auditions ({auditionInvites.length})
                 </PagesButton>
                 <PagesButton
                   onClick={() => setActiveTab("castings")}
                   className={`ac-tab-btn ${activeTab === "castings" ? "active" : ""}`}
                 >
-                  Castings
+                  Castings ({receivedApplicants.length})
                 </PagesButton>
                 <PagesButton
                   onClick={() => setActiveTab("my-applications")}
                   className={`ac-tab-btn ${activeTab === "my-applications" ? "active" : ""}`}
                 >
-                  My Applications
+                  My Applications ({myApplications.length})
                 </PagesButton>
               </div>
 
@@ -347,7 +366,7 @@ export default function Auditions() {
                   </PagesButton>
                   {showTypeDropdown && (
                     <div className="ac-dropdown-menu">
-                      {["All Types", "Feature Film", "Web Series", "Short Film", "Ad Film", "Music Video"].map((t) => (
+                      {["All Types", "Feature Film", "Web Series", "Commercial / TVC", "Music Video", "Short Film", "Ad Film"].map((t) => (
                         <PagesButton
                           key={t}
                           onClick={() => {
@@ -364,7 +383,7 @@ export default function Auditions() {
                   )}
                 </div>
 
-                {/* Application Status Filter */}
+                {/* Status Filter */}
                 <div className="ac-dropdown-container" onClick={(e) => e.stopPropagation()}>
                   <PagesButton
                     onClick={() => {
@@ -379,7 +398,7 @@ export default function Auditions() {
                   </PagesButton>
                   {showStatusDropdown && (
                     <div className="ac-dropdown-menu">
-                      {["All Status", "Under Review", "Shortlisted", "Submitted"].map((s) => (
+                      {["All Status", "Pending / Under Review", "Shortlisted", "Selected / Accepted", "Declined / Rejected"].map((s) => (
                         <PagesButton
                           key={s}
                           onClick={() => {
@@ -433,7 +452,7 @@ export default function Auditions() {
               </div>
             </div>
 
-            {/* Stats Row */}
+            {/* Stats Row (Preserving Exact Original Layout & Dynamic DB Values) */}
             <div className="ac-stats-row">
               <div className="ac-stat-card">
                 <div className="ac-stat-icon-wrapper pink">
@@ -441,7 +460,7 @@ export default function Auditions() {
                 </div>
                 <div className="ac-stat-info">
                   <span className="ac-stat-label">Total Opportunities</span>
-                  <span className="ac-stat-value">24</span>
+                  <span className="ac-stat-value">{totalOpportunitiesCount}</span>
                   <span className="ac-stat-status">Active</span>
                 </div>
               </div>
@@ -452,8 +471,8 @@ export default function Auditions() {
                 </div>
                 <div className="ac-stat-info">
                   <span className="ac-stat-label">Audition Invites</span>
-                  <span className="ac-stat-value">5</span>
-                  <span className="ac-stat-status">New invites</span>
+                  <span className="ac-stat-value">{auditionInvitesCount}</span>
+                  <span className="ac-stat-status">For You</span>
                 </div>
               </div>
 
@@ -463,7 +482,7 @@ export default function Auditions() {
                 </div>
                 <div className="ac-stat-info">
                   <span className="ac-stat-label">Applications Sent</span>
-                  <span className="ac-stat-value">12</span>
+                  <span className="ac-stat-value">{applicationsSentCount}</span>
                   <span className="ac-stat-status">Total sent</span>
                 </div>
               </div>
@@ -474,8 +493,8 @@ export default function Auditions() {
                 </div>
                 <div className="ac-stat-info">
                   <span className="ac-stat-label">Callbacks</span>
-                  <span className="ac-stat-value">3</span>
-                  <span className="ac-stat-status">This month</span>
+                  <span className="ac-stat-value">{callbacksCount}</span>
+                  <span className="ac-stat-status">Shortlisted</span>
                 </div>
               </div>
 
@@ -485,132 +504,85 @@ export default function Auditions() {
                 </div>
                 <div className="ac-stat-info">
                   <span className="ac-stat-label">Bookings</span>
-                  <span className="ac-stat-value">2</span>
-                  <span className="ac-stat-status">This year</span>
+                  <span className="ac-stat-value">{bookingsCount}</span>
+                  <span className="ac-stat-status">Confirmed</span>
                 </div>
               </div>
             </div>
             
-            {/* Tab: Auditions List */}
+            {/* ═══════════════════════════════════════════════════════════════ */}
+            {/* TAB 1: AUDITIONS (Audition Calls & Direct Invites Received by Me) */}
+            {/* ═══════════════════════════════════════════════════════════════ */}
             {activeTab === "auditions" && (
               <>
-                  <div className="ac-section-header">
-                    <h2>Audition Invites ({filteredAuditions.length})</h2>
-                    <PagesButton className="ac-view-all-link">View All</PagesButton>
-                  </div>
-
-                  <div className="ac-list">
-                    {filteredAuditions.length > 0 ? (
-                      filteredAuditions.map((item) => (
-                        <div key={item.id} className="ac-invite-item">
-                          
-                          <div className="ac-invite-media">
-                            <img
-                              src={item.poster}
-                              alt={item.project}
-                              className="ac-poster-img"
-                            />
-                            <div className="ac-invite-info">
-                              <span className="ac-project-name">{item.project}</span>
-                              <span className="ac-project-type">{item.type}</span>
-                            </div>
-                          </div>
-
-                          <div className="ac-invite-meta-block">
-                            <span className="ac-meta-label">Role</span>
-                            <span className="ac-meta-val role-name">{item.role}</span>
-                            <span className="ac-meta-val role-person">{item.character}</span>
-                          </div>
-
-                          <div className="ac-invite-meta-block">
-                            <span className="ac-meta-label">Deadline</span>
-                            <span className="ac-meta-val">{item.deadline}</span>
-                          </div>
-
-                          <div className="ac-invite-meta-block">
-                            <span className="ac-meta-label">Location</span>
-                            <span className="ac-meta-val flex items-center gap-1">
-                              <MapPin size={13} className="text-slate-400" />
-                              {item.location}
-                            </span>
-                          </div>
-
-                          <div className="ac-action-col">
-                            <PagesButton
-                              onClick={() => setSelectedAudition(item)}
-                              className="ac-outline-btn"
-                            >
-                              View Details
-                            </PagesButton>
-                          </div>
-
-                        </div>
-                      ))
-                    ) : (
-                      <div className="py-8 text-center text-slate-500 font-medium text-xs">
-                        No audition invites match your search criteria.
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="ac-section-header second-section">
-                    <h2>Recent Applications ({filteredApplications.length})</h2>
-                    <PagesButton className="ac-view-all-link">View All</PagesButton>
-                  </div>
-
-                  <RecentApplications
-                    applications={filteredApplications}
-                    onViewUpdate={setSelectedApplication}
-                    emptyMessage="No recent applications match your search criteria."
-                  />
-              </>
-            )}
-
-            {/* Tab: Castings List */}
-            {activeTab === "castings" && (
-              <>
                 <div className="ac-section-header">
-                  <h2>Casting Opportunities ({filteredCastings.length})</h2>
-                  <PagesButton className="ac-view-all-link">View All</PagesButton>
+                  <h2>Audition Invites & Calls Received ({filteredAuditions.length})</h2>
+                  <PagesButton className="ac-view-all-link" onClick={() => setSelectedStatus("All Status")}>
+                    View All
+                  </PagesButton>
                 </div>
 
                 <div className="ac-list">
-                  {filteredCastings.length > 0 ? (
-                    filteredCastings.map((item) => (
+                  {filteredAuditions.length > 0 ? (
+                    filteredAuditions.map((item) => (
                       <div key={item.id} className="ac-invite-item">
                         
                         <div className="ac-invite-media">
                           <img
-                            src={item.poster}
-                            alt={item.project}
+                            src={
+                              item.professionalPhotoUrl
+                                ? (item.professionalPhotoUrl.startsWith("http") ? item.professionalPhotoUrl : getFullImageUrl(item.professionalPhotoUrl))
+                                : `https://ui-avatars.com/api/?name=${encodeURIComponent(item.professionalCompany || item.professionalName || "Director")}&background=f3e8ff&color=7c3aed&bold=true`
+                            }
+                            alt={item.projectTitle || "Audition Project"}
                             className="ac-poster-img"
+                            style={{ objectFit: "cover" }}
                           />
                           <div className="ac-invite-info">
-                            <span className="ac-project-name">{item.project}</span>
-                            <span className="ac-project-type">{item.type}</span>
+                            <span className="ac-project-name">{item.projectTitle || "Untitled Audition Call"}</span>
+                            <span className="ac-project-type">{item.projectType || "Direct Audition Call"}</span>
                           </div>
                         </div>
 
                         <div className="ac-invite-meta-block">
                           <span className="ac-meta-label">Role</span>
-                          <span className="ac-meta-val role-name">{item.role}</span>
-                          <span className="ac-meta-val role-person">{item.character}</span>
+                          <span className="ac-meta-val role-name">
+                            {item.offeredRate ? `₹ ${item.offeredRate}` : "Audition Invite"}
+                          </span>
+                          <span className="ac-meta-val role-person" style={{ color: "#7c3aed", fontWeight: "700" }}>
+                            {item.professionalCompany || item.professionalName || "Casting Director"}
+                          </span>
                         </div>
 
                         <div className="ac-invite-meta-block">
-                          <span className="ac-meta-label">Deadline</span>
-                          <span className="ac-meta-val">{item.deadline}</span>
+                          <span className="ac-meta-label">Audition Date</span>
+                          <span className="ac-meta-val">
+                            {item.bookingDate || "Date TBD"}
+                          </span>
                         </div>
 
                         <div className="ac-invite-meta-block">
                           <span className="ac-meta-label">Location</span>
                           <span className="ac-meta-val flex items-center gap-1">
                             <MapPin size={13} className="text-slate-400" />
-                            {item.location}
+                            {item.location || "Location TBD"}
                           </span>
                         </div>
 
-                        <div className="ac-action-col">
+                        <div className="ac-action-col" style={{ display: "flex", flexDirection: "column", gap: "6px", alignItems: "flex-end" }}>
+                          {item.status && item.status !== "PENDING" && (
+                            <span style={{
+                              fontSize: "10.5px",
+                              fontWeight: "800",
+                              padding: "2px 8px",
+                              borderRadius: "6px",
+                              background: item.status === "ACCEPTED" ? "#f0fdf4" : "#fef2f2",
+                              color: item.status === "ACCEPTED" ? "#16a34a" : "#dc2626",
+                              border: `1px solid ${item.status === "ACCEPTED" ? "#bbf7d0" : "#fecaca"}`
+                            }}>
+                              {item.status}
+                            </span>
+                          )}
                           <PagesButton
                             onClick={() => setSelectedAudition(item)}
                             className="ac-outline-btn"
@@ -622,36 +594,179 @@ export default function Auditions() {
                       </div>
                     ))
                   ) : (
-                    <div className="py-8 text-center text-slate-500 font-medium text-xs">
-                      No casting calls match your search criteria.
+                    <div className="py-12 text-center text-slate-500 font-medium text-xs bg-white rounded-2xl border border-slate-200">
+                      <div className="text-3xl mb-2">🎬</div>
+                      <div className="font-bold text-slate-700 text-sm">No Audition Calls Received Yet</div>
+                      <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                        When casting directors, agencies, or producers book you for an audition, their invitation call sheets appear here.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Second section: Recent applications summary */}
+                <div className="ac-section-header second-section">
+                  <h2>Recent Applications You Sent ({filteredApplications.length})</h2>
+                  <PagesButton className="ac-view-all-link" onClick={() => setActiveTab("my-applications")}>
+                    View All
+                  </PagesButton>
+                </div>
+
+                <RecentApplications
+                  applications={filteredApplications.slice(0, 3)}
+                  onViewUpdate={setSelectedApplication}
+                  emptyMessage="You have not submitted any audition applications yet."
+                />
+              </>
+            )}
+
+            {/* ═══════════════════════════════════════════════════════════════ */}
+            {/* TAB 2: CASTINGS (Applicants on My Opportunities)               */}
+            {/* ═══════════════════════════════════════════════════════════════ */}
+            {activeTab === "castings" && (
+              <>
+                <div className="ac-section-header">
+                  <h2>Applicants on My Opportunities ({filteredApplicants.length})</h2>
+                  <PagesButton className="ac-view-all-link" onClick={() => setSelectedStatus("All Status")}>
+                    View All
+                  </PagesButton>
+                </div>
+
+                <div className="ac-list">
+                  {filteredApplicants.length > 0 ? (
+                    filteredApplicants.map((item) => {
+                      const photoUrl = item.applicantPhoto
+                        ? (item.applicantPhoto.startsWith("http") ? item.applicantPhoto : getFullImageUrl(item.applicantPhoto))
+                        : `https://ui-avatars.com/api/?name=${encodeURIComponent(item.applicantName || "Talent")}&background=fdf2f8&color=be185d&bold=true`;
+
+                      const craftLabel = item.applicantProfileTypes && item.applicantProfileTypes.length > 0
+                        ? Array.from(item.applicantProfileTypes).join(", ")
+                        : "Talent";
+
+                      return (
+                        <div key={item.id} className="ac-invite-item">
+                          
+                          {/* Candidate Media Thumbnail */}
+                          <div className="ac-invite-media">
+                            <img
+                              src={photoUrl}
+                              alt={item.applicantName || "Candidate"}
+                              className="ac-poster-img"
+                              style={{ objectFit: "cover", borderRadius: "10px" }}
+                            />
+                            <div className="ac-invite-info">
+                              <span className="ac-project-name">{item.applicantName || "Anonymous Candidate"}</span>
+                              <span className="ac-project-type" style={{ color: "#ee008f", fontWeight: "700" }}>
+                                {craftLabel}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Applied For Post */}
+                          <div className="ac-invite-meta-block">
+                            <span className="ac-meta-label">Applied For</span>
+                            <span className="ac-meta-val role-name" style={{ color: "#0f172a" }}>
+                              {item.castingCallTitle || "My Casting Call"}
+                            </span>
+                            <span className="ac-meta-val role-person">
+                              {item.applicantLocation || "Location Not Set"}
+                            </span>
+                          </div>
+
+                          {/* Applied Date */}
+                          <div className="ac-invite-meta-block">
+                            <span className="ac-meta-label">Applied On</span>
+                            <span className="ac-meta-val">
+                              {item.appliedAt ? new Date(item.appliedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "Recently"}
+                            </span>
+                          </div>
+
+                          {/* Proposed Rate */}
+                          <div className="ac-invite-meta-block">
+                            <span className="ac-meta-label">Proposed Rate</span>
+                            <span className="ac-meta-val font-extrabold text-emerald-600">
+                              {item.proposedRate ? `₹ ${item.proposedRate.toLocaleString("en-IN")}` : (item.applicantDayRate || "Negotiable")}
+                            </span>
+                          </div>
+
+                          {/* Status & Review Button */}
+                          <div className="ac-action-col" style={{ display: "flex", flexDirection: "column", gap: "6px", alignItems: "flex-end" }}>
+                            <span style={{
+                              fontSize: "10.5px",
+                              fontWeight: "800",
+                              padding: "2px 8px",
+                              borderRadius: "6px",
+                              background:
+                                item.status === "SELECTED" ? "#f0fdf4" :
+                                item.status === "SHORTLISTED" ? "#fefce8" :
+                                item.status === "REJECTED" ? "#fef2f2" : "#f1f5f9",
+                              color:
+                                item.status === "SELECTED" ? "#16a34a" :
+                                item.status === "SHORTLISTED" ? "#ca8a04" :
+                                item.status === "REJECTED" ? "#dc2626" : "#475569",
+                              border: `1px solid ${
+                                item.status === "SELECTED" ? "#bbf7d0" :
+                                item.status === "SHORTLISTED" ? "#fef08a" :
+                                item.status === "REJECTED" ? "#fecaca" : "#cbd5e1"
+                              }`
+                            }}>
+                              {item.status || "APPLIED"}
+                            </span>
+
+                            <PagesButton
+                              onClick={() => setSelectedCandidate(item)}
+                              className="ac-outline-btn"
+                            >
+                              Review Candidate
+                            </PagesButton>
+                          </div>
+
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="py-12 text-center text-slate-500 font-medium text-xs bg-white rounded-2xl border border-slate-200">
+                      <div className="text-3xl mb-2">👥</div>
+                      <div className="font-bold text-slate-700 text-sm">No Candidate Applicants Yet</div>
+                      <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                        When talents apply for the opportunities you post on the Opportunities page, their candidate profiles appear here.
+                      </p>
                     </div>
                   )}
                 </div>
               </>
             )}
 
-            {/* Tab: My Applications List */}
+            {/* ═══════════════════════════════════════════════════════════════ */}
+            {/* TAB 3: MY APPLICATIONS (Auditions Submitted to Others)         */}
+            {/* ═══════════════════════════════════════════════════════════════ */}
             {activeTab === "my-applications" && (
               <>
                 <div className="ac-section-header">
-                  <h2>All Applications ({filteredApplications.length})</h2>
-                  <PagesButton className="ac-view-all-link">View All</PagesButton>
+                  <h2>All Applications You Submitted ({filteredApplications.length})</h2>
+                  <PagesButton className="ac-view-all-link" onClick={() => setSelectedStatus("All Status")}>
+                    View All
+                  </PagesButton>
                 </div>
 
                 <RecentApplications
                   applications={filteredApplications}
                   onViewUpdate={setSelectedApplication}
-                  emptyMessage="No applications match your status filters."
+                  emptyMessage="No audition applications match your filters."
                 />
               </>
             )}
 
           </div>
 
-          {/* Right Sidebar Column */}
+          {/* Right Sidebar Column (Preserving Exact Original Layout) */}
           <div className="ac-sidebar-col">
             
-            <UpcomingAuditions onViewCalendar={() => setShowCalendarModal(true)} />
+            <UpcomingAuditions 
+              items={auditionInvites}
+              onViewCalendar={() => setShowCalendarModal(true)} 
+              onSelectItem={(item) => setSelectedAudition(item)}
+            />
 
             <QuickActions
               onUploadMedia={() => setShowUploadModal(true)}
@@ -665,12 +780,21 @@ export default function Auditions() {
           </div>
         </div>
 
-        {/* Modal: Audition Invite Details */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {/* MODAL 1: Audition Invite Details (Tab 1)                       */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
         {selectedAudition && (
           <div className="ac-modal-overlay" onClick={() => setSelectedAudition(null)}>
-            <div className="ac-modal-content animate-fadeIn" onClick={(e) => e.stopPropagation()}>
-              <div className="ac-modal-header">
-                <h3>Audition Details: {selectedAudition.project}</h3>
+            <div className="ac-modal-content animate-fadeIn" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "560px" }}>
+              <div className="ac-modal-header" style={{ background: "linear-gradient(to right, #fdf4ff, #faf5ff)" }}>
+                <div>
+                  <h3 style={{ fontSize: "16px", fontWeight: "800", color: "#0f172a", margin: 0 }}>
+                    Audition Call: {selectedAudition.projectTitle || "Feature Film"}
+                  </h3>
+                  <span style={{ fontSize: "11.5px", color: "#64748b" }}>
+                    From: {selectedAudition.professionalCompany || selectedAudition.professionalName || "Casting Director"}
+                  </span>
+                </div>
                 <PagesButton
                   onClick={() => setSelectedAudition(null)}
                   className="ac-modal-close-btn"
@@ -679,91 +803,255 @@ export default function Auditions() {
                 </PagesButton>
               </div>
 
-              <div className="ac-modal-body">
-                {applySuccess ? (
-                  <div className="flex flex-col items-center justify-center py-8 text-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100">
-                      <Check size={24} strokeWidth={3} />
-                    </div>
-                    <h4 className="font-bold text-slate-800 text-sm">Application Sent Successfully!</h4>
-                    <p className="text-xs text-slate-500 max-w-xs">
-                      Your profile and audition credentials have been submitted to the casting agency.
-                    </p>
+              <div className="ac-modal-body" style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: "14px" }}>
+                
+                {/* Meta details grid */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", background: "#f8fafc", padding: "12px 14px", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
+                  <div>
+                    <span style={{ fontSize: "11px", fontWeight: "700", color: "#94a3b8", display: "block", textTransform: "uppercase" }}>📅 Audition Date</span>
+                    <span style={{ fontSize: "13px", fontWeight: "800", color: "#1e293b" }}>{selectedAudition.bookingDate || "Open Call"}</span>
                   </div>
-                ) : (
-                  <>
-                    <div className="flex gap-4">
-                      <img
-                        src={selectedAudition.poster}
-                        alt={selectedAudition.project}
-                        className="w-16 h-20 rounded-lg object-cover bg-slate-100 flex-shrink-0"
-                      />
-                      <div className="flex flex-col justify-center text-left">
-                        <span className="text-sm font-bold text-slate-800">{selectedAudition.project}</span>
-                        <span className="text-xs text-slate-500 font-medium">{selectedAudition.type}</span>
-                        <span className="text-[11px] text-slate-400 mt-1">Casting Agency: {selectedAudition.castingDirector}</span>
-                      </div>
-                    </div>
+                  <div>
+                    <span style={{ fontSize: "11px", fontWeight: "700", color: "#94a3b8", display: "block", textTransform: "uppercase" }}>📍 Audition Studio</span>
+                    <span style={{ fontSize: "13px", fontWeight: "800", color: "#1e293b" }}>{selectedAudition.location || "Location not specified"}</span>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: "11px", fontWeight: "700", color: "#94a3b8", display: "block", textTransform: "uppercase" }}>💰 Offered Budget</span>
+                    <span style={{ fontSize: "13px", fontWeight: "800", color: "#16a34a" }}>
+                      {selectedAudition.offeredRate ? `₹ ${selectedAudition.offeredRate}` : "Standard Offer"}
+                    </span>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: "11px", fontWeight: "700", color: "#94a3b8", display: "block", textTransform: "uppercase" }}>📌 Call Status</span>
+                    <span style={{ fontSize: "12px", fontWeight: "800", color: selectedAudition.status === "ACCEPTED" ? "#16a34a" : "#ca8a04" }}>
+                      {selectedAudition.status || "PENDING"}
+                    </span>
+                  </div>
+                </div>
 
-                    <div className="ac-modal-info-grid">
-                      <div className="ac-modal-info-item">
-                        <span className="label">Requested Role</span>
-                        <span className="value">{selectedAudition.role}</span>
-                      </div>
-                      <div className="ac-modal-info-item">
-                        <span className="label">Character Name</span>
-                        <span className="value">{selectedAudition.character}</span>
-                      </div>
-                      <div className="ac-modal-info-item">
-                        <span className="label">Deadline</span>
-                        <span className="value">{selectedAudition.deadline}</span>
-                      </div>
-                      <div className="ac-modal-info-item">
-                        <span className="label">Location</span>
-                        <span className="value">{selectedAudition.location}</span>
-                      </div>
-                    </div>
+                {/* Audition Instructions / Note */}
+                <div style={{ background: "#fdf2f8", border: "1px solid #fbcfe8", padding: "12px 14px", borderRadius: "12px" }}>
+                  <span style={{ fontSize: "12px", fontWeight: "800", color: "#831843", display: "block", marginBottom: "4px" }}>
+                    📜 Audition Instructions & Details:
+                  </span>
+                  <p style={{ fontSize: "12.5px", color: "#9d174d", margin: 0, lineHeight: 1.5 }}>
+                    {selectedAudition.message || "No specific instructions provided for this audition call."}
+                  </p>
+                </div>
 
-                    <div className="flex flex-col gap-1 text-left">
-                      <span className="text-[10.5px] color-slate-400 font-bold uppercase tracking-wider">Project Synopsis</span>
-                      <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-lg border border-slate-100">
-                        {selectedAudition.description}
-                      </p>
-                    </div>
-
-                    <div className="flex flex-col gap-1 text-left">
-                      <span className="text-[10.5px] color-slate-400 font-bold uppercase tracking-wider">Submission Requirements</span>
-                      <p className="text-xs text-slate-600 leading-relaxed bg-pink-50/30 text-pink-900 border border-pink-100 p-3 rounded-lg">
-                        {selectedAudition.requirements}
-                      </p>
-                    </div>
-                  </>
-                )}
               </div>
 
-              {!applySuccess && (
-                <div className="ac-modal-footer">
-                  <PagesButton
-                    onClick={() => setSelectedAudition(null)}
-                    className="ac-outline-btn border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-700 hover:border-slate-300"
-                    style={{ borderColor: '#cbd5e1', color: '#475569' }}
-                  >
-                    Cancel
-                  </PagesButton>
-                  <PagesButton
-                    onClick={handleApplySubmit}
-                    className="ac-solid-btn w-auto"
-                    style={{ padding: '8px 18px' }}
-                  >
-                    Submit Application
-                  </PagesButton>
+              <div className="ac-modal-footer" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px" }}>
+                <PagesButton
+                  onClick={() => {
+                    setSelectedAudition(null);
+                    navigate("/messages", {
+                      state: {
+                        targetUser: {
+                          id: selectedAudition.professionalId,
+                          name: selectedAudition.professionalName || "Casting Director",
+                          role: "Casting Director",
+                          avatar: selectedAudition.professionalPhotoUrl
+                        },
+                        opportunityTitle: selectedAudition.projectTitle
+                      }
+                    });
+                  }}
+                  className="ac-outline-btn"
+                  style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
+                >
+                  <MessageSquare size={14} color="#ee008f" />
+                  <span>Chat Director</span>
+                </PagesButton>
+
+                <div style={{ display: "flex", gap: "8px" }}>
+                  {selectedAudition.status !== "DECLINED" && (
+                    <PagesButton
+                      onClick={() => handleUpdateBookingStatus(selectedAudition.id, "DECLINED")}
+                      disabled={updatingAction}
+                      style={{
+                        background: "#fef2f2",
+                        border: "1px solid #fecaca",
+                        color: "#dc2626",
+                        padding: "8px 14px",
+                        borderRadius: "8px",
+                        fontSize: "12.5px",
+                        fontWeight: "700",
+                        cursor: "pointer"
+                      }}
+                    >
+                      Decline
+                    </PagesButton>
+                  )}
+
+                  {selectedAudition.status !== "ACCEPTED" && (
+                    <PagesButton
+                      onClick={() => handleUpdateBookingStatus(selectedAudition.id, "ACCEPTED")}
+                      disabled={updatingAction}
+                      className="ac-solid-btn"
+                      style={{
+                        background: "linear-gradient(135deg, #ee008f 0%, #7c3aed 100%)",
+                        padding: "8px 20px",
+                        fontSize: "12.5px",
+                        fontWeight: "700",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px"
+                      }}
+                    >
+                      {updatingAction ? <Loader2 size={14} className="animate-spin" /> : "✓ Confirm & Accept Call"}
+                    </PagesButton>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           </div>
         )}
 
-        {/* Modal: Application Status Update */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {/* MODAL 2: Candidate Applicant Review (Tab 2)                   */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {selectedCandidate && (
+          <div className="ac-modal-overlay" onClick={() => setSelectedCandidate(null)}>
+            <div className="ac-modal-content animate-fadeIn" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "560px" }}>
+              <div className="ac-modal-header" style={{ background: "linear-gradient(to right, #fdf4ff, #faf5ff)" }}>
+                <div>
+                  <h3 style={{ fontSize: "16px", fontWeight: "800", color: "#0f172a", margin: 0 }}>
+                    Candidate Review: {selectedCandidate.applicantName}
+                  </h3>
+                  <span style={{ fontSize: "11.5px", color: "#64748b" }}>
+                    Applied for: {selectedCandidate.castingCallTitle}
+                  </span>
+                </div>
+                <PagesButton
+                  onClick={() => setSelectedCandidate(null)}
+                  className="ac-modal-close-btn"
+                >
+                  <X size={18} />
+                </PagesButton>
+              </div>
+
+              <div className="ac-modal-body" style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: "14px" }}>
+                
+                {/* Profile card summary */}
+                <div style={{ display: "flex", alignItems: "center", gap: "14px", background: "#f8fafc", padding: "14px", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
+                  <img
+                    src={
+                      selectedCandidate.applicantPhoto
+                        ? (selectedCandidate.applicantPhoto.startsWith("http") ? selectedCandidate.applicantPhoto : getFullImageUrl(selectedCandidate.applicantPhoto))
+                        : `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedCandidate.applicantName || "Talent")}&background=fdf2f8&color=be185d&bold=true`
+                    }
+                    alt={selectedCandidate.applicantName}
+                    style={{ width: "54px", height: "54px", borderRadius: "12px", objectFit: "cover", border: "2px solid #fbcfe8" }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: "14.5px", fontWeight: "800", color: "#0f172a" }}>{selectedCandidate.applicantName}</span>
+                      <span style={{ fontSize: "11px", fontWeight: "700", color: "#be185d", background: "#fdf2f8", padding: "2px 8px", borderRadius: "6px" }}>
+                        {selectedCandidate.applicantProfileTypes && selectedCandidate.applicantProfileTypes.length > 0 ? Array.from(selectedCandidate.applicantProfileTypes).join(", ") : "Talent"}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: "12px", color: "#64748b", marginTop: "2px" }}>
+                      Location: {selectedCandidate.applicantLocation || "Not specified"} • Proposed: <strong style={{ color: "#16a34a" }}>₹ {selectedCandidate.proposedRate ? selectedCandidate.proposedRate.toLocaleString("en-IN") : "Negotiable"}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Cover Note */}
+                <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", padding: "12px 14px", borderRadius: "12px" }}>
+                  <span style={{ fontSize: "12px", fontWeight: "800", color: "#334155", display: "block", marginBottom: "4px" }}>
+                    Candidate Cover Note:
+                  </span>
+                  <p style={{ fontSize: "12.5px", color: "#475569", margin: 0, lineHeight: 1.5 }}>
+                    {selectedCandidate.coverNote || "No cover note provided with this submission."}
+                  </p>
+                </div>
+
+              </div>
+
+              <div className="ac-modal-footer" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", flexWrap: "wrap" }}>
+                <PagesButton
+                  onClick={() => {
+                    setSelectedCandidate(null);
+                    navigate("/messages", {
+                      state: {
+                        targetUser: {
+                          id: selectedCandidate.applicantId,
+                          name: selectedCandidate.applicantName,
+                          role: "Talent",
+                          avatar: selectedCandidate.applicantPhoto
+                        },
+                        opportunityTitle: selectedCandidate.castingCallTitle
+                      }
+                    });
+                  }}
+                  className="ac-outline-btn"
+                  style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
+                >
+                  <MessageSquare size={14} color="#ee008f" />
+                  <span>Chat with Talent</span>
+                </PagesButton>
+
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <PagesButton
+                    onClick={() => handleUpdateApplicantStatus(selectedCandidate.id, "REJECTED")}
+                    disabled={updatingAction}
+                    style={{
+                      background: "#fef2f2",
+                      border: "1px solid #fecaca",
+                      color: "#dc2626",
+                      padding: "8px 14px",
+                      borderRadius: "8px",
+                      fontSize: "12.5px",
+                      fontWeight: "700",
+                      cursor: "pointer"
+                    }}
+                  >
+                    Decline
+                  </PagesButton>
+
+                  <PagesButton
+                    onClick={() => handleUpdateApplicantStatus(selectedCandidate.id, "SHORTLISTED")}
+                    disabled={updatingAction}
+                    style={{
+                      background: "#fefce8",
+                      border: "1px solid #fef08a",
+                      color: "#ca8a04",
+                      padding: "8px 14px",
+                      borderRadius: "8px",
+                      fontSize: "12.5px",
+                      fontWeight: "800",
+                      cursor: "pointer"
+                    }}
+                  >
+                    ✨ Shortlist
+                  </PagesButton>
+
+                  <PagesButton
+                    onClick={() => handleUpdateApplicantStatus(selectedCandidate.id, "SELECTED")}
+                    disabled={updatingAction}
+                    className="ac-solid-btn"
+                    style={{
+                      background: "linear-gradient(135deg, #16a34a 0%, #059669 100%)",
+                      padding: "8px 18px",
+                      fontSize: "12.5px",
+                      fontWeight: "700",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px"
+                    }}
+                  >
+                    {updatingAction ? <Loader2 size={14} className="animate-spin" /> : "✓ Select Candidate"}
+                  </PagesButton>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {/* MODAL 3: Application Status Update (Tab 3)                     */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
         {selectedApplication && (
           <div className="ac-modal-overlay" onClick={() => setSelectedApplication(null)}>
             <div className="ac-modal-content animate-fadeIn" onClick={(e) => e.stopPropagation()}>
@@ -797,7 +1085,6 @@ export default function Auditions() {
                   <div className="ac-timeline-container">
                     {selectedApplication.history.map((step, idx) => (
                       <div key={idx} className="ac-timeline-item">
-                        {/* Bullet */}
                         <div className={`ac-timeline-bullet ${step.done ? "done" : ""}`}>
                           {step.done && <Check size={8} strokeWidth={4} />}
                         </div>
@@ -825,118 +1112,100 @@ export default function Auditions() {
                 </PagesButton>
                 <PagesButton
                   onClick={() => {
-                    alert("Opening messaging system...");
+                    navigate("/messages");
                     setSelectedApplication(null);
                   }}
-                  className="ac-solid-btn w-auto bg-purple-600 hover:bg-purple-700"
-                  style={{ padding: '8px 18px', backgroundColor: '#7c3aed' }}
+                  className="ac-solid-btn w-auto"
+                  style={{ padding: '8px 18px', background: 'linear-gradient(135deg, #ee008f, #7c3aed)' }}
                 >
-                  Message Agency
+                  Message Director
                 </PagesButton>
               </div>
             </div>
           </div>
         )}
 
-        {/* Modal: Upload Audition */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {/* MODAL 4: Upload Audition Material                              */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
         {showUploadModal && (
-          <div className="ac-modal-overlay" onClick={() => setShowUploadModal(null)}>
+          <div className="ac-modal-overlay" onClick={() => setShowUploadModal(false)}>
             <div className="ac-modal-content animate-fadeIn" onClick={(e) => e.stopPropagation()}>
               <div className="ac-modal-header">
                 <h3>Upload Audition Material</h3>
                 <PagesButton
-                  onClick={() => setShowUploadModal(null)}
+                  onClick={() => setShowUploadModal(false)}
                   className="ac-modal-close-btn"
                 >
                   <X size={18} />
                 </PagesButton>
               </div>
 
-              <form onSubmit={handleUploadSubmit}>
-                <div className="ac-modal-body">
-                  {uploadSuccess ? (
-                    <div className="flex flex-col items-center justify-center py-8 text-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100">
-                        <Check size={24} strokeWidth={3} />
-                      </div>
-                      <h4 className="font-bold text-slate-800 text-sm">Upload Successful!</h4>
-                      <p className="text-xs text-slate-500 max-w-xs">
-                        Your file has been uploaded to your portfolio and synced with your auditions stack.
-                      </p>
+              <div className="ac-modal-body">
+                {uploadSuccess ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100">
+                      <Check size={24} strokeWidth={3} />
                     </div>
-                  ) : (
-                    <>
-                      <div className="flex flex-col gap-2 text-left">
-                        <label className="text-xs font-bold text-slate-700">Material Type</label>
-                        <div className="grid grid-cols-3 gap-2">
-                          {["Video", "Photo", "Document"].map((type) => (
-                            <PagesButton
-                              key={type}
-                              type="button"
-                              onClick={() => setUploadFileType(type)}
-                              className={`py-2 px-3 text-xs font-semibold rounded-lg border text-center transition-all duration-200
-                                ${uploadFileType === type
-                                  ? "border-pink-500 bg-pink-50/50 text-pink-600"
-                                  : "border-slate-200 hover:bg-slate-50 text-slate-600"}`}
-                            >
-                              {type}
-                            </PagesButton>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Dropzone */}
-                      <div className="border-2 border-dashed border-slate-200 hover:border-pink-400 rounded-xl p-8 text-center flex flex-col items-center justify-center gap-3 bg-slate-50/50 transition-colors duration-200 cursor-pointer">
-                        <div className="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center text-slate-400 border border-slate-100">
-                          <Upload size={16} />
-                        </div>
-                        <div className="flex flex-col text-xs text-slate-500 font-medium">
-                          <span>Drag and drop your file here, or <span className="text-pink-600 underline">browse</span></span>
-                          <span className="text-[10px] text-slate-400 mt-1">
-                            {uploadFileType === "Video" && "MP4, MOV, AVI (Max 150MB)"}
-                            {uploadFileType === "Photo" && "JPG, PNG, WEBP (Max 15MB)"}
-                            {uploadFileType === "Document" && "PDF, DOCX, PPTX (Max 20MB)"}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col gap-1 text-left">
-                        <label className="text-xs font-bold text-slate-700">Link with Active Audition (Optional)</label>
-                        <select className="p-2 border border-slate-200 rounded-lg text-xs font-medium bg-white outline-none">
-                          <option value="">Do not link - save to General Media</option>
-                          <option value="1">The Last Chapter (Lead Role)</option>
-                          <option value="2">City Lights (Supporting Role)</option>
-                          <option value="3">Love Stories (Lead Role)</option>
-                        </select>
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                {!uploadSuccess && (
-                  <div className="ac-modal-footer">
-                    <PagesButton
-                      type="button"
-                      onClick={() => setShowUploadModal(false)}
-                      className="ac-outline-btn border-slate-200 text-slate-600 hover:bg-slate-50"
-                      style={{ borderColor: '#cbd5e1', color: '#475569' }}
-                    >
-                      Cancel
-                    </PagesButton>
-                    <PagesButton
-                      type="submit"
-                      className="ac-solid-btn w-auto"
-                      style={{ padding: '8px 18px' }}
-                    >
-                      Upload File
-                    </PagesButton>
+                    <h4 className="font-bold text-slate-800 text-sm">Upload Successful!</h4>
+                    <p className="text-xs text-slate-500 max-w-xs">
+                      Your file has been uploaded to your portfolio and synced with your auditions stack.
+                    </p>
                   </div>
+                ) : (
+                  <>
+                    <div className="flex flex-col gap-2 text-left">
+                      <label className="text-xs font-bold text-slate-700">Material Type</label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {["Video", "Photo", "Document"].map((type) => (
+                          <PagesButton
+                            key={type}
+                            type="button"
+                            onClick={() => setUploadFileType(type)}
+                            className={`py-2 px-3 text-xs font-semibold rounded-lg border text-center transition-all duration-200
+                              ${uploadFileType === type
+                                ? "border-pink-500 bg-pink-50/50 text-pink-600"
+                                : "border-slate-200 hover:bg-slate-50 text-slate-600"}`}
+                          >
+                            {type}
+                          </PagesButton>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div 
+                      onClick={() => navigate("/mymedia")}
+                      className="border-2 border-dashed border-slate-200 hover:border-pink-400 rounded-xl p-8 text-center flex flex-col items-center justify-center gap-3 bg-slate-50/50 transition-colors duration-200 cursor-pointer"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center text-slate-400 border border-slate-100">
+                        <Upload size={16} />
+                      </div>
+                      <div className="flex flex-col text-xs text-slate-500 font-medium">
+                        <span>Click to open <strong className="text-pink-600">My Media Portfolio Studio</strong></span>
+                        <span className="text-[10px] text-slate-400 mt-1">
+                          Manage reels, audition audios, headshots and casting tapes
+                        </span>
+                      </div>
+                    </div>
+                  </>
                 )}
-              </form>
+              </div>
+
+              <div className="ac-modal-footer">
+                <PagesButton
+                  type="button"
+                  onClick={() => setShowUploadModal(false)}
+                  className="ac-outline-btn border-slate-200 text-slate-600 hover:bg-slate-50"
+                  style={{ borderColor: '#cbd5e1', color: '#475569' }}
+                >
+                  Close
+                </PagesButton>
+              </div>
             </div>
           </div>
         )}
 
+        {/* Mini Calendar Modal */}
         <MiniCalendar 
           isOpen={showCalendarModal} 
           onClose={() => setShowCalendarModal(false)} 

@@ -1,7 +1,8 @@
 import PagesButton from "../common/PagesButton";
 import { useState, useEffect, useRef } from "react";
 import { Play, Pause, MoreVertical, Plus, Trash2, Download } from "lucide-react";
-import { getFullImageUrl } from "../../services/api";
+import { getFullImageUrl } from "../../features/bms/api/media/portfolioApi";
+import { confirmDelete } from "../../shared/utils/alert";
 
 export default function Audios({ audios, onUploadClick, onDeleteAudio }) {
   const [playingId, setPlayingId] = useState(null);
@@ -131,7 +132,13 @@ export default function Audios({ audios, onUploadClick, onDeleteAudio }) {
                     )}
                     <PagesButton
                       style={{ background: "none", border: "none", padding: "6px 10px", fontSize: 12, fontWeight: 600, color: "#ef4444", borderRadius: 5, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, width: "100%" }}
-                      onClick={() => { if(window.confirm("Delete this audio track?")) { onDeleteAudio(audio.id); setActiveMenu(null); } }}
+                      onClick={async () => {
+                        const confirmed = await confirmDelete(audio.title || "this audio track");
+                        if (confirmed) {
+                          onDeleteAudio(audio.id);
+                          setActiveMenu(null);
+                        }
+                      }}
                     >
                       <Trash2 size={13} /> Delete
                     </PagesButton>

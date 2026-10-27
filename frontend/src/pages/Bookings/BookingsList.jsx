@@ -5,7 +5,9 @@ import {
   MapPin, IndianRupee, MessageSquare, Building2, 
   Send, Loader2, Sparkles, UserCheck 
 } from "lucide-react";
-import { getIncomingBookingRequests, updateBookingRequestStatus, getFullImageUrl } from "../../services/api";
+import { getIncomingBookingRequests, updateBookingRequestStatus } from "../../features/bms/api/bookings/bookingsApi";
+import { getFullImageUrl } from "../../features/bms/api/media/portfolioApi";
+import { showSuccess, showError } from "../../shared/utils/alert";
 
 const BOOKINGS_DATA = [
   {
@@ -162,14 +164,13 @@ export default function BookingsList({
       setIncomingRequests((prev) =>
         prev.map((req) => (req.id === requestId ? { ...req, status: newStatus } : req))
       );
-      setStatusMessage(
-        newStatus === "ACCEPTED"
-          ? "🎉 Booking accepted! Date has been reserved on your calendar."
-          : "Booking request declined."
-      );
-      setTimeout(() => setStatusMessage(null), 4000);
+      if (newStatus === "ACCEPTED") {
+        showSuccess("Booking Accepted! 🎉", "Date has been reserved on your calendar.");
+      } else {
+        showSuccess("Booking Declined", "The booking request has been declined.");
+      }
     } catch (err) {
-      alert("Failed to update status: " + err.message);
+      showError("Status Update Failed", err.message || "Failed to update booking status.");
     } finally {
       setUpdatingId(null);
     }

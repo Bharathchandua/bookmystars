@@ -1,8 +1,9 @@
 import PagesButton from "../common/PagesButton";
 import { Headphones } from "lucide-react";
+import { showSuccess } from "../../shared/utils/alert";
 
 export default function NeedHelp({ onContactSupport }) {
-  const defaultAction = () => alert("Connecting with Support team...");
+  const defaultAction = () => showSuccess("Support Requested", "Our talent support team will connect with you shortly.");
 
   return (
     <div className="ac-help-card">

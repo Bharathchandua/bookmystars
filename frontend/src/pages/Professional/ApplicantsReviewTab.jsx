@@ -8,7 +8,9 @@ import {
   Users, CheckCircle2, Clock, XCircle, Award, 
   MapPin, IndianRupee, MessageSquare, Loader2, Sparkles 
 } from "lucide-react";
-import { getMyCastingCalls, getApplicantsForCasting, updateApplicantStatus } from "../../services/api";
+import { getMyCastingCalls } from "../../features/bms/api/opportunities/opportunitiesApi";
+import { getApplicantsForCasting, updateApplicantStatus } from "../../features/bms/api/opportunities/castingApplicationsApi";
+import { showSuccess, showError } from "../../shared/utils/alert";
 
 const STATUS_FILTERS = [
   { label: "All Applicants", value: "ALL" },
@@ -75,8 +77,9 @@ export default function ApplicantsReviewTab({ initialCastingId = null }) {
       setApplicants((prev) =>
         prev.map((app) => (app.id === applicationId ? { ...app, status: newStatus } : app))
       );
+      showSuccess("Status Updated", `Applicant status changed to ${newStatus}.`);
     } catch (err) {
-      alert("Failed to update status: " + err.message);
+      showError("Update Failed", err.message || "Failed to update applicant status.");
     } finally {
       setUpdatingId(null);
     }

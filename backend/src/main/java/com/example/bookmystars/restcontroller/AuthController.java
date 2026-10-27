@@ -45,6 +45,7 @@ public class AuthController {
                 .referralSource(registeredUser.getReferralSource())
                 .termsAccepted(registeredUser.getTermsAccepted())
                 .customProfession(registeredUser.getCustomProfession())
+                .primaryProfession(registeredUser.getPrimaryProfession())
                 .build();
 
         return ResponseEntity

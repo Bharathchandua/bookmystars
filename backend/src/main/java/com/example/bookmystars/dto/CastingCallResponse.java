@@ -21,6 +21,8 @@ public class CastingCallResponse {
     private String companyName;
     private String title;
     private String projectType;
+    private String postType;
+    private String requiredLanguages;
     private ProfileType roleType;
     private String description;
     private String requirements;
@@ -29,6 +31,13 @@ public class CastingCallResponse {
     private LocalDate shootStartDate;
     private LocalDate shootEndDate;
     private LocalDate applicationDeadline;
+    private String videoUrl;
+    private String posterUrl;
+    private String customCraft;
+    private String age;
+    private String gender;
+    private String height;
+    private String weight;
     private CastingStatus status;
     private long applicantCount;
     private LocalDateTime createdAt;

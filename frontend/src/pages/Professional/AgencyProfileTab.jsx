@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from "react";
 import { Building2, Globe, Mail, Phone, MapPin, Save, Loader2, CheckCircle2, ShieldCheck } from "lucide-react";
-import { getProfessionalProfile, updateProfessionalProfile } from "../../services/api";
+import { getProfessionalProfile, updateProfessionalProfile } from "../../features/bms/api/professional/professionalApi";
 
 const AGENCY_TYPES = [
   "Casting Agency",

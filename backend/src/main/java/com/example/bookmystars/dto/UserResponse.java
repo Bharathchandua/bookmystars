@@ -25,6 +25,7 @@ public class UserResponse {
     private Gender gender;
     private String location;
     private Set<ProfileType> profileTypes;
+    private String primaryProfession;
     private String referralSource;
     private Boolean termsAccepted;
 }

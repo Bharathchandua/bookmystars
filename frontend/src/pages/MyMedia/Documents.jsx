@@ -1,7 +1,7 @@
 import PagesButton from "../common/PagesButton";
 import { useState, useEffect } from "react";
 import { FileText, MoreVertical, Plus, Trash2, Download, Eye, File, ExternalLink } from "lucide-react";
-import { getFullImageUrl } from "../../services/api";
+import { getFullImageUrl } from "../../features/bms/api/media/portfolioApi";
 
 export default function Documents({ documents, onUploadClick, onDeleteDocument }) {
   const [activeMenu, setActiveMenu] = useState(null);

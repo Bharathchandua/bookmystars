@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -11,13 +11,392 @@ import {
   Calendar,
   MapPin,
   Briefcase,
-  ShieldCheck
+  ShieldCheck,
+  Search,
+  Check,
+  Globe,
+  ChevronLeft,
+  ChevronRight,
+  Sparkles
 } from "lucide-react";
 import logo from "../../assets/logo.png";
 import CountUpModule from "react-countup";
 import Button from "../common/Button";
-import { registerUser, logoutUser } from "../../services/api";
+import { registerUser, logoutUser } from "../../features/bms/api/auth/authApi";
+import { getPublicProfessions } from "../../features/bms/api/professions/professionsApi";
+import { getPublicCrafts } from "../../features/bms/api/skills/skillsApi";
+import { getPublicLanguages } from "../../features/bms/api/languages/languagesApi";
+import { onLiveSync } from "../../shared/utils/liveSync";
 const CountUp = typeof CountUpModule === "function" ? CountUpModule : (CountUpModule.default || CountUpModule);
+
+/**
+ * Compact Single-Line Horizontal Scrolling Language Picker
+ * Avoids taking up vertical page height by providing a sleek 1-row scrollable carousel
+ * with Left/Right navigation, instant text search, auto-pinned selections, and clean active summary.
+ */
+function ScrollableLanguagePicker({
+  title,
+  icon,
+  required = false,
+  selectedList = [],
+  onChange,
+  availableLanguages = [],
+  themeColor = "#ee008f",
+  themeBg = "#fff1f8",
+  themeBorder = "#fbcfe8",
+  subtitle = "",
+  extraAction = null,
+}) {
+  const scrollRef = useRef(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
+
+  const handleScroll = (offset) => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ left: offset, behavior: "smooth" });
+    }
+  };
+
+  const filteredLanguages = useMemo(() => {
+    if (!searchQuery.trim()) {
+      // Put selected languages at front so they're instantly visible, followed by unselected
+      const selected = availableLanguages.filter((l) => selectedList.includes(l));
+      const unselected = availableLanguages.filter((l) => !selectedList.includes(l));
+      return [...selected, ...unselected];
+    }
+    return availableLanguages.filter((l) =>
+      l.toLowerCase().includes(searchQuery.toLowerCase().trim())
+    );
+  }, [availableLanguages, selectedList, searchQuery]);
+
+  const toggleLanguage = (lang) => {
+    if (selectedList.includes(lang)) {
+      onChange(selectedList.filter((l) => l !== lang));
+    } else {
+      onChange([...selectedList, lang]);
+    }
+  };
+
+  return (
+    <div className="auth-field" style={{ marginBottom: "0 !important" }}>
+      {/* Header: Title, Extra Actions, Search Toggle, Selected Count */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: "8px",
+          flexWrap: "wrap",
+          gap: "8px"
+        }}
+      >
+        <label
+          style={{
+            fontSize: "13px",
+            fontWeight: "700",
+            color: "#1e293b",
+            margin: 0,
+            display: "flex",
+            alignItems: "center",
+            gap: "6px"
+          }}
+        >
+          {icon}
+          <span>{title}</span>
+          {required && <span className="pink">*</span>}
+        </label>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          {extraAction}
+
+          {/* Quick Search Toggle */}
+          <button
+            type="button"
+            onClick={() => {
+              setShowSearch((prev) => !prev);
+              if (showSearch) setSearchQuery("");
+            }}
+            style={{
+              background: showSearch ? themeBg : "transparent",
+              border: showSearch ? `1px solid ${themeBorder}` : "none",
+              color: showSearch ? themeColor : "#64748b",
+              borderRadius: "6px",
+              padding: "3px 7px",
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "4px",
+              fontSize: "11px",
+              fontWeight: "700"
+            }}
+            title="Search languages"
+          >
+            <Search size={12} />
+            <span>{showSearch ? "Close" : "Find"}</span>
+          </button>
+
+          {/* Selected Counter */}
+          <span
+            style={{
+              fontSize: "11px",
+              fontWeight: "800",
+              color: selectedList.length > 0 ? themeColor : "#94a3b8",
+              backgroundColor: selectedList.length > 0 ? themeBg : "#f1f5f9",
+              padding: "2px 8px",
+              borderRadius: "10px",
+              border: `1px solid ${selectedList.length > 0 ? themeBorder : "#e2e8f0"}`
+            }}
+          >
+            {selectedList.length} selected
+          </span>
+
+          {selectedList.length > 0 && (
+            <button
+              type="button"
+              onClick={() => onChange([])}
+              style={{
+                background: "transparent",
+                border: "none",
+                color: "#94a3b8",
+                fontSize: "11px",
+                fontWeight: "600",
+                cursor: "pointer",
+                padding: "2px 4px"
+              }}
+              title="Clear all"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Inline Search Bar (if search opened) */}
+      {showSearch && (
+        <div style={{ marginBottom: "8px", position: "relative" }}>
+          <input
+            type="text"
+            placeholder="Type language name (e.g. Telugu, Spanish)..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            autoFocus
+            style={{
+              width: "100%",
+              padding: "7px 12px 7px 32px",
+              borderRadius: "8px",
+              border: `1.5px solid ${themeColor}`,
+              fontSize: "12px",
+              outline: "none",
+              backgroundColor: "#ffffff",
+              boxSizing: "border-box"
+            }}
+          />
+          <Search
+            size={13}
+            style={{
+              position: "absolute",
+              left: "10px",
+              top: "50%",
+              transform: "translateY(-50%)",
+              color: themeColor
+            }}
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              style={{
+                position: "absolute",
+                right: "8px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                background: "none",
+                border: "none",
+                color: "#94a3b8",
+                cursor: "pointer"
+              }}
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Single-Row Scrolling Carousel Track (takes only 44px height instead of 5 rows) */}
+      <div
+        style={{
+          position: "relative",
+          display: "flex",
+          alignItems: "center",
+          backgroundColor: "#f8fafc",
+          borderRadius: "12px",
+          border: "1px solid #e2e8f0",
+          padding: "4px 6px"
+        }}
+      >
+        {/* Left Scroll Button */}
+        <button
+          type="button"
+          onClick={() => handleScroll(-220)}
+          style={{
+            flexShrink: 0,
+            width: "28px",
+            height: "28px",
+            borderRadius: "50%",
+            border: "1px solid #e2e8f0",
+            backgroundColor: "#ffffff",
+            color: "#475569",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+            transition: "all 0.15s ease",
+            zIndex: 2
+          }}
+          title="Scroll Left"
+        >
+          <ChevronLeft size={16} />
+        </button>
+
+        {/* Horizontal Scroll Track */}
+        <div
+          ref={scrollRef}
+          style={{
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            overflowX: "auto",
+            scrollBehavior: "smooth",
+            padding: "4px 8px",
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+            WebkitOverflowScrolling: "touch",
+            whiteSpace: "nowrap"
+          }}
+        >
+          {filteredLanguages.length === 0 ? (
+            <div style={{ fontSize: "12px", color: "#94a3b8", padding: "6px 12px" }}>
+              No languages match "{searchQuery}"
+            </div>
+          ) : (
+            filteredLanguages.map((lang) => {
+              const isSel = selectedList.includes(lang);
+              return (
+                <button
+                  key={lang}
+                  type="button"
+                  onClick={() => toggleLanguage(lang)}
+                  style={{
+                    flexShrink: 0,
+                    padding: "6px 13px",
+                    borderRadius: "20px",
+                    fontSize: "12px",
+                    fontWeight: isSel ? "800" : "600",
+                    border: isSel ? `1.5px solid ${themeColor}` : "1px solid #cbd5e1",
+                    backgroundColor: isSel ? themeColor : "#ffffff",
+                    color: isSel ? "#ffffff" : "#475569",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    boxShadow: isSel ? `0 2px 6px ${themeColor}33` : "none"
+                  }}
+                >
+                  <span>{isSel ? "✓" : "+"}</span>
+                  <span>{lang}</span>
+                </button>
+              );
+            })
+          )}
+        </div>
+
+        {/* Right Scroll Button */}
+        <button
+          type="button"
+          onClick={() => handleScroll(220)}
+          style={{
+            flexShrink: 0,
+            width: "28px",
+            height: "28px",
+            borderRadius: "50%",
+            border: "1px solid #e2e8f0",
+            backgroundColor: "#ffffff",
+            color: "#475569",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+            transition: "all 0.15s ease",
+            zIndex: 2
+          }}
+          title="Scroll Right"
+        >
+          <ChevronRight size={16} />
+        </button>
+      </div>
+
+      {/* Active Selected Summary Badges */}
+      {selectedList.length > 0 && (
+        <div
+          style={{
+            marginTop: "6px",
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            fontSize: "11px",
+            color: "#64748b",
+            flexWrap: "wrap"
+          }}
+        >
+          <span style={{ fontWeight: "700", color: themeColor }}>Active:</span>
+          {selectedList.map((lang) => (
+            <span
+              key={lang}
+              style={{
+                backgroundColor: themeBg,
+                color: themeColor,
+                border: `1px solid ${themeBorder}`,
+                padding: "1px 7px",
+                borderRadius: "6px",
+                fontWeight: "700",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "3px"
+              }}
+            >
+              {lang}
+              <button
+                type="button"
+                onClick={() => toggleLanguage(lang)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: themeColor,
+                  cursor: "pointer",
+                  padding: 0,
+                  fontSize: "10px",
+                  lineHeight: 1
+                }}
+              >
+                ✕
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {subtitle && (
+        <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "4px" }}>
+          {subtitle}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function JoinFree() {
   const navigate = useNavigate();
@@ -35,13 +414,114 @@ export default function JoinFree() {
   const [gender, setGender] = useState("");
   const [location, setLocation] = useState("");
   const [selectedProfiles, setSelectedProfiles] = useState([]); // multiselect
-  const [otherProfession, setOtherProfession] = useState("");
+  const [dbCrafts, setDbCrafts] = useState([]);
+  const [rawProfessions, setRawProfessions] = useState([
+    { id: 1, name: "Actor", craftCategory: "Acting & Performance" },
+    { id: 2, name: "Director", craftCategory: "Writing & Direction" },
+    { id: 3, name: "Dancer", craftCategory: "Dance & Movement" },
+    { id: 4, name: "Singer", craftCategory: "Music & Voice" },
+    { id: 5, name: "Model", craftCategory: "Acting & Performance" },
+    { id: 6, name: "Producer", craftCategory: "Writing & Direction" },
+    { id: 7, name: "Cinematographer", craftCategory: "Technical & Camera" },
+    { id: 8, name: "Film Editor", craftCategory: "Post-Production & VFX" },
+    { id: 9, name: "Screenplay Writer", craftCategory: "Writing & Direction" },
+    { id: 10, name: "Choreographer", craftCategory: "Dance & Movement" },
+    { id: 11, name: "Stunt Performer", craftCategory: "Stunts & Action" },
+    { id: 12, name: "Voice Artist", craftCategory: "Music & Voice" }
+  ]);
+  const [selectedCraft, setSelectedCraft] = useState("Acting & Performance");
+  const [profSearch, setProfSearch] = useState("");
+  const [loadingProfessions, setLoadingProfessions] = useState(false);
+  const [languagesKnown, setLanguagesKnown] = useState(["English", "Hindi"]);
+  const [actingLanguages, setActingLanguages] = useState(["Hindi"]);
+  const [dbLanguages, setDbLanguages] = useState([]);
   const [howHeard, setHowHeard] = useState("");
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [passwordMismatch, setPasswordMismatch] = useState(false);
+
+  const CRAFT_METADATA = {
+    "Acting & Performance": { icon: "🎭", label: "Acting & Performance" },
+    "Writing & Direction": { icon: "🎬", label: "Writing & Direction" },
+    "Technical & Camera": { icon: "🎥", label: "Technical & Camera" },
+    "Cinematography & Camera": { icon: "🎥", label: "Cinematography & Camera" },
+    "Music & Voice": { icon: "🎵", label: "Music & Voice" },
+    "Music Direction & Composition": { icon: "🎼", label: "Music Direction & Composition" },
+    "Playback Singing": { icon: "🎤", label: "Playback Singing" },
+    "Voice Dubbing & Foley": { icon: "🎙️", label: "Voice Dubbing & Foley" },
+    "Dance & Movement": { icon: "💃", label: "Dance & Movement" },
+    "Choreography": { icon: "💃", label: "Choreography" },
+    "Stunts & Action": { icon: "💥", label: "Stunts & Action" },
+    "Stunt & Action Direction": { icon: "💥", label: "Stunt & Action Direction" },
+    "Post-Production & VFX": { icon: "✂️", label: "Post-Production & VFX" },
+    "Editing & Assembly": { icon: "🎞️", label: "Editing & Assembly" },
+    "Visual Effects (VFX)": { icon: "✨", label: "Visual Effects (VFX)" },
+    "Sound Recording & Design": { icon: "🎧", label: "Sound Recording & Design" },
+    "Color Grading & DI": { icon: "🎨", label: "Color Grading & DI" },
+    "Hair, Makeup & Costume": { icon: "💄", label: "Hair, Makeup & Costume" },
+    "Makeup & Prosthetics": { icon: "💄", label: "Makeup & Prosthetics" },
+    "Costume Design & Styling": { icon: "👗", label: "Costume Design & Styling" },
+    "Art & Production Design": { icon: "🏛️", label: "Art & Production Design" },
+    "Production Management": { icon: "📋", label: "Production Management" },
+    "Screenplay & Writing": { icon: "✍️", label: "Screenplay & Writing" },
+    "Direction & Filmmaking": { icon: "🎬", label: "Direction & Filmmaking" },
+    "Casting Direction": { icon: "🌟", label: "Casting Direction" },
+    "Lighting & Gaffer": { icon: "💡", label: "Lighting & Gaffer" },
+    "PR, Publicity & Promotion": { icon: "📢", label: "PR, Publicity & Promotion" },
+    "Still Photography": { icon: "📷", label: "Still Photography" },
+    "Specialized Craft": { icon: "⚡", label: "Specialized Crafts" }
+  };
+
+  const availableCrafts = useMemo(() => {
+    const list = [];
+    // 1. All crafts live in PostgreSQL (/api/crafts)
+    dbCrafts.forEach((c) => {
+      const name = (c.name || c).trim();
+      if (name && !list.includes(name)) list.push(name);
+    });
+
+    // 2. Also ensure any craft category present in rawProfessions is included
+    rawProfessions.forEach((p) => {
+      const cat = (p.craftCategory || "").trim();
+      if (cat && !list.includes(cat)) list.push(cat);
+    });
+
+    return list.length > 0 ? list : [
+      "Acting & Performance",
+      "Writing & Direction",
+      "Technical & Camera",
+      "Music & Voice",
+      "Dance & Movement",
+      "Stunts & Action",
+      "Post-Production & VFX",
+      "Hair, Makeup & Costume",
+      "Art & Production Design",
+      "Specialized Craft"
+    ];
+  }, [dbCrafts, rawProfessions]);
+
+  const displayedProfessions = useMemo(() => {
+    if (profSearch.trim()) {
+      const q = profSearch.toLowerCase();
+      return rawProfessions.filter((p) => 
+        p.name?.toLowerCase().includes(q) ||
+        (p.craftCategory && p.craftCategory.toLowerCase().includes(q))
+      );
+    }
+    return rawProfessions.filter((p) => (p.craftCategory || "General Craft") === selectedCraft);
+  }, [rawProfessions, selectedCraft, profSearch]);
+
+  const availableLanguagesList = useMemo(() => {
+    if (dbLanguages && dbLanguages.length > 0) {
+      return dbLanguages.map(l => (typeof l === "string" ? l : l.name));
+    }
+    return [
+      "Hindi", "English", "Telugu", "Tamil", "Malayalam", 
+      "Kannada", "Marathi", "Bengali", "Punjabi", "Gujarati", "Urdu"
+    ];
+  }, [dbLanguages]);
 
   // Live password validation rules (mockup requirements)
   const hasMinLength = password.length >= 8;
@@ -50,6 +530,43 @@ export default function JoinFree() {
   const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>_]/.test(password);
 
   const allRulesMet = hasMinLength && hasUppercase && hasNumber && hasSpecialChar;
+
+  // Load dynamic primary professions & crafts from PostgreSQL
+  useEffect(() => {
+    async function loadDynamicTaxonomy() {
+      try {
+        setLoadingProfessions(true);
+        const [profData, craftData, langData] = await Promise.allSettled([
+          getPublicProfessions(),
+          getPublicCrafts(),
+          getPublicLanguages()
+        ]);
+        if (profData.status === "fulfilled" && Array.isArray(profData.value) && profData.value.length > 0) {
+          setRawProfessions(profData.value);
+        }
+        if (craftData.status === "fulfilled" && Array.isArray(craftData.value) && craftData.value.length > 0) {
+          setDbCrafts(craftData.value);
+        }
+        if (langData.status === "fulfilled" && Array.isArray(langData.value) && langData.value.length > 0) {
+          setDbLanguages(langData.value);
+        }
+      } catch (err) {
+        console.warn("Could not load taxonomy from API, using fallback list:", err);
+      } finally {
+        setLoadingProfessions(false);
+      }
+    }
+
+    loadDynamicTaxonomy();
+
+    const unsubscribe = onLiveSync(["professions_updated", "crafts_updated", "skills_updated", "languages_updated"], () => {
+      loadDynamicTaxonomy();
+    });
+
+    return () => {
+      if (typeof unsubscribe === "function") unsubscribe();
+    };
+  }, []);
 
   const handleProfileToggle = (profile) => {
     if (selectedProfiles.includes(profile)) {
@@ -84,17 +601,10 @@ export default function JoinFree() {
       return;
     }
 
-    if (selectedProfiles.includes("Other") && !otherProfession.trim()) {
-      setError("Please specify your profession for 'Other'!");
-      return;
-    }
-
     setLoading(true);
     logoutUser();
     try {
-      const finalProfiles = selectedProfiles.includes("Other") && otherProfession.trim()
-        ? [otherProfession.trim()]
-        : selectedProfiles;
+      const chosenProfession = selectedProfiles[0] || "Actor";
 
       await registerUser({
         accountType,
@@ -107,8 +617,11 @@ export default function JoinFree() {
         dob,
         gender,
         location,
-        selectedProfiles: finalProfiles,
-        customProfession: otherProfession.trim(),
+        selectedProfiles,
+        primaryProfession: chosenProfession,
+        customProfession: chosenProfession,
+        languages: languagesKnown,
+        actingLanguages: actingLanguages,
         howHeard,
         agreeTerms,
       });
@@ -488,66 +1001,159 @@ export default function JoinFree() {
                 </div>
               </div>
 
-              {/* Row 6: Primary Profession (Single Select) */}
-              <div className="auth-field">
-                <label>
-                  Primary Profession <span className="pink">*</span>{" "}
-                  <span style={{ fontSize: "12px", color: "#64748b", fontWeight: "500" }}>
-                    (Choose your core craft)
-                  </span>
-                </label>
-                <div className="profile-type-container">
-                  {[
-                    "Actor",
-                    "Director",
-                    "Dancer",
-                    "Singer",
-                    "Model",
-                    "Producer",
-                    "Other"
-                  ].map((profile) => {
-                    const isSelected = selectedProfiles.includes(profile);
-                    return (
-                      <div
-                        key={profile}
-                        className={`profile-type-badge ${isSelected ? "selected" : ""}`}
-                        onClick={() => {
-                          setSelectedProfiles([profile]);
-                          if (profile !== "Other") setOtherProfession("");
-                        }}
-                      >
-                        {profile}
-                        {isSelected && (
-                          <div className="badge-check-dot">✓</div>
-                        )}
-                      </div>
-                    );
-                  })}
+              {/* Row 6: Creative Craft & Primary Profession (Clean Side-by-Side Dropdowns) */}
+              <div className="auth-grid-row-2col" style={{ marginBottom: "16px" }}>
+                {/* Dropdown 1: Craft / Department */}
+                <div className="auth-field" style={{ marginBottom: "0 !important" }}>
+                  <label htmlFor="craftSelect">
+                    Creative Craft / Department <span className="pink">*</span>
+                  </label>
+                  <div className="auth-input-wrapper">
+                    <select
+                      id="craftSelect"
+                      className="auth-select"
+                      value={selectedCraft}
+                      onChange={(e) => {
+                        const newCraft = e.target.value;
+                        setSelectedCraft(newCraft);
+                        // Filter professions for this craft
+                        const profs = rawProfessions.filter(p => (p.craftCategory || "General Craft") === newCraft);
+                        if (profs.length > 0) {
+                          setSelectedProfiles([profs[0].name]);
+                        } else {
+                          setSelectedProfiles([]);
+                        }
+                      }}
+                      required
+                    >
+                      <option value="" disabled>-- Select Your Craft --</option>
+                      {availableCrafts.map((craft) => {
+                        const meta = CRAFT_METADATA[craft] || { icon: "🎬" };
+                        const count = rawProfessions.filter(p => (p.craftCategory || "General Craft") === craft).length;
+                        return (
+                          <option key={craft} value={craft}>
+                            {meta.icon} {craft} ({count} roles)
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
                 </div>
 
-                {/* Dynamic input for "Other" profession */}
-                {selectedProfiles.includes("Other") && (
-                  <div style={{ marginTop: "10px" }}>
-                    <input
-                      type="text"
-                      className="auth-input"
-                      placeholder="Specify your craft/profession (e.g. Cinematographer, Editor, Lyricist)"
-                      value={otherProfession}
-                      onChange={(e) => setOtherProfession(e.target.value)}
-                      style={{ paddingLeft: "14px", height: "42px", fontSize: "13px" }}
+                {/* Dropdown 2: Specific Profession */}
+                <div className="auth-field" style={{ marginBottom: "0 !important" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <label htmlFor="professionSelect" style={{ margin: 0 }}>
+                      Primary Profession / Role <span className="pink">*</span>
+                    </label>
+                    {loadingProfessions && (
+                      <span style={{ fontSize: "11px", color: "#94a3b8" }}>Syncing...</span>
+                    )}
+                  </div>
+                  <div className="auth-input-wrapper">
+                    <select
+                      id="professionSelect"
+                      className="auth-select"
+                      value={selectedProfiles[0] || ""}
+                      onChange={(e) => setSelectedProfiles([e.target.value])}
+                      disabled={!selectedCraft}
                       required
-                    />
+                    >
+                      <option value="" disabled>
+                        {selectedCraft ? `-- Select your role in ${selectedCraft} --` : "-- Choose Craft first --"}
+                      </option>
+                      {(() => {
+                        const craftRoles = rawProfessions.filter(p => (p.craftCategory || "General Craft") === selectedCraft);
+                        if (craftRoles.length === 0) {
+                          return (
+                            <option value={`${selectedCraft} Specialist`}>
+                              {selectedCraft} Specialist (General)
+                            </option>
+                          );
+                        }
+                        return craftRoles.map((prof) => (
+                          <option key={prof.id || prof.name} value={prof.name}>
+                            {prof.name}
+                          </option>
+                        ));
+                      })()}
+                    </select>
                   </div>
-                )}
+                </div>
+              </div>
 
-                <p style={{ fontSize: "12px", color: "#64748b", marginTop: "6px", marginBottom: "4px" }}>
-                  💡 <em>You can add extra specialized skills (like Comedy, Dancing, Singing) after logging in using the <strong>[+ Add Skill]</strong> button!</em>
-                </p>
-                {accountType === "professional" && (
-                  <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", padding: "8px 12px", borderRadius: "6px", fontSize: "12px", color: "#1e40af", marginTop: "6px" }}>
-                    ⚠️ <strong>Note for Professionals:</strong> 1+ years of verified industry experience with completed work is required. If not updated upon login, your account will be automatically set to Talent.
-                  </div>
-                )}
+              {/* Subtle Selected Role Confirmation */}
+              {selectedProfiles[0] && (
+                <div style={{ marginTop: "-6px", marginBottom: "18px", display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", color: "#64748b" }}>
+                  <span>Selected Role:</span>
+                  <span style={{ fontWeight: "800", color: "#ee008f", backgroundColor: "#fff1f8", padding: "3px 10px", borderRadius: "8px", border: "1px solid #fbcfe8", display: "inline-flex", alignItems: "center", gap: "5px" }}>
+                    <Check size={12} />
+                    <span>{selectedProfiles[0]}</span>
+                    <span style={{ color: "#94a3b8", fontWeight: "600" }}>({selectedCraft})</span>
+                  </span>
+                </div>
+              )}
+
+              {accountType === "professional" && (
+                <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", padding: "8px 12px", borderRadius: "8px", fontSize: "12px", color: "#1e40af", marginBottom: "16px" }}>
+                  ⚠️ <strong>Note for Professionals:</strong> 1+ years of verified industry experience with completed work is required. If not updated upon login, your account will be automatically set to Talent.
+                </div>
+              )}
+
+              {/* Languages Known & Performance Languages Selection (Compact 1-Line Horizontal Scrolling) */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginBottom: "20px" }}>
+                {/* 1. Languages Known (Conversational) */}
+                <ScrollableLanguagePicker
+                  title="Languages Known (Conversational)"
+                  icon={<Globe size={15} color="#ee008f" />}
+                  required={true}
+                  selectedList={languagesKnown}
+                  onChange={setLanguagesKnown}
+                  availableLanguages={availableLanguagesList}
+                  themeColor="#ee008f"
+                  themeBg="#fff1f8"
+                  themeBorder="#fbcfe8"
+                  subtitle="Scroll horizontally or click arrows to explore all cinema languages."
+                />
+
+                {/* 2. Performance / Acting Languages */}
+                <ScrollableLanguagePicker
+                  title="Performance / Acting Languages (Dialogues & Auditions)"
+                  icon={<span style={{ fontSize: "14px" }}>🎭</span>}
+                  required={false}
+                  selectedList={actingLanguages}
+                  onChange={setActingLanguages}
+                  availableLanguages={availableLanguagesList}
+                  themeColor="#7c3aed"
+                  themeBg="#faf5ff"
+                  themeBorder="#e9d5ff"
+                  subtitle="Choose the languages in which you can fluently act, deliver monologues, dub, or sing."
+                  extraAction={
+                    languagesKnown.length > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => setActingLanguages([...languagesKnown])}
+                        style={{
+                          backgroundColor: "#f5f3ff",
+                          border: "1px solid #ddd6fe",
+                          color: "#7c3aed",
+                          padding: "2px 8px",
+                          borderRadius: "6px",
+                          fontSize: "11px",
+                          fontWeight: "700",
+                          cursor: "pointer",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "3px"
+                        }}
+                        title="Copy selected conversational languages into acting languages"
+                      >
+                        <Sparkles size={11} />
+                        <span>Same as Conversational</span>
+                      </button>
+                    ) : null
+                  }
+                />
               </div>
 
               {/* Row 7: How did you hear about us? */}

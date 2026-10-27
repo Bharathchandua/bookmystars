@@ -8,7 +8,8 @@ import {
   X, Calendar, IndianRupee, MapPin, Send, Loader2, 
   CheckCircle2, Sparkles, Building2, Clock 
 } from "lucide-react";
-import { createBookingRequest, getFullImageUrl } from "../../services/api";
+import { createBookingRequest } from "../../features/bms/api/bookings/bookingsApi";
+import { getFullImageUrl } from "../../features/bms/api/media/portfolioApi";
 
 const PROJECT_TYPES = [
   "Commercial Campaign",

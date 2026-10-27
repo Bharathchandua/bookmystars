@@ -18,7 +18,7 @@ import {
 import PagesButton from "../common/PagesButton";
 import TalentWorkModal from "./TalentWorkModal";
 import BookingRequestModal from "./BookingRequestModal";
-import { getFullImageUrl } from "../../services/api";
+import { getFullImageUrl } from "../../features/bms/api/media/portfolioApi";
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",

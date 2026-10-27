@@ -1161,10 +1161,6 @@
   cursor: pointer !important;
   transition: all 0.2s ease !important;
   box-shadow: 0 4px 10px rgba(238, 0, 143, 0.1) !important;
-  position: absolute !important;
-  top: 14px !important;
-  right: 32px !important;
-  z-index: 10 !important;
 }
 
 .btn-link-db-premium:hover {
@@ -1173,8 +1169,6 @@
 
 @media (max-width: 576px) {
   .btn-link-db-premium {
-    top: 10px !important;
-    right: 12px !important;
     padding: 4px 8px !important;
     font-size: 9.5px !important;
     gap: 3px !important;
@@ -1214,9 +1208,8 @@
 
 @media (min-width: 1200px) {
   .db-stats-container-box {
-    margin-top: -220px !important;
-    max-width: 700px !important;
-    margin-left: auto !important;
+    margin-top: 0 !important;
+    width: 100% !important;
   }
 }
 
@@ -1230,6 +1223,14 @@
   justify-content: space-between !important;
   height: 120px !important;
   text-align: left !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.db-stat-item-card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06) !important;
+  border-color: #cbd5e1 !important;
 }
 
 .db-stat-top-row {
@@ -1347,8 +1348,9 @@
 
 @media (min-width: 1200px) {
   .db-quick-actions-container-box {
-    max-width: 700px !important;
-    margin-left: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
   }
 }
 
@@ -2608,5 +2610,31 @@
   background: #fff5fa !important;
   color: #ee008f !important;
   border-color: #ffd6ec !important;
+}
+
+/* 3-Section Redesigned Dashboard Profile Header */
+.db-profile-three-col-grid {
+  display: grid;
+  grid-template-columns: 395px 1fr 220px;
+  gap: 22px;
+  align-items: stretch;
+}
+
+@media (max-width: 1200px) {
+  .db-profile-three-col-grid {
+    grid-template-columns: 1fr 220px;
+  }
+}
+
+@media (max-width: 900px) {
+  .db-profile-three-col-grid {
+    grid-template-columns: 1fr;
+  }
+  .db-profile-col-divider {
+    border-right: none !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+    padding-right: 0 !important;
+    padding-bottom: 18px !important;
+  }
 }
 

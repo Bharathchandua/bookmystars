@@ -57,6 +57,28 @@ export default function WhyChooseUs() {
     "Lifestyle & Wellness",
   ];
 
+  const scrollToRegistration = (catEnum = null) => {
+    if (catEnum) {
+      window.dispatchEvent(new CustomEvent("bms_select_partner_category", { detail: catEnum }));
+    }
+    const el = document.getElementById("partner-registration-section");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
+  const handleCategoryClick = (category) => {
+    setActiveCategory(category);
+    let catEnum = "OTHER";
+    const lower = category.toLowerCase();
+    if (lower.includes("dance")) catEnum = "DANCE_ACADEMY";
+    else if (lower.includes("acting") || lower.includes("art")) catEnum = "ACTING_ACADEMY";
+    else if (lower.includes("music") || lower.includes("media") || lower.includes("podcast")) catEnum = "MUSIC_STUDIO";
+    else if (lower.includes("model") || lower.includes("fashion") || lower.includes("makeover")) catEnum = "MODELING_AGENCY";
+    else if (lower.includes("production") || lower.includes("film") || lower.includes("photo")) catEnum = "PRODUCTION_HOUSE";
+    scrollToRegistration(catEnum);
+  };
+
   return (
     <section className="agency-split-wrapper agency-section-padding">
       <div className="split-container">
@@ -79,10 +101,11 @@ export default function WhyChooseUs() {
               variant="list-agency"
               icon={<Building2 size={20} />}
               iconPosition="left"
+              onClick={() => scrollToRegistration()}
             >
               List Your Agency
             </Button>
-            <span className="btn-subtext">It's free and takes less than 5 minutes!</span>
+            <span className="btn-subtext">It's free and takes less than 2 minutes!</span>
           </div>
         </div>
 
@@ -94,7 +117,7 @@ export default function WhyChooseUs() {
               <Button
                 key={category}
                 className={`category-tag ${activeCategory === category ? "active" : ""}`}
-                onClick={() => setActiveCategory(category)}
+                onClick={() => handleCategoryClick(category)}
               >
                 {category}
               </Button>

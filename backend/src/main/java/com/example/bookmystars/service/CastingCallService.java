@@ -11,9 +11,17 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -23,14 +31,35 @@ public class CastingCallService {
     private final CastingApplicationRepository castingApplicationRepository;
     private final ProfessionalProfileRepository professionalProfileRepository;
     private final UserRepository userRepository;
+    private final Path oppUploadDirectory = Paths.get("uploads/opportunities");
+
+    public String uploadOpportunityMedia(Authentication authentication, MultipartFile file) throws IOException {
+        User user = getAuthenticatedUser(authentication);
+        if (file == null || file.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File is required");
+        }
+        Files.createDirectories(oppUploadDirectory);
+        String originalFileName = file.getOriginalFilename();
+        String fileExtension = "";
+        if (originalFileName != null && originalFileName.contains(".")) {
+            fileExtension = originalFileName.substring(originalFileName.lastIndexOf("."));
+        }
+        String fileName = "opp_" + user.getId() + "_" + UUID.randomUUID().toString().substring(0, 8) + fileExtension;
+        Path filePath = oppUploadDirectory.resolve(fileName);
+        Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+        return "/uploads/opportunities/" + fileName;
+    }
 
     public CastingCallResponse createCastingCall(Authentication authentication, CastingCallRequest request) {
         User user = getAuthenticatedUser(authentication);
+        validateCastingCallRequest(request);
 
         CastingCall castingCall = CastingCall.builder()
                 .postedBy(user)
                 .title(request.getTitle())
                 .projectType(request.getProjectType())
+                .postType(request.getPostType() != null && !request.getPostType().isBlank() ? request.getPostType().trim() : (request.getRoleType() != null ? request.getRoleType().name() : "ACTING"))
+                .requiredLanguages(request.getRequiredLanguages() != null ? request.getRequiredLanguages().trim() : null)
                 .roleType(request.getRoleType())
                 .description(request.getDescription())
                 .requirements(request.getRequirements())
@@ -39,7 +68,14 @@ public class CastingCallService {
                 .shootStartDate(request.getShootStartDate())
                 .shootEndDate(request.getShootEndDate())
                 .applicationDeadline(request.getApplicationDeadline())
-                .status(request.getStatus() != null ? request.getStatus() : CastingStatus.OPEN)
+                .videoUrl(request.getVideoUrl())
+                .posterUrl(request.getPosterUrl())
+                .customCraft(request.getCustomCraft())
+                .age(request.getAge())
+                .gender(request.getGender())
+                .height(request.getHeight())
+                .weight(request.getWeight())
+                .status(request.getStatus() != null && request.getStatus() != CastingStatus.OPEN ? request.getStatus() : CastingStatus.IN_REVIEW)
                 .build();
 
         CastingCall saved = castingCallRepository.save(castingCall);
@@ -82,8 +118,16 @@ public class CastingCallService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only update your own casting calls");
         }
 
+        validateCastingCallRequest(request);
+
         call.setTitle(request.getTitle());
         call.setProjectType(request.getProjectType());
+        if (request.getPostType() != null) {
+            call.setPostType(request.getPostType().trim());
+        }
+        if (request.getRequiredLanguages() != null) {
+            call.setRequiredLanguages(request.getRequiredLanguages().trim());
+        }
         call.setRoleType(request.getRoleType());
         call.setDescription(request.getDescription());
         call.setRequirements(request.getRequirements());
@@ -92,6 +136,27 @@ public class CastingCallService {
         call.setShootStartDate(request.getShootStartDate());
         call.setShootEndDate(request.getShootEndDate());
         call.setApplicationDeadline(request.getApplicationDeadline());
+        if (request.getVideoUrl() != null) {
+            call.setVideoUrl(request.getVideoUrl());
+        }
+        if (request.getPosterUrl() != null) {
+            call.setPosterUrl(request.getPosterUrl());
+        }
+        if (request.getCustomCraft() != null) {
+            call.setCustomCraft(request.getCustomCraft());
+        }
+        if (request.getAge() != null) {
+            call.setAge(request.getAge());
+        }
+        if (request.getGender() != null) {
+            call.setGender(request.getGender());
+        }
+        if (request.getHeight() != null) {
+            call.setHeight(request.getHeight());
+        }
+        if (request.getWeight() != null) {
+            call.setWeight(request.getWeight());
+        }
         if (request.getStatus() != null) {
             call.setStatus(request.getStatus());
         }
@@ -100,6 +165,7 @@ public class CastingCallService {
         return mapToResponse(updated);
     }
 
+    @Transactional
     public void deleteCastingCall(Authentication authentication, Long id) {
         User user = getAuthenticatedUser(authentication);
         CastingCall call = castingCallRepository.findById(id)
@@ -109,6 +175,7 @@ public class CastingCallService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only delete your own casting calls");
         }
 
+        castingApplicationRepository.deleteByCastingCallId(call.getId());
         castingCallRepository.delete(call);
     }
 
@@ -133,6 +200,8 @@ public class CastingCallService {
                 .companyName(companyName)
                 .title(call.getTitle())
                 .projectType(call.getProjectType())
+                .postType(call.getPostType() != null ? call.getPostType() : (call.getRoleType() != null ? call.getRoleType().name() : "ACTING"))
+                .requiredLanguages(call.getRequiredLanguages())
                 .roleType(call.getRoleType())
                 .description(call.getDescription())
                 .requirements(call.getRequirements())
@@ -141,10 +210,38 @@ public class CastingCallService {
                 .shootStartDate(call.getShootStartDate())
                 .shootEndDate(call.getShootEndDate())
                 .applicationDeadline(call.getApplicationDeadline())
+                .videoUrl(call.getVideoUrl())
+                .posterUrl(call.getPosterUrl())
+                .customCraft(call.getCustomCraft())
+                .age(call.getAge())
+                .gender(call.getGender())
+                .height(call.getHeight())
+                .weight(call.getWeight())
                 .status(call.getStatus())
                 .applicantCount(applicantCount)
                 .createdAt(call.getCreatedAt())
                 .updatedAt(call.getUpdatedAt())
                 .build();
+    }
+
+    private void validateCastingCallRequest(CastingCallRequest request) {
+        if (request == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Casting call request payload cannot be empty");
+        }
+        if (request.getTitle() == null || request.getTitle().trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Project or film title is required");
+        }
+        if (request.getRoleType() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Talent / craft role type is required");
+        }
+        if (request.getRoleType() == ProfileType.OTHER && (request.getCustomCraft() == null || request.getCustomCraft().trim().isEmpty())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Specific craft / role name is required when role type is OTHER");
+        }
+        if (request.getAge() == null || request.getAge().trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Age requirement is mandatory (e.g. 20-30 or 25 years)");
+        }
+        if (request.getGender() == null || request.getGender().trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Gender requirement is mandatory (e.g. Any, Male, Female)");
+        }
     }
 }

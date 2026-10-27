@@ -34,6 +34,12 @@ public class Profile {
     // Professional information
     private String languages;
 
+    @Column(name = "acting_languages")
+    private String actingLanguages;
+
+    @Column(name = "talent_category", length = 80)
+    private String talentCategory;
+
     private String workType;
 
     private String dayRate;
@@ -70,6 +76,10 @@ public class Profile {
 
     // Custom profession when ProfileType is OTHER
     private String customProfession;
+
+    // Primary profession from master catalog
+    @Column(name = "primary_profession", length = 120)
+    private String primaryProfession;
 
     // Specialized skills added by the user (stored in database)
     @ElementCollection(fetch = FetchType.EAGER)

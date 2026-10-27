@@ -44,3 +44,11 @@ dist/
 uploads/
 **/uploads/
 
+### Archive & Local Temporary Files ###
+*.zip
+*.tar.gz
+*.rar
+context.md
+fix_roles.sql
+
+

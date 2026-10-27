@@ -12,7 +12,7 @@ import React, { useState } from "react";
 import About from "./About.jsx";
 import PortfolioHighlights from "./PortfolioHighlights.jsx";
 import { Star, Play, Briefcase, Video, X, ExternalLink, Film } from "lucide-react";
-import { getFullImageUrl } from "../../services/api";
+import { getFullImageUrl } from "../../features/bms/api/media/portfolioApi";
 
 function getVideoThumbnail(v) {
   if (!v) return null;

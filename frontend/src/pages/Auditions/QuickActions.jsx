@@ -1,7 +1,10 @@
 import PagesButton from "../common/PagesButton";
 import { Search, Star, Upload, CalendarDays, Sparkles } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function QuickActions({ onUploadMedia, onAvailabilityCalendar }) {
+  const navigate = useNavigate();
+
   return (
     <div className="ac-sidebar-card">
       <div className="ac-sidebar-header" style={{ marginBottom: '12px' }}>
@@ -9,7 +12,7 @@ export default function QuickActions({ onUploadMedia, onAvailabilityCalendar }) 
       </div>
 
       <div className="ac-quick-list">
-        <PagesButton className="ac-quick-item">
+        <PagesButton className="ac-quick-item" onClick={() => navigate("/opportunities")}>
           <div className="ac-quick-icon-wrapper">
             <Search size={14} />
           </div>
@@ -19,7 +22,7 @@ export default function QuickActions({ onUploadMedia, onAvailabilityCalendar }) 
           </div>
         </PagesButton>
 
-        <PagesButton className="ac-quick-item">
+        <PagesButton className="ac-quick-item" onClick={() => navigate("/profile")}>
           <div className="ac-quick-icon-wrapper">
             <Star size={14} />
           </div>
@@ -49,7 +52,7 @@ export default function QuickActions({ onUploadMedia, onAvailabilityCalendar }) 
           </div>
         </PagesButton>
 
-        <PagesButton className="ac-quick-item">
+        <PagesButton className="ac-quick-item" onClick={() => navigate("/contacts")}>
           <div className="ac-quick-icon-wrapper">
             <Sparkles size={14} />
           </div>

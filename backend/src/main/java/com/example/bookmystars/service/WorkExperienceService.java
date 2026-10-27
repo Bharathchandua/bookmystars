@@ -65,6 +65,16 @@ public class WorkExperienceService {
                 .orElseThrow(() ->
                         new RuntimeException("User not found"));
 
+        if (request == null) {
+            throw new RuntimeException("Work experience details are required");
+        }
+        if (request.getCompany() == null || request.getCompany().trim().isEmpty()) {
+            throw new RuntimeException("Company or production banner is required");
+        }
+        if (request.getTitle() == null || request.getTitle().trim().isEmpty()) {
+            throw new RuntimeException("Project or role title is required");
+        }
+
         WorkExperience workExperience = WorkExperience.builder()
                 .user(user)
                 .company(request.getCompany())
@@ -120,6 +130,16 @@ public class WorkExperienceService {
 
             throw new RuntimeException(
                 "You are not allowed to update this work experience");
+        }
+
+        if (request == null) {
+            throw new RuntimeException("Work experience details are required");
+        }
+        if (request.getCompany() == null || request.getCompany().trim().isEmpty()) {
+            throw new RuntimeException("Company or production banner is required");
+        }
+        if (request.getTitle() == null || request.getTitle().trim().isEmpty()) {
+            throw new RuntimeException("Project or role title is required");
         }
 
         workExperience.setCompany(request.getCompany());

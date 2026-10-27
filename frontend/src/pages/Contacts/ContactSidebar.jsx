@@ -30,7 +30,7 @@ export default function ContactSidebar({
         <div className="quick-actions-list">
           <PagesButton
             className="quick-action-row"
-            onClick={() => onSendMessageClick ? onSendMessageClick(contact) : navigate("/messages")}
+            onClick={() => onSendMessageClick ? onSendMessageClick(contact) : navigate("/messages", { state: { targetUser: contact } })}
           >
             <div className="quick-action-icon-wrapper">
               <MessageSquare size={16} />

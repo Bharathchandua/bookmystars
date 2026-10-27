@@ -46,7 +46,7 @@ public class ProfessionalDashboardController {
     @GetMapping("/talents")
     @Operation(summary = "Discover talents with 3-day availability schedule and filter by talent type")
     public ResponseEntity<List<TalentSummaryResponse>> getTalents(
-            @RequestParam(value = "type", required = false) ProfileType type,
+            @RequestParam(value = "type", required = false) String type,
             @RequestParam(value = "query", required = false) String query) {
 
         return ResponseEntity.ok(talentDirectoryService.getTalents(type, query));

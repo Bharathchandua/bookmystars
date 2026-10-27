@@ -23,20 +23,20 @@ import {
   Briefcase
 } from "lucide-react";
 import logo from "../../assets/logo.png";
-import { getStoredUser } from "../../services/api";
+import { getStoredUser } from "../../features/bms/api/auth/authApi";
 
 export default function Sidebar({ isOpen, isPinned, onToggle, onHoverOpen, onHoverClose, activeTab, setActiveTab }) {
   const location = useLocation();
   const navigate  = useNavigate();
   const storedUser = getStoredUser();
 
-  const isPro = storedUser?.accountType === "PROFESSIONAL";
+  const isPro = (storedUser?.accountType || "").toUpperCase() === "PROFESSIONAL";
 
   const proMenuItems = [
     { id: "pro-dashboard", label: "Talent Discovery",  icon: Briefcase,       path: "/professional/dashboard" },
     { id: "messages",      label: "Messages",          icon: MessageSquare,   path: "/messages" },
     { id: "contacts",      label: "Contacts",          icon: Users,           path: "/contacts" },
-    { id: "settings",      label: "Settings",          icon: Settings,        path: "/settings" },
+    { id: "settings",      label: "Settings",          icon: Settings,        path: "/profile?tab=overview" },
   ];
 
   const talentMenuItems = [
@@ -48,11 +48,12 @@ export default function Sidebar({ isOpen, isPinned, onToggle, onHoverOpen, onHov
     { id: "bookings",     label: "Bookings",            icon: CalendarDays,    path: "/bookings" },
     { id: "calendar",     label: "Calendar",            icon: Calendar,        path: "/calendar" },
     { id: "messages",     label: "Messages",            icon: MessageSquare,   path: "/messages" },
-    { id: "contacts",     label: "Contacts",            icon: Users,           path: "/contacts" },
-    { id: "analytics",    label: "Analytics",           icon: BarChart2,       path: "/analytics" },
-    { id: "earnings",     label: "Earnings",            icon: DollarSign,      path: "/earnings" },
-    { id: "reviews",      label: "Reviews",             icon: Star,            path: "/reviews" },
-    { id: "settings",     label: "Settings",            icon: Settings,        path: "/settings" },
+    { id: "talents",      label: "Talent Search",       icon: Users,           path: "/talents" },
+    { id: "contacts",     label: "Contacts",           icon: Users,           path: "/contacts" },
+    { id: "analytics",    label: "Analytics",           icon: BarChart2,       path: "/dashboard" },
+    { id: "earnings",     label: "Earnings",            icon: DollarSign,      path: "/profile?tab=rates" },
+    { id: "reviews",      label: "Reviews",             icon: Star,            path: "/profile?tab=reviews" },
+    { id: "settings",     label: "Settings",            icon: Settings,        path: "/profile?tab=overview" },
   ];
 
   const menuItems = isPro ? proMenuItems : talentMenuItems;

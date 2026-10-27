@@ -2,6 +2,7 @@ package com.example.bookmystars.service;
 
 import com.example.bookmystars.dto.LoginRequest;
 import com.example.bookmystars.dto.LoginResponse;
+import com.example.bookmystars.model.AccountType;
 import com.example.bookmystars.model.Profile;
 import com.example.bookmystars.model.User;
 import com.example.bookmystars.repository.ProfileRepository;
@@ -34,6 +35,18 @@ public class LoginService {
                 user.getPassword())) {
 
             throw new BadCredentialsException("Invalid email or password");
+        }
+
+        // 2b. Partner & Client Verification Gatekeeper: must be approved by Super Admin before login
+        if (user.getAccountType() == AccountType.PARTNER || user.getAccountType() == AccountType.CLIENT) {
+            String roleName = user.getAccountType() == AccountType.CLIENT ? "Client Brand" : "Partner Academy";
+            if ("REJECTED".equalsIgnoreCase(user.getVerificationStatus())) {
+                String reason = user.getRejectionReason() != null ? user.getRejectionReason() : "Application does not meet platform criteria";
+                throw new BadCredentialsException(roleName + " registration was rejected by Super Admin. Reason: " + reason);
+            }
+            if (Boolean.FALSE.equals(user.getIsApproved()) || "PENDING".equalsIgnoreCase(user.getVerificationStatus())) {
+                throw new BadCredentialsException("Your " + roleName + " account is pending Super Admin verification. You will be able to log in once your company details and requirements are approved.");
+            }
         }
 
         // 3. Generate JWT

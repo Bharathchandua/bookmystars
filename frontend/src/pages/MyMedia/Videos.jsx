@@ -1,6 +1,7 @@
 import PagesButton from "../common/PagesButton";
 import { useState } from "react";
 import { Play, MoreVertical, Trash2, Download, Plus } from "lucide-react";
+import { confirmDelete } from "../../shared/utils/alert";
 
 function getYoutubeThumb(url) {
   if (!url) return "";
@@ -100,7 +101,13 @@ export default function Videos({ videos, onUploadClick, onDeleteVideo }) {
                     )}
                     <PagesButton
                       style={{ background: "none", border: "none", padding: "6px 10px", fontSize: 12, fontWeight: 600, color: "#ef4444", borderRadius: 5, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}
-                      onClick={() => { if(window.confirm("Delete this video?")) { onDeleteVideo(vid.id); setActiveMenu(null); } }}
+                      onClick={async () => {
+                        const confirmed = await confirmDelete(vid.title || "this video");
+                        if (confirmed) {
+                          onDeleteVideo(vid.id);
+                          setActiveMenu(null);
+                        }
+                      }}
                     >
                       <Trash2 size={13} /> Delete
                     </PagesButton>

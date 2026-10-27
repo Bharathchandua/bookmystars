@@ -1,5 +1,6 @@
 import PagesButton from "../common/PagesButton";
 import { useState, useRef, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import AppLayout from "../Layout/AppLayout.jsx";
 import About from "./About.jsx";
 import OverviewTab from "./OverviewTab.jsx";
@@ -15,7 +16,9 @@ import {
   Star, Play, CheckCircle2,
   FolderOpen, Users, BarChart2, Bookmark,
   Camera, Edit3, X, Plus, Crop, ExternalLink,
-  Lock, Trash2, Paperclip, Clock, FolderPlus
+  Lock, Trash2, Paperclip, Clock, FolderPlus,
+  ChevronRight, ChevronDown, Zap, FileText, Settings, User, MessageSquare,
+  Film
 } from "lucide-react";
 import SkillManagementModal from "../../components/common/SkillManagementModal.jsx";
 import {
@@ -39,7 +42,7 @@ import {
   updateWorkExperience,
   deleteWorkExperience,
   uploadWorkExperienceFile
-} from "../../services/api";
+} from "../../features/bms/api";
 import {
   showSuccess,
   showError,
@@ -251,7 +254,7 @@ function EditProfileModal({ isOpen, onClose, profile, onSave }) {
               />
             </div>
             <div>
-              <label style={{ fontSize: "12px", fontWeight: "600", color: "#334155", display: "block", marginBottom: "4px" }}>Languages</label>
+              <label style={{ fontSize: "12px", fontWeight: "600", color: "#334155", display: "block", marginBottom: "4px" }}>Languages Spoken</label>
               <input
                 type="text"
                 placeholder="e.g. English, Hindi, Telugu"
@@ -263,6 +266,16 @@ function EditProfileModal({ isOpen, onClose, profile, onSave }) {
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+            <div>
+              <label style={{ fontSize: "12px", fontWeight: "600", color: "#7c3aed", display: "block", marginBottom: "4px" }}>Performance / Acting Languages</label>
+              <input
+                type="text"
+                placeholder="e.g. Hindi, Telugu, Tamil (acting)"
+                value={form.actingLanguages || ""}
+                onChange={(e) => setForm({ ...form, actingLanguages: e.target.value })}
+                style={{ width: "100%", padding: "8px 12px", border: "1.5px solid #c4b5fd", borderRadius: "8px", fontSize: "13px" }}
+              />
+            </div>
             <div>
               <label style={{ fontSize: "12px", fontWeight: "600", color: "#334155", display: "block", marginBottom: "4px" }}>Work Type</label>
               <input
@@ -430,12 +443,14 @@ function SkillWorksModal({ skill, isOpen, initialAdd = false, onClose, experienc
   };
 
   const handleDelete = async (id, title) => {
-    if (!window.confirm(`Are you sure you want to delete "${title || 'this project'}"?`)) return;
+    const confirmed = await confirmDelete(title || 'this project', "Are you sure you want to delete this project? This action cannot be undone.");
+    if (!confirmed) return;
     try {
       await deleteWorkExperience(id);
       await onWorkUpdated();
+      showSuccess("Deleted!", "Work experience deleted successfully.");
     } catch (err) {
-      alert("Failed to delete work: " + (err.message || ""));
+      showError("Delete Failed", err.message || "Failed to delete work");
     }
   };
 
@@ -464,9 +479,10 @@ function SkillWorksModal({ skill, isOpen, initialAdd = false, onClose, experienc
       });
 
       await onWorkUpdated();
+      showSuccess("Work Updated!", `"${formTitle.trim()}" has been updated.`);
       cancelForm();
     } catch (err) {
-      alert("Failed to update work: " + (err.message || ""));
+      showError("Update Failed", err.message || "Failed to update work");
     } finally {
       setSubmitting(false);
     }
@@ -496,9 +512,10 @@ function SkillWorksModal({ skill, isOpen, initialAdd = false, onClose, experienc
       });
 
       await onWorkUpdated();
+      showSuccess("Work Added!", `"${formTitle.trim()}" has been added to your experience.`);
       cancelForm();
     } catch (err) {
-      alert("Failed to add work: " + (err.message || ""));
+      showError("Add Failed", err.message || "Failed to add work");
     } finally {
       setSubmitting(false);
     }
@@ -906,7 +923,22 @@ function SkillWorksModal({ skill, isOpen, initialAdd = false, onClose, experienc
 
 export default function Profile() {
   const storedUser = getStoredUser();
-  const [activeTab, setActiveTab] = useState("overview");
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const requestedTab = (searchParams.get("tab") || location.state?.tab || "").toLowerCase();
+  
+  const VALID_TABS = ["overview", "portfolio", "work-experience", "measurements", "videos", "reviews", "availability", "rates"];
+  const initialActive = VALID_TABS.includes(requestedTab) ? requestedTab : "overview";
+
+  const [activeTab, setActiveTab] = useState(initialActive);
+
+  // Sync tab if query parameter changes dynamically
+  useEffect(() => {
+    const qTab = (new URLSearchParams(location.search).get("tab") || location.state?.tab || "").toLowerCase();
+    if (qTab && VALID_TABS.includes(qTab)) {
+      setActiveTab(qTab);
+    }
+  }, [location.search, location.state]);
   const [liked, setLiked] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -920,20 +952,28 @@ export default function Profile() {
   const fileInputRef = useRef(null);
   const moreMenuRef = useRef(null);
 
+  const rawStoredTypes = storedUser?.profileTypes ? Array.from(storedUser.profileTypes) : [];
+  const initialStoredType = rawStoredTypes.length > 0 ? String(rawStoredTypes[0]).toUpperCase() : "";
+  const isInitialOther = initialStoredType === "OTHER";
+  const initialCustom = isInitialOther ? (storedUser?.customProfession || localStorage.getItem(`bms_custom_profession_${(storedUser?.email || "").toLowerCase()}`) || "") : "";
+  const initialRole = isInitialOther ? (initialCustom || "Other") : (initialStoredType ? (initialStoredType.charAt(0) + initialStoredType.slice(1).toLowerCase()) : "Actor");
+
   // Profile data state
   const [profile, setProfile] = useState({
     fullName: storedUser?.fullName || "Your Name",
     stageName: "",
-    role: "Talent",
+    role: initialRole,
+    customProfession: initialCustom,
     location: "Location not set",
     dob: "",
     languages: "English, Hindi",
+    actingLanguages: "Hindi",
     workType: "Freelance Talent",
     rate: "Flexible / Negotiable",
     rateNote: "Price range varies by project",
     about: "Click 'Edit Profile' to add your bio and tell the industry about yourself.",
     profilePhoto: localStorage.getItem("bms_profile_photo") ? getFullImageUrl(localStorage.getItem("bms_profile_photo")) : null,
-    profileTypes: [],
+    profileTypes: initialStoredType ? [initialStoredType] : [],
     memberSince: new Date().getFullYear().toString(),
     stats: [
       { value: "0", label: "Projects Completed" },
@@ -945,6 +985,8 @@ export default function Profile() {
 
   const [skills, setSkills] = useState([]);
   const [showSkillModal, setShowSkillModal] = useState(false);
+  const [showAllSkillsModal, setShowAllSkillsModal] = useState(false);
+  const [isBioExpanded, setIsBioExpanded] = useState(false);
   const [yearsExperience, setYearsExperience] = useState(0);
   const [workExpCount, setWorkExpCount] = useState(0);
   const [isPendingVerification, setIsPendingVerification] = useState(false);
@@ -1051,7 +1093,7 @@ export default function Profile() {
               localStorage.removeItem(`bms_custom_profession_${storedUser.email.toLowerCase()}`);
             }
           }
-          const mainRole = isOther ? (fetchedCustom || "Other") : (types.length > 0 ? types[0] : "Talent");
+          const mainRole = isOther ? (fetchedCustom || "Other") : (types.length > 0 ? types[0] : "Actor");
           setProfile(prev => ({
             ...prev,
             fullName: data.fullName || prev.fullName,
@@ -1061,6 +1103,7 @@ export default function Profile() {
             location: data.location || prev.location,
             dob: data.dateOfBirth || "",
             languages: data.languages || prev.languages,
+            actingLanguages: data.actingLanguages || prev.actingLanguages,
             workType: data.workType || prev.workType,
             rate: data.dayRate || prev.rate,
             about: data.about || prev.about,
@@ -1117,8 +1160,14 @@ export default function Profile() {
     }
     fetchProfile();
 
+    const handleProfileUpdated = () => {
+      fetchProfile();
+    };
+    window.addEventListener("profile_updated", handleProfileUpdated);
+
     return () => {
       window.removeEventListener("skills_updated", handleSkillsUpdated);
+      window.removeEventListener("profile_updated", handleProfileUpdated);
     };
   }, []);
 
@@ -1304,6 +1353,7 @@ export default function Profile() {
         location: updatedData.location,
         about: updatedData.about,
         languages: updatedData.languages,
+        actingLanguages: updatedData.actingLanguages,
         workType: updatedData.workType,
         dayRate: updatedData.rate,
         profileTypes: singleRawType,
@@ -1470,127 +1520,93 @@ export default function Profile() {
               </div>
             )}
 
-            {/* ── Profile Header Card ── */}
-            <div className="prof-header-card" style={{ position: "relative" }}>
+            {/* ── Profile Header Card (Redesigned matching Image 2, Unstretched Photo matching Image 1) ── */}
+            <div className="prof-header-card" style={{
+              position: "relative",
+              background: "#ffffff",
+              border: "1px solid #eef2f6",
+              borderRadius: "20px",
+              padding: "20px",
+              boxShadow: "0 4px 20px rgba(15, 23, 42, 0.04)",
+              marginBottom: "20px"
+            }}>
+              <div style={{ display: "flex", flexDirection: "row", gap: "20px", alignItems: "stretch" }}>
 
-              {/* Private / Public Toggle Switch placed at the right end of this section */}
-              <button
-                type="button"
-                onClick={handleTogglePrivacy}
-                disabled={privacyToggling}
-                style={{
-                  position: "absolute",
-                  top: "20px",
-                  right: "20px",
-                  zIndex: 10,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  padding: "5px 12px",
-                  borderRadius: "20px",
-                  fontSize: "12px",
-                  fontWeight: "700",
-                  cursor: "pointer",
-                  transition: "all 0.2s ease",
-                  border: isPrivate ? "1.5px solid #ef4444" : "1.5px solid #10b981",
-                  backgroundColor: isPrivate ? "#fef2f2" : "#ecfdf5",
-                  color: isPrivate ? "#dc2626" : "#059669",
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
-                  whiteSpace: "nowrap"
-                }}
-                title={isPrivate ? "Profile is Private. Click to switch to Public" : "Profile is Public. Click to switch to Private"}
-              >
-                {isPrivate ? <Lock size={13} /> : <Globe size={13} />}
-                <span>{isPrivate ? "Private" : "Public"}</span>
-                {/* Interactive iOS / Instagram Toggle Pill Track */}
-                <div style={{
-                  width: "32px",
-                  height: "18px",
-                  borderRadius: "10px",
-                  backgroundColor: isPrivate ? "#ef4444" : "#10b981",
-                  position: "relative",
-                  transition: "background-color 0.2s ease",
-                  display: "flex",
-                  alignItems: "center",
-                  padding: "2px"
-                }}>
-                  <div style={{
-                    width: "14px",
-                    height: "14px",
-                    borderRadius: "50%",
-                    backgroundColor: "#ffffff",
-                    transform: isPrivate ? "translateX(14px)" : "translateX(0px)",
-                    transition: "transform 0.2s ease",
-                    boxShadow: "0 1px 2px rgba(0,0,0,0.2)"
-                  }} />
-                </div>
-              </button>
-
-              {/* Main row: photo | info+bio */}
-              <div className="prof-card-main">
-
-                {/* Photo container */}
+                {/* 1. Photo container (Exact dimension from Image 1, unstretched) */}
                 <div
                   className="prof-photo-col"
                   style={{
                     position: "relative",
                     width: "215px",
                     minWidth: "215px",
-                    minHeight: "240px",
-                    background: "#f8fafc",
-                    borderRadius: "14px",
+                    minHeight: "260px",
+                    background: "#0f172a",
+                    borderRadius: "16px",
                     overflow: "hidden",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    border: "1px solid #e2e8f0",
+                    border: "2px solid #e2e8f0",
                     flexShrink: 0,
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
                     alignSelf: "stretch"
                   }}
                 >
-                  {profile.profilePhoto ? (
-                    <img
-                      src={profile.profilePhoto}
-                      alt={profile.fullName}
-                      className="prof-main-photo"
-                      style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 20%", display: "block" }}
-                    />
-                  ) : (
-                    <div style={{ textAlign: "center", padding: "20px", color: "#64748b" }}>
-                      <div
-                        style={{
-                          width: "72px",
-                          height: "72px",
-                          borderRadius: "50%",
-                          background: "#fce7f3",
-                          border: "2px dashed #e91e8c",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          margin: "0 auto 12px",
-                          color: "#e91e8c",
-                          fontSize: "24px",
-                          fontWeight: "800"
-                        }}
-                      >
-                        {profile.fullName.substring(0, 2).toUpperCase()}
-                      </div>
-                      <p style={{ fontSize: "12px", fontWeight: "600", margin: 0 }}>No Photo</p>
-                    </div>
-                  )}
+                  <img
+                    src={profile.profilePhoto || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80"}
+                    alt={profile.fullName}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      objectPosition: "center 20%",
+                      display: "block"
+                    }}
+                  />
 
-                  {/* Add / Change / Crop Photo Buttons */}
+                  {/* Top-left: • Available Badge */}
                   <div
                     style={{
                       position: "absolute",
-                      bottom: "10px",
+                      top: "12px",
+                      left: "12px",
+                      zIndex: 4,
+                      background: "#ffffff",
+                      border: "1px solid #e2e8f0",
+                      borderRadius: "20px",
+                      padding: "3px 10px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "5px",
+                      boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
+                      fontSize: "11px",
+                      fontWeight: "800",
+                      color: "#065f46"
+                    }}
+                  >
+                    <span style={{
+                      width: "7px",
+                      height: "7px",
+                      borderRadius: "50%",
+                      backgroundColor: "#10b981",
+                      display: "inline-block"
+                    }} />
+                    <span>Available</span>
+                  </div>
+
+                  {/* Bottom: [Change] & [Crop] Buttons */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      bottom: "12px",
                       left: "50%",
                       transform: "translateX(-50%)",
                       display: "flex",
                       alignItems: "center",
                       gap: "6px",
-                      zIndex: 3,
-                      maxWidth: "92%"
+                      zIndex: 4,
+                      width: "90%",
+                      justifyContent: "center"
                     }}
                   >
                     <label
@@ -1611,7 +1627,7 @@ export default function Profile() {
                       }}
                     >
                       <Camera size={13} />
-                      <span>{profile.profilePhoto ? "Change" : "+ Add Photo"}</span>
+                      <span>Change</span>
                       <input
                         ref={fileInputRef}
                         type="file"
@@ -1629,10 +1645,9 @@ export default function Profile() {
                           setCropModalOpen(true);
                         }}
                         style={{
-                          background: "rgba(233, 30, 140, 0.9)",
-                          backdropFilter: "blur(4px)",
+                          background: "#7c3aed",
                           color: "#fff",
-                          padding: "6px 11px",
+                          padding: "6px 12px",
                           borderRadius: "20px",
                           fontSize: "11px",
                           fontWeight: "700",
@@ -1640,269 +1655,382 @@ export default function Profile() {
                           cursor: "pointer",
                           display: "flex",
                           alignItems: "center",
-                          gap: "4px",
-                          boxShadow: "0 2px 6px rgba(0,0,0,0.25)",
+                          gap: "5px",
+                          boxShadow: "0 2px 6px rgba(124, 58, 237, 0.3)",
                           whiteSpace: "nowrap"
                         }}
-                        title="Crop or adjust current photo"
+                        title="Crop photo"
                       >
-                        <Crop size={12} />
+                        <Crop size={13} />
                         <span>Crop</span>
                       </button>
                     )}
                   </div>
-
-                  <span className="prof-avail-badge" style={{ top: "10px", left: "10px", bottom: "auto", position: "absolute", zIndex: 4 }}>
-                    <span className="prof-avail-dot" />
-                    Available
-                  </span>
                 </div>
 
-                {/* Right side: info + bio */}
-                <div className="prof-card-right" style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "space-between", gap: "8px", paddingRight: "135px" }}>
+                {/* 2. Info & Content Right Column (Matching Image 2) */}
+                <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "space-between", gap: "10px" }}>
+                  
+                  {/* Row 1: Name + Rosette + Profession + Tier + Private Toggle */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px" }}>
+                    <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <h2 style={{ margin: 0, fontSize: "22px", fontWeight: "900", color: "#0f172a", lineHeight: 1.2 }}>
+                          {profile.fullName}
+                        </h2>
+                        <svg viewBox="0 0 24 24" width="19" height="19" style={{ flexShrink: 0 }}>
+                          <path d="M23 12l-2.44-2.78.34-3.68-3.61-.82-1.89-3.18L12 3 8.6 1.54 6.71 4.72l-3.61.81.34 3.68L1 12l2.44 2.78-.34 3.69 3.61.82 1.89 3.18L12 21l3.4 1.46 1.89-3.18 3.61-.82-.34-3.68L23 12z" fill="#2563eb"/>
+                          <path d="M10 14.17L7.41 11.59 6 13l4 4 9-9-1.41-1.41z" fill="#fff"/>
+                        </svg>
+                      </div>
 
-                  {/* 1. Header Line: Name + Profession Badge + Professional Tier + [+ Add Skill] */}
-                  <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                      <h2 className="prof-name" style={{ margin: 0, fontSize: "20px", fontWeight: "900", color: "#1e293b", lineHeight: 1.2 }}>
-                        {profile.fullName}
-                      </h2>
-                      <svg viewBox="0 0 24 24" width="18" height="18" style={{ flexShrink: 0 }}>
-                        <path d="M23 12l-2.44-2.78.34-3.68-3.61-.82-1.89-3.18L12 3 8.6 1.54 6.71 4.72l-3.61.81.34 3.68L1 12l2.44 2.78-.34 3.69 3.61.82 1.89 3.18L12 21l3.4 1.46 1.89-3.18 3.61-.82-.34-3.68L23 12z" fill="#e91e8c"/>
-                        <path d="M10 14.17L7.41 11.59 6 13l4 4 9-9-1.41-1.41z" fill="#fff"/>
-                      </svg>
-                    </div>
+                      {/* Primary Profession Pill */}
+                      {(() => {
+                        const primaryType = Array.isArray(profile.profileTypes) && profile.profileTypes.length > 0
+                          ? profile.profileTypes[0]
+                          : (profile.role ? profile.role.split(" · ")[0] : "Talent");
+                        const isOther = primaryType.toUpperCase() === "OTHER";
+                        const customProf = isOther
+                          ? (profile.customProfession || storedUser?.customProfession || localStorage.getItem(`bms_custom_profession_${(storedUser?.email || "").toLowerCase()}`))
+                          : "";
+                        const isOtherWithoutCustom = isOther && !customProf;
+                        const displayProfName = isOther ? (customProf || "Other") : primaryType;
+                        return (
+                          <span style={{
+                            background: isOtherWithoutCustom ? "#fef2f2" : "#eff6ff",
+                            color: isOtherWithoutCustom ? "#b91c1c" : "#1d4ed8",
+                            padding: "3px 9px",
+                            borderRadius: "14px",
+                            fontSize: "11px",
+                            fontWeight: "800",
+                            border: isOtherWithoutCustom ? "1.5px dashed #f87171" : "1px solid #bfdbfe",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "5px"
+                          }}>
+                            <span>🎭 {displayProfName}</span>
+                            <button
+                              type="button"
+                              onClick={() => setShowEditModal(true)}
+                              style={{
+                                background: "transparent",
+                                color: "#e11d48",
+                                border: "none",
+                                padding: 0,
+                                fontSize: "10px",
+                                cursor: "pointer"
+                              }}
+                              title="Edit profession"
+                            >
+                              ✏️
+                            </button>
+                          </span>
+                        );
+                      })()}
 
-                    {/* Primary Profession */}
-                    {(() => {
-                      const primaryType = Array.isArray(profile.profileTypes) && profile.profileTypes.length > 0
-                        ? profile.profileTypes[0]
-                        : (profile.role ? profile.role.split(" · ")[0] : "Talent");
-                      const isOther = primaryType.toUpperCase() === "OTHER";
-                      const customProf = isOther
-                        ? (profile.customProfession || storedUser?.customProfession || localStorage.getItem(`bms_custom_profession_${(storedUser?.email || "").toLowerCase()}`))
-                        : "";
-                      const isOtherWithoutCustom = isOther && !customProf;
-                      const displayProfName = isOther ? (customProf || "Other") : primaryType;
-                      return (
-                        <span style={{
-                          background: isOtherWithoutCustom ? "#fef2f2" : "#f1f5f9",
-                          color: isOtherWithoutCustom ? "#b91c1c" : "#0f172a",
-                          padding: "3px 8px",
-                          borderRadius: "6px",
-                          fontSize: "11px",
-                          fontWeight: "800",
-                          border: isOtherWithoutCustom ? "1.5px dashed #f87171" : "1px solid #cbd5e1",
-                          textTransform: "uppercase",
+                      {/* Tier badge */}
+                      <span style={{
+                        background: (isAutoPromoted || (!isPendingVerification && (storedUser?.accountType === "PROFESSIONAL" || yearsExperience >= 1))) ? "#eff6ff" : "#ecfdf5",
+                        color: (isAutoPromoted || (!isPendingVerification && (storedUser?.accountType === "PROFESSIONAL" || yearsExperience >= 1))) ? "#1d4ed8" : "#047857",
+                        padding: "3px 9px",
+                        borderRadius: "14px",
+                        fontSize: "11px",
+                        fontWeight: "700",
+                        border: (isAutoPromoted || (!isPendingVerification && (storedUser?.accountType === "PROFESSIONAL" || yearsExperience >= 1))) ? "1px solid #bfdbfe" : "1px solid #a7f3d0",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px"
+                      }}>
+                        <span>💼</span>
+                        <span>{(isAutoPromoted || (!isPendingVerification && (storedUser?.accountType === "PROFESSIONAL" || yearsExperience >= 1))) ? "Professional (1+ Yrs)" : "Talent (< 1 Yr)"}</span>
+                      </span>
+
+                      {/* + Add Skill */}
+                      <button
+                        type="button"
+                        onClick={() => setShowSkillModal(true)}
+                        style={{
                           display: "inline-flex",
                           alignItems: "center",
-                          gap: "5px"
-                        }}>
-                          <span>🎭 {displayProfName}</span>
+                          gap: "3px",
+                          background: "#ee008f",
+                          color: "#ffffff",
+                          border: "none",
+                          borderRadius: "14px",
+                          padding: "3px 10px",
+                          fontSize: "11px",
+                          fontWeight: "700",
+                          cursor: "pointer",
+                          boxShadow: "0 1px 4px rgba(238, 0, 143, 0.25)"
+                        }}
+                      >
+                        <Plus size={11} /> Add Skill
+                      </button>
+                    </div>
+
+                    {/* Private / Public Toggle Switch */}
+                    <button
+                      type="button"
+                      onClick={handleTogglePrivacy}
+                      disabled={privacyToggling}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        padding: "5px 12px",
+                        borderRadius: "20px",
+                        fontSize: "12px",
+                        fontWeight: "700",
+                        cursor: "pointer",
+                        transition: "all 0.2s ease",
+                        border: isPrivate ? "1.5px solid #f87171" : "1.5px solid #10b981",
+                        backgroundColor: "#ffffff",
+                        color: isPrivate ? "#ef4444" : "#10b981",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+                        whiteSpace: "nowrap"
+                      }}
+                      title={isPrivate ? "Profile is Private. Click to switch to Public" : "Profile is Public. Click to switch to Private"}
+                    >
+                      <Lock size={13} />
+                      <span>{isPrivate ? "Private" : "Public"}</span>
+                      <div style={{
+                        width: "32px",
+                        height: "18px",
+                        borderRadius: "10px",
+                        backgroundColor: isPrivate ? "#ef4444" : "#10b981",
+                        display: "flex",
+                        alignItems: "center",
+                        padding: "2px",
+                        justifyContent: isPrivate ? "flex-end" : "flex-start"
+                      }}>
+                        <div style={{
+                          width: "14px",
+                          height: "14px",
+                          borderRadius: "50%",
+                          backgroundColor: "#ffffff",
+                          boxShadow: "0 1px 2px rgba(0,0,0,0.2)"
+                        }} />
+                      </div>
+                    </button>
+                  </div>
+
+                  {/* Row 2: Specialized Skills (Max 5) + 5 of X skills count + View More Button */}
+                  <div style={{ marginTop: "4px" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <Zap size={14} color="#7c3aed" />
+                        <span style={{ fontSize: "12.5px", fontWeight: "800", color: "#1e293b" }}>Specialized Skills</span>
+                      </div>
+                      <span style={{ fontSize: "11px", fontWeight: "600", color: "#64748b" }}>
+                        {Math.min(5, skills.length)} of {skills.length} skills
+                      </span>
+                    </div>
+
+                    {/* Skill Pills Row (Max 5) */}
+                    <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "6px" }}>
+                      {(() => {
+                        const palette = [
+                          { bg: "#fdf2f8", border: "#fbcfe8", text: "#be185d", icon: "🏃" },
+                          { bg: "#fdf2f8", border: "#fbcfe8", text: "#be185d", icon: "🎵" },
+                          { bg: "#f5f3ff", border: "#ddd6fe", text: "#7c3aed", icon: "🎙️" },
+                          { bg: "#fff7ed", border: "#fed7aa", text: "#ea580c", icon: "👥" },
+                          { bg: "#f0f9ff", border: "#bae6fd", text: "#0284c7", icon: "🎥" }
+                        ];
+
+                        return skills.slice(0, 5).map((skill, idx) => {
+                          const theme = palette[idx % palette.length];
+                          return (
+                            <span
+                              key={skill}
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "5px",
+                                padding: "4px 10px",
+                                background: theme.bg,
+                                border: `1px solid ${theme.border}`,
+                                borderRadius: "14px",
+                                fontSize: "11.5px",
+                                fontWeight: "700",
+                                color: theme.text
+                              }}
+                            >
+                              <span>{theme.icon} {skill}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveSkill(skill)}
+                                style={{
+                                  background: "transparent",
+                                  border: "none",
+                                  color: theme.text,
+                                  cursor: "pointer",
+                                  padding: 0,
+                                  fontSize: "10px",
+                                  opacity: 0.7
+                                }}
+                                title={`Remove ${skill}`}
+                              >
+                                ✕
+                              </button>
+                            </span>
+                          );
+                        });
+                      })()}
+                    </div>
+
+                    {/* View More Button below skills */}
+                    {skills.length > 5 && (
+                      <div style={{ marginTop: "8px" }}>
+                        <button
+                          type="button"
+                          onClick={() => setShowAllSkillsModal(true)}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "5px",
+                            padding: "4px 12px",
+                            borderRadius: "16px",
+                            border: "1.5px solid #7c3aed",
+                            backgroundColor: "#ffffff",
+                            color: "#7c3aed",
+                            fontSize: "11.5px",
+                            fontWeight: "800",
+                            cursor: "pointer",
+                            transition: "all 0.15s ease"
+                          }}
+                        >
+                          <span>View More +{skills.length - 5}</span>
+                          <ChevronRight size={13} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Row 3: Two Side-by-Side Sub-Cards (Details on Left, About on Right) */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1.1fr", gap: "12px", alignItems: "stretch", marginTop: "6px" }}>
+                    
+                    {/* Left Box: Details */}
+                    <div style={{
+                      background: "#f8fafc",
+                      padding: "10px 12px",
+                      borderRadius: "12px",
+                      border: "1px solid #f1f5f9",
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between"
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
+                        <User size={13} color="#7c3aed" />
+                        <span style={{ fontSize: "12px", fontWeight: "800", color: "#0f172a" }}>Details</span>
+                      </div>
+
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "11.5px", color: "#475569" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                          <MapPin size={12} color="#ec4899" />
+                          <span>{profile.location || "Bangalore"}</span>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                          <MessageSquare size={12} color="#6366f1" />
+                          <span>Spoken: {profile.languages || "English, Hindi"}</span>
+                        </div>
+                        {profile.actingLanguages && (
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#7c3aed", fontWeight: "700" }}>
+                            <Film size={12} color="#7c3aed" />
+                            <span>Acting: {profile.actingLanguages}</span>
+                          </div>
+                        )}
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                          <Calendar size={12} color="#8b5cf6" />
+                          <span>{age ? `${age} Yrs` : "25 Yrs"}</span>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                          <Briefcase size={12} color="#64748b" />
+                          <span>{profile.workType || "Freelance Talent"}</span>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#ee008f", fontWeight: "800" }}>
+                          <span style={{ fontSize: "12px" }}>₹</span>
+                          <span>{profile.rate || "Flexible / Negotiable"}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Box: About */}
+                    <div style={{
+                      background: "#f8fafc",
+                      padding: "10px 12px",
+                      borderRadius: "12px",
+                      border: "1px solid #f1f5f9",
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between"
+                    }}>
+                      <div>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                            <FileText size={13} color="#6366f1" />
+                            <span style={{ fontSize: "12px", fontWeight: "800", color: "#0f172a" }}>About</span>
+                          </div>
                           <button
                             type="button"
                             onClick={() => setShowEditModal(true)}
                             style={{
-                              background: isOtherWithoutCustom ? "#dc2626" : "transparent",
-                              color: isOtherWithoutCustom ? "#ffffff" : "#64748b",
-                              border: isOtherWithoutCustom ? "none" : "1px solid #cbd5e1",
-                              borderRadius: "4px",
-                              padding: "1px 4px",
-                              fontSize: "9.5px",
-                              fontWeight: "700",
-                              cursor: "pointer"
-                            }}
-                            title="Click to edit your profession"
-                          >
-                            {isOtherWithoutCustom ? "+ Set" : "✏️"}
-                          </button>
-                        </span>
-                      );
-                    })()}
-
-                    {/* Tier badge */}
-                    <span style={{
-                      background: (isAutoPromoted || (!isPendingVerification && (storedUser?.accountType === "PROFESSIONAL" || yearsExperience >= 1))) ? "#eff6ff" : "#ecfdf5",
-                      color: (isAutoPromoted || (!isPendingVerification && (storedUser?.accountType === "PROFESSIONAL" || yearsExperience >= 1))) ? "#1d4ed8" : "#047857",
-                      padding: "3px 8px",
-                      borderRadius: "6px",
-                      fontSize: "11px",
-                      fontWeight: "700",
-                      border: (isAutoPromoted || (!isPendingVerification && (storedUser?.accountType === "PROFESSIONAL" || yearsExperience >= 1))) ? "1px solid #bfdbfe" : "1px solid #a7f3d0"
-                    }}>
-                      {(isAutoPromoted || (!isPendingVerification && (storedUser?.accountType === "PROFESSIONAL" || yearsExperience >= 1))) ? "🎬 Professional (1+ Yrs)" : "🌟 Talent (< 1 Yr)"}
-                    </span>
-
-                    {/* + Add Skill */}
-                    <button
-                      type="button"
-                      onClick={() => setShowSkillModal(true)}
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "3px",
-                        background: "#ee008f",
-                        color: "#ffffff",
-                        border: "none",
-                        borderRadius: "14px",
-                        padding: "3px 10px",
-                        fontSize: "11px",
-                        fontWeight: "700",
-                        cursor: "pointer",
-                        boxShadow: "0 1px 4px rgba(238, 0, 143, 0.25)"
-                      }}
-                    >
-                      <Plus size={11} /> Add Skill
-                    </button>
-                  </div>
-
-                  {/* 2. Added Specialized Skills Row */}
-                  <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px" }}>
-
-                    {skills && skills.map((skill) => {
-                      const worksForSkill = experiences.filter(
-                        w => (w.category || "").toLowerCase() === skill.toLowerCase()
-                      );
-                      return (
-                        <span
-                          key={skill}
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "5px",
-                            padding: "3px 9px",
-                            background: "#fdf2f8",
-                            border: "1px solid #fbcfe8",
-                            borderRadius: "14px",
-                            fontSize: "11px",
-                            fontWeight: "700",
-                            color: "#be185d"
-                          }}
-                        >
-                          <span
-                            onClick={() => handleViewSkillWorks(skill)}
-                            style={{ cursor: "pointer" }}
-                            title={`Click to view, add, or manage works for ${skill} (${worksForSkill.length} works)`}
-                          >
-                            ✨ {skill} ({worksForSkill.length})
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveSkill(skill)}
-                            style={{
                               background: "transparent",
                               border: "none",
-                              color: "#db2777",
-                              cursor: "pointer",
-                              padding: "0 2px",
-                              fontSize: "11px",
+                              color: "#7c3aed",
+                              fontSize: "11.5px",
                               fontWeight: "700",
-                              lineHeight: 1,
+                              cursor: "pointer",
                               display: "inline-flex",
-                              alignItems: "center"
+                              alignItems: "center",
+                              gap: "3px",
+                              padding: 0
                             }}
-                            title={`Remove ${skill}`}
                           >
-                            ✕
+                            <Edit3 size={11} /> Edit
                           </button>
-                        </span>
-                      );
-                    })}
-                  </div>
+                        </div>
 
-                  {/* 3. Two-Column Middle Section: Details on Left, Bio & Actions on Right */}
-                  <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr", gap: "10px", alignItems: "stretch", flex: 1 }}>
-                    
-                    {/* Left Box: Compact Meta Information */}
-                    <div style={{ background: "#f8fafc", padding: "8px 10px", borderRadius: "10px", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "5px 8px", fontSize: "11.5px", color: "#475569" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "5px", overflow: "hidden" }}>
-                          <MapPin size={11} className="prof-meta-icon" style={{ flexShrink: 0 }} />
-                          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{profile.location || "Add Location"}</span>
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                          <Calendar size={11} className="prof-meta-icon" style={{ flexShrink: 0 }} />
-                          <span>{age ? `${age} Yrs` : "Age N/A"}</span>
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: "5px", overflow: "hidden" }}>
-                          <Globe size={11} className="prof-meta-icon" style={{ flexShrink: 0 }} />
-                          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{profile.languages || "Languages"}</span>
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: "5px", overflow: "hidden" }}>
-                          <Briefcase size={11} className="prof-meta-icon" style={{ flexShrink: 0 }} />
-                          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{profile.workType || "Freelance"}</span>
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: "5px", color: "#e91e8c", fontWeight: "700" }}>
-                          <span style={{ fontSize: "12px" }}>₹</span>
-                          <span>{profile.rate || "Flexible"}</span>
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: "5px", color: "#64748b", fontWeight: "600", fontSize: "11px" }}>
-                          <span>⭐ New Talent</span>
-                        </div>
-                      </div>
-                      {profile.rateNote && (
-                        <div style={{ fontSize: "10px", color: "#94a3b8", marginTop: "3px" }}>
-                          {profile.rateNote}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Right Box: Bio & Actions */}
-                    <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", gap: "6px" }}>
-                      <div style={{ background: "#f8fafc", padding: "8px 10px", borderRadius: "10px", border: "1px solid #e2e8f0", flex: 1, minHeight: "50px", overflow: "hidden" }}>
-                        <div style={{ fontSize: "10px", fontWeight: "700", color: "#94a3b8", textTransform: "uppercase", marginBottom: "2px" }}>About</div>
-                        <p style={{ fontSize: "11.5px", color: "#475569", margin: 0, lineHeight: "1.4", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden", whiteSpace: "pre-line" }}>
-                          {profile.about || "Welcome to my official profile."}
+                        <p style={{
+                          fontSize: "11.5px",
+                          color: "#475569",
+                          margin: 0,
+                          lineHeight: "1.5",
+                          display: isBioExpanded ? "block" : "-webkit-box",
+                          WebkitLineClamp: isBioExpanded ? "unset" : 3,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden"
+                        }}>
+                          {profile.about || "Passionate Computer Science enthusiast with an interest in software development, programming, and emerging technologies. Eager to learn new skills, solve real-world problems, and build innovative solutions...."}
                         </p>
                       </div>
 
-                      {/* Action Buttons */}
-                      <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                      <div style={{ marginTop: "6px" }}>
                         <button
                           type="button"
-                          onClick={() => setShowEditModal(true)}
+                          onClick={() => setIsBioExpanded(!isBioExpanded)}
                           style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "5px",
-                            background: "#e91e8c",
-                            color: "#ffffff",
+                            background: "transparent",
                             border: "none",
-                            borderRadius: "7px",
-                            padding: "6px 14px",
-                            fontSize: "11.5px",
-                            fontWeight: "700",
+                            color: "#7c3aed",
+                            fontSize: "11px",
+                            fontWeight: "800",
                             cursor: "pointer",
-                            boxShadow: "0 2px 4px rgba(233, 30, 140, 0.2)"
-                          }}
-                        >
-                          <Edit3 size={12} /> Edit Profile
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setShowShareModal(true)}
-                          style={{
+                            padding: 0,
                             display: "inline-flex",
                             alignItems: "center",
-                            gap: "5px",
-                            background: "#ffffff",
-                            color: "#334155",
-                            border: "1px solid #cbd5e1",
-                            borderRadius: "7px",
-                            padding: "6px 12px",
-                            fontSize: "11.5px",
-                            fontWeight: "700",
-                            cursor: "pointer"
+                            gap: "2px"
                           }}
                         >
-                          <Share2 size={12} color="#e91e8c" /> Share Profile
+                          <span>{isBioExpanded ? "Read Less" : "Read More"}</span>
+                          <ChevronDown size={12} style={{ transform: isBioExpanded ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
                         </button>
                       </div>
                     </div>
 
                   </div>
+
                 </div>
+
               </div>
             </div>
 
@@ -1970,33 +2098,106 @@ export default function Profile() {
           {/* ═══ RIGHT SIDEBAR ═══ */}
           <div className="prof-right-sidebar">
 
-            {/* Profile Details / Verification Card */}
-            <div className="prof-sidebar-card">
-              <h3 className="prof-sidebar-card-title">Profile Details</h3>
-              <div className="prof-detail-row">
-                <span className="prof-detail-label">Member Since</span>
-                <span className="prof-detail-value">{profile.memberSince || "—"}</span>
+            {/* Profile Details / Verification Card (Matching Image 2) */}
+            <div className="prof-sidebar-card" style={{
+              background: "#ffffff",
+              borderRadius: "18px",
+              padding: "20px",
+              border: "1px solid #eef2f6",
+              boxShadow: "0 4px 20px rgba(15, 23, 42, 0.04)"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px" }}>
+                <Settings size={18} color="#7c3aed" />
+                <h3 className="prof-sidebar-card-title" style={{ margin: 0, fontSize: "15px", fontWeight: "800", color: "#0f172a" }}>
+                  Profile Details
+                </h3>
               </div>
-              <div className="prof-detail-row">
-                <span className="prof-detail-label">Profile Type</span>
-                <span className="prof-detail-value prof-verified-badge">
+              <div className="prof-detail-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px", fontSize: "12.5px" }}>
+                <span className="prof-detail-label" style={{ color: "#64748b" }}>Member Since</span>
+                <span className="prof-detail-value" style={{ fontWeight: "800", color: "#0f172a" }}>{profile.memberSince || "2026"}</span>
+              </div>
+              <div className="prof-detail-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", fontSize: "12.5px" }}>
+                <span className="prof-detail-label" style={{ color: "#64748b" }}>Profile Type</span>
+                <span className="prof-detail-value prof-verified-badge" style={{
+                  background: "#fdf2f8",
+                  color: "#be185d",
+                  border: "1px solid #fbcfe8",
+                  borderRadius: "14px",
+                  padding: "2px 8px",
+                  fontSize: "11px",
+                  fontWeight: "700"
+                }}>
                   ✓ Verified {(() => {
                     const primaryType = Array.isArray(profile.profileTypes) && profile.profileTypes.length > 0
                       ? profile.profileTypes[0]
-                      : (profile.role ? profile.role.split(" · ")[0] : "Talent");
+                      : (profile.role ? profile.role.split(" · ")[0] : "Model");
                     const isOther = primaryType.toUpperCase() === "OTHER";
                     const customProf = isOther ? (profile.customProfession || storedUser?.customProfession || localStorage.getItem(`bms_custom_profession_${(storedUser?.email || "").toLowerCase()}`)) : "";
                     return isOther ? (customProf || "Other") : primaryType;
                   })()}
                 </span>
               </div>
-              <div className="prof-verify-items">
+              <div className="prof-verify-items" style={{ marginTop: "12px", borderTop: "1px solid #f1f5f9", paddingTop: "12px" }}>
                 {["ID Verified", "Phone Verified", "Email Verified"].map((item, i) => (
-                  <div key={i} className="prof-verify-item">
-                    <CheckCircle2 size={15} className="prof-check-icon" />
+                  <div key={i} className="prof-verify-item" style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12.5px", color: "#334155", fontWeight: "600", marginBottom: "8px" }}>
+                    <CheckCircle2 size={16} color="#10b981" />
                     <span>{item}</span>
                   </div>
                 ))}
+              </div>
+
+              {/* Action Buttons inside Profile Details Sidebar (matching Image 2) */}
+              <div style={{ marginTop: "16px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(true)}
+                  style={{
+                    width: "100%",
+                    background: "linear-gradient(135deg, #7c3aed 0%, #ee008f 100%)",
+                    color: "#ffffff",
+                    border: "none",
+                    borderRadius: "12px",
+                    padding: "10px 14px",
+                    fontSize: "13px",
+                    fontWeight: "700",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    cursor: "pointer",
+                    boxShadow: "0 3px 10px rgba(124, 58, 237, 0.25)"
+                  }}
+                >
+                  <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <Edit3 size={15} />
+                    <span>Edit Profile</span>
+                  </span>
+                  <ChevronRight size={16} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowShareModal(true)}
+                  style={{
+                    width: "100%",
+                    background: "#ffffff",
+                    border: "1.5px solid #e2e8f0",
+                    borderRadius: "12px",
+                    padding: "10px 14px",
+                    fontSize: "13px",
+                    fontWeight: "700",
+                    color: "#1e293b",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    cursor: "pointer"
+                  }}
+                >
+                  <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <Share2 size={15} color="#64748b" />
+                    <span>Share Profile</span>
+                  </span>
+                  <ChevronRight size={16} color="#94a3b8" />
+                </button>
               </div>
             </div>
 
@@ -2282,6 +2483,180 @@ export default function Profile() {
         onAddSkill={handleAddSkill}
         onRemoveSkill={handleRemoveSkill}
       />
+
+      {/* Complete Specialized Skills Dialogue Box Modal */}
+      {showAllSkillsModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(15, 23, 42, 0.7)",
+            backdropFilter: "blur(4px)",
+            zIndex: 1000,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "16px"
+          }}
+          onClick={() => setShowAllSkillsModal(false)}
+        >
+          <div
+            style={{
+              background: "#ffffff",
+              borderRadius: "20px",
+              width: "100%",
+              maxWidth: "500px",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+              border: "1px solid #e2e8f0",
+              overflow: "hidden"
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "16px 20px",
+              borderBottom: "1px solid #f1f5f9"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <Zap size={18} color="#7c3aed" />
+                <div>
+                  <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "#0f172a" }}>
+                    All Specialized Skills
+                  </h3>
+                  <span style={{ fontSize: "11.5px", color: "#64748b" }}>
+                    {skills.length} skills added to your cinema profile
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAllSkillsModal(false)}
+                style={{
+                  background: "#f1f5f9",
+                  border: "none",
+                  borderRadius: "50%",
+                  width: "28px",
+                  height: "28px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  color: "#64748b",
+                  fontWeight: "800"
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Body: Complete list of all skills */}
+            <div style={{ padding: "20px", maxHeight: "60vh", overflowY: "auto" }}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                {skills.map((skill, idx) => {
+                  const palette = [
+                    { bg: "#fdf2f8", border: "#fbcfe8", text: "#be185d", icon: "🏃" },
+                    { bg: "#fdf2f8", border: "#fbcfe8", text: "#be185d", icon: "🎵" },
+                    { bg: "#f5f3ff", border: "#ddd6fe", text: "#7c3aed", icon: "🎙️" },
+                    { bg: "#fff7ed", border: "#fed7aa", text: "#ea580c", icon: "👥" },
+                    { bg: "#f0f9ff", border: "#bae6fd", text: "#0284c7", icon: "🎥" }
+                  ];
+                  const theme = palette[idx % palette.length];
+                  return (
+                    <span
+                      key={skill}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        padding: "6px 12px",
+                        background: theme.bg,
+                        border: `1px solid ${theme.border}`,
+                        borderRadius: "14px",
+                        fontSize: "12px",
+                        fontWeight: "700",
+                        color: theme.text
+                      }}
+                    >
+                      <span>{theme.icon} {skill}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSkill(skill)}
+                        style={{
+                          background: "transparent",
+                          border: "none",
+                          color: theme.text,
+                          cursor: "pointer",
+                          padding: 0,
+                          fontSize: "11px",
+                          display: "flex",
+                          alignItems: "center",
+                          opacity: 0.7
+                        }}
+                        title={`Remove ${skill}`}
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div style={{
+              padding: "14px 20px",
+              background: "#f8fafc",
+              borderTop: "1px solid #f1f5f9",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center"
+            }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAllSkillsModal(false);
+                  setShowSkillModal(true);
+                }}
+                style={{
+                  background: "#ee008f",
+                  color: "#ffffff",
+                  border: "none",
+                  borderRadius: "8px",
+                  padding: "7px 14px",
+                  fontSize: "12px",
+                  fontWeight: "700",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "4px"
+                }}
+              >
+                <Plus size={13} /> Add Another Skill
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowAllSkillsModal(false)}
+                style={{
+                  background: "#ffffff",
+                  border: "1px solid #cbd5e1",
+                  borderRadius: "8px",
+                  padding: "7px 16px",
+                  fontSize: "12px",
+                  fontWeight: "700",
+                  cursor: "pointer",
+                  color: "#475569"
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Skill Works Management Modal */}
       {viewingSkillWorks && (

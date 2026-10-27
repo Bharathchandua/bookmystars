@@ -2,9 +2,10 @@
    Modal form to create a new casting call project.
    ────────────────────────────────────────────────────────── */
 
-import { useState } from "react";
-import { X, Loader2, Sparkles } from "lucide-react";
-import { createCastingCall } from "../../services/api";
+import { useState, useEffect } from "react";
+import { X, Loader2, Sparkles, Globe } from "lucide-react";
+import { createCastingCall } from "../../features/bms/api/opportunities/opportunitiesApi";
+import { getPublicLanguages } from "../../features/bms/api/languages/languagesApi";
 
 const ROLE_TYPES = [
   { label: "Actor", value: "ACTOR" },
@@ -18,7 +19,11 @@ const ROLE_TYPES = [
 export default function CreateCastingModal({ isOpen, onClose, onSuccess }) {
   const [title, setTitle] = useState("");
   const [projectType, setProjectType] = useState("Commercial Campaign");
+  const [postType, setPostType] = useState("ACTING");
+  const [customDiscipline, setCustomDiscipline] = useState("");
   const [roleType, setRoleType] = useState("MODEL");
+  const [selectedLanguages, setSelectedLanguages] = useState(["Hindi", "English"]);
+  const [availableLanguages, setAvailableLanguages] = useState([]);
   const [budget, setBudget] = useState("");
   const [location, setLocation] = useState("Mumbai");
   const [shootStartDate, setShootStartDate] = useState("");
@@ -29,6 +34,42 @@ export default function CreateCastingModal({ isOpen, onClose, onSuccess }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
+  useEffect(() => {
+    let mounted = true;
+    getPublicLanguages()
+      .then((data) => {
+        if (!mounted) return;
+        if (Array.isArray(data) && data.length > 0) {
+          setAvailableLanguages(data);
+        } else {
+          setAvailableLanguages([
+            { id: 1, name: "Hindi" },
+            { id: 2, name: "English" },
+            { id: 3, name: "Telugu" },
+            { id: 4, name: "Tamil" },
+            { id: 5, name: "Malayalam" },
+            { id: 6, name: "Kannada" },
+            { id: 7, name: "Marathi" },
+            { id: 8, name: "Bengali" }
+          ]);
+        }
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setAvailableLanguages([
+          { id: 1, name: "Hindi" },
+          { id: 2, name: "English" },
+          { id: 3, name: "Telugu" },
+          { id: 4, name: "Tamil" },
+          { id: 5, name: "Malayalam" },
+          { id: 6, name: "Kannada" },
+          { id: 7, name: "Marathi" },
+          { id: 8, name: "Bengali" }
+        ]);
+      });
+    return () => { mounted = false; };
+  }, []);
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e) => {
@@ -38,14 +79,26 @@ export default function CreateCastingModal({ isOpen, onClose, onSuccess }) {
       return;
     }
 
+    if (postType === "CUSTOM" && !customDiscipline.trim()) {
+      setError("Please specify your custom discipline / post type name.");
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
+
+    const resolvedPostType = postType === "CUSTOM" ? customDiscipline.trim() : postType;
+    const resolvedRoleType = postType === "CUSTOM" ? "OTHER" : roleType;
+    const resolvedCustomCraft = postType === "CUSTOM" ? customDiscipline.trim() : null;
 
     try {
       await createCastingCall({
         title: title.trim(),
         projectType,
-        roleType,
+        postType: resolvedPostType,
+        requiredLanguages: selectedLanguages.join(", "),
+        roleType: resolvedRoleType,
+        customCraft: resolvedCustomCraft,
         budget: budget ? parseFloat(budget) : null,
         location,
         shootStartDate: shootStartDate || null,
@@ -94,6 +147,111 @@ export default function CreateCastingModal({ isOpen, onClose, onSuccess }) {
               onChange={(e) => setTitle(e.target.value)}
               style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 13, boxSizing: "border-box" }}
             />
+          </div>
+
+          {/* Discipline / Post Type Selector */}
+          <div style={{ marginBottom: 14 }}>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 700, marginBottom: 6, color: "#475569" }}>
+              Casting Discipline / Post Type *
+            </label>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 6 }}>
+              {[
+                { type: "ACTING", label: "Acting", icon: "🎭" },
+                { type: "SINGING", label: "Singing", icon: "🎤" },
+                { type: "DANCING", label: "Dancing", icon: "💃" },
+                { type: "MODELING", label: "Modeling", icon: "✨" },
+                { type: "CREW", label: "Crew", icon: "🎬" },
+                { type: "CUSTOM", label: "Custom +", icon: "➕" },
+              ].map(item => {
+                const isSel = postType === item.type;
+                return (
+                  <button
+                    key={item.type}
+                    type="button"
+                    onClick={() => setPostType(item.type)}
+                    style={{
+                      padding: "6px 2px",
+                      borderRadius: 8,
+                      border: isSel ? "1.5px solid #e91e8c" : "1px solid #cbd5e1",
+                      backgroundColor: isSel ? "#fdf2f8" : "#ffffff",
+                      color: isSel ? "#be185d" : "#475569",
+                      fontWeight: isSel ? "800" : "600",
+                      fontSize: 11,
+                      cursor: "pointer",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: 2
+                    }}
+                  >
+                    <span>{item.icon}</span>
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {postType === "CUSTOM" && (
+              <div style={{ marginTop: 8, padding: "10px 12px", backgroundColor: "#fffbeb", borderRadius: 8, border: "1.5px dashed #f59e0b" }}>
+                <label style={{ display: "block", fontSize: 11.5, fontWeight: 800, marginBottom: 4, color: "#b45309" }}>
+                  Custom Discipline / Post Type Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Voiceover Artist, Stunt Performer, Musician, Scriptwriter"
+                  value={customDiscipline}
+                  onChange={(e) => setCustomDiscipline(e.target.value)}
+                  style={{ width: "100%", padding: "7px 10px", borderRadius: 6, border: "1px solid #d97706", fontSize: 12.5, boxSizing: "border-box", backgroundColor: "#ffffff" }}
+                />
+                <div style={{ fontSize: "10.5px", color: "#92400e", marginTop: 4 }}>
+                  🌟 This custom discipline will be saved with the post and displayed on your casting notice.
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Required Languages */}
+          <div style={{ marginBottom: 14 }}>
+            <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12, fontWeight: 700, marginBottom: 4, color: "#475569" }}>
+              <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <Globe size={13} color="#7c3aed" /> Required Audition Languages
+              </span>
+              <span style={{ fontSize: 11, color: "#7c3aed", fontWeight: 700 }}>
+                {selectedLanguages.length} selected
+              </span>
+            </label>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 5, maxHeight: 90, overflowY: "auto", padding: "6px 8px", backgroundColor: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0" }}>
+              {availableLanguages.map(lang => {
+                const langName = typeof lang === "string" ? lang : lang.name;
+                const isSel = selectedLanguages.includes(langName);
+                return (
+                  <button
+                    key={lang.id || langName}
+                    type="button"
+                    onClick={() => {
+                      if (isSel) {
+                        setSelectedLanguages(selectedLanguages.filter(l => l !== langName));
+                      } else {
+                        setSelectedLanguages([...selectedLanguages, langName]);
+                      }
+                    }}
+                    style={{
+                      padding: "3px 8px",
+                      borderRadius: 14,
+                      fontSize: 11,
+                      fontWeight: isSel ? "800" : "500",
+                      border: isSel ? "1px solid #7c3aed" : "1px solid #cbd5e1",
+                      backgroundColor: isSel ? "#7c3aed" : "#ffffff",
+                      color: isSel ? "#ffffff" : "#475569",
+                      cursor: "pointer"
+                    }}
+                  >
+                    {isSel ? "✓ " : "+ "}{langName}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>

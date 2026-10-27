@@ -5,7 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { 
   Search, Bell, ChevronDown, Menu, LogOut, User, Settings, Shield, 
   Check, MessageSquare, X, Clock, Calendar, Film, CheckCircle2, XCircle, 
-  Lock, IndianRupee, MapPin, Loader2, Sparkles 
+  Lock, IndianRupee, MapPin, Loader2, Sparkles, LayoutDashboard, ExternalLink, Camera 
 } from "lucide-react";
 import { 
   getStoredUser, 
@@ -17,7 +17,8 @@ import {
   getSentBookingRequests,
   getProfileAccessRequests,
   respondToProfileAccessRequest 
-} from "../../services/api";
+} from "../../features/bms/api";
+import { showSuccess, showError } from "../../shared/utils/alert";
 
 export default function Header({ 
   toggleSidebar, 
@@ -176,8 +177,9 @@ export default function Header({
         prev.map(b => b.id === bookingId ? { ...b, status: "ACCEPTED" } : b)
       );
       window.dispatchEvent(new Event("booking_status_updated"));
+      showSuccess("Booking Accepted! 🎉", "The booking request has been confirmed.");
     } catch (err) {
-      alert("Failed to accept booking: " + (err.message || "Error"));
+      showError("Booking Action Failed", err.message || "Failed to accept booking.");
     } finally {
       setActionLoadingId(null);
     }
@@ -193,8 +195,9 @@ export default function Header({
         prev.map(b => b.id === bookingId ? { ...b, status: "DECLINED" } : b)
       );
       window.dispatchEvent(new Event("booking_status_updated"));
+      showSuccess("Booking Declined", "The booking request has been declined.");
     } catch (err) {
-      alert("Failed to decline booking: " + (err.message || "Error"));
+      showError("Booking Action Failed", err.message || "Failed to decline booking.");
     } finally {
       setActionLoadingId(null);
     }
@@ -210,8 +213,9 @@ export default function Header({
         prev.map(r => r.id === requestId ? { ...r, status: approved ? "APPROVED" : "REJECTED" } : r)
       );
       window.dispatchEvent(new Event("booking_status_updated"));
+      showSuccess("Access Request", `Profile access has been ${approved ? "Approved" : "Declined"}.`);
     } catch (err) {
-      alert("Failed to respond to access request: " + (err.message || "Error"));
+      showError("Access Action Failed", err.message || "Failed to respond to access request.");
     } finally {
       setActionLoadingId(null);
     }
@@ -766,9 +770,23 @@ export default function Header({
           {/* Profile Dropdown menu */}
           {showProfileMenu && (
             <div className="db-dropdown-menu db-profile-menu animate-fadeIn">
-              <div className="px-4 py-2.5 border-b border-slate-100 text-left">
-                <h4 className="text-[13px] font-bold text-slate-800 leading-none">{displayName}</h4>
-                <span className="text-[11px] text-slate-500 font-medium mt-1.5 block">{userRole}</span>
+              <div 
+                className="px-4 py-3 border-b border-slate-100 text-left cursor-pointer hover:bg-slate-50 transition-colors"
+                onClick={() => {
+                  setShowProfileMenu(false);
+                  navigate("/profile");
+                }}
+                title="Click to view & edit your full profile"
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div>
+                    <h4 className="text-[13px] font-bold text-slate-800 leading-none">{displayName}</h4>
+                    <span className="text-[11px] text-slate-500 font-medium mt-1.5 block">{userRole}</span>
+                  </div>
+                  <span style={{ fontSize: "11px", fontWeight: "700", color: "#ee008f", backgroundColor: "#fff1f8", padding: "2px 8px", borderRadius: "6px" }}>
+                    Edit Profile →
+                  </span>
+                </div>
               </div>
 
               {/* Role Switcher Section */}
@@ -796,29 +814,74 @@ export default function Header({
                   className="db-dropdown-item"
                   onClick={() => {
                     setShowProfileMenu(false);
-                    const uid = currentUser?.userId || storedUser?.userId || 7;
+                    navigate("/profile");
+                  }}
+                >
+                  <User size={15} style={{ color: "#ee008f" }} />
+                  <span style={{ fontWeight: "700", color: "#0f172a" }}>My Profile & Portfolio</span>
+                </PagesButton>
+
+                <PagesButton
+                  className="db-dropdown-item"
+                  onClick={() => {
+                    setShowProfileMenu(false);
+                    navigate("/dashboard");
+                  }}
+                >
+                  <LayoutDashboard size={15} className="text-slate-400" />
+                  <span>My Dashboard</span>
+                </PagesButton>
+
+                <PagesButton
+                  className="db-dropdown-item"
+                  onClick={() => {
+                    setShowProfileMenu(false);
+                    const uid = currentUser?.userId || storedUser?.userId || storedUser?.id || 7;
                     navigate(`/public-profile/${uid}`);
                   }}
                 >
-                  <User size={15} className="text-slate-400" />
-                  View Public Profile
-                </PagesButton>
-                
-                <PagesButton className="db-dropdown-item">
-                  <Settings size={15} className="text-slate-400" />
-                  Account Settings
+                  <ExternalLink size={15} className="text-slate-400" />
+                  <span>View Public Profile</span>
                 </PagesButton>
 
-                <PagesButton className="db-dropdown-item">
+                <PagesButton
+                  className="db-dropdown-item"
+                  onClick={() => {
+                    setShowProfileMenu(false);
+                    navigate("/my-media");
+                  }}
+                >
+                  <Film size={15} className="text-slate-400" />
+                  <span>My Media & Audios</span>
+                </PagesButton>
+                
+                <PagesButton
+                  className="db-dropdown-item"
+                  onClick={() => {
+                    setShowProfileMenu(false);
+                    navigate("/profile?tab=overview");
+                  }}
+                >
+                  <Settings size={15} className="text-slate-400" />
+                  <span>Account Settings</span>
+                </PagesButton>
+
+                <PagesButton
+                  className="db-dropdown-item"
+                  onClick={() => {
+                    setShowProfileMenu(false);
+                    navigate("/profile?tab=availability");
+                  }}
+                >
                   <Shield size={15} className="text-slate-400" />
-                  Security & Password
+                  <span>Security & Privacy</span>
                 </PagesButton>
 
                 <div className="border-t border-slate-100 my-1" />
 
                 <PagesButton className="db-dropdown-item danger" onClick={handleLogout}>
                   <LogOut size={15} className="text-red-500" />
-                  Logout
+                  <span>Logout</span>
                 </PagesButton>
               </div>
             </div>

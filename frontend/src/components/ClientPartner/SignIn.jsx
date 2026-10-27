@@ -10,13 +10,16 @@ import {
   User,
   Calendar,
   MessageSquare,
-  ShieldCheck
+  ShieldCheck,
+  Clock,
+  AlertTriangle
 } from "lucide-react";
 import logo from "../../assets/logo.png";
 import signinLeftBg from "../../assets/signin_left_bg.png";
 import CountUpModule from "react-countup";
 import Button from "../common/Button";
-import { loginUser, getStoredUser } from "../../services/api";
+import { loginUser, getStoredUser } from "../../features/bms/api/auth/authApi";
+import { loginAdminUser } from "../../features/bms/api/admin/adminApi";
 const CountUp = typeof CountUpModule === "function" ? CountUpModule : (CountUpModule.default || CountUpModule);
 
 export default function SignIn() {
@@ -42,15 +45,33 @@ export default function SignIn() {
     setError("");
     setLoading(true);
     try {
+      // 1. First attempt login as a standard platform user (Talent, Model, Producer, Partner)
       const authData = await loginUser(email, password);
-      if (authData?.accountType === "PROFESSIONAL") {
+      if (authData?.accountType === "PARTNER") {
+        navigate("/partner/dashboard");
+      } else if (authData?.accountType === "CLIENT") {
+        navigate("/client/dashboard");
+      } else if (authData?.accountType === "PROFESSIONAL") {
         navigate("/professional/dashboard");
       } else {
         navigate("/dashboard");
       }
     } catch (err) {
+      // 2. If standard login fails, automatically check if this is an Admin / Staff Officer
+      try {
+        const adminResult = await loginAdminUser(email, password);
+        if (adminResult && adminResult.user) {
+          navigate("/admin");
+          return;
+        }
+      } catch (adminErr) {
+        // Not an admin or password incorrect
+      }
+
       const rawMsg = err.message || "";
-      if (rawMsg.toLowerCase().includes("internal server error") || !rawMsg) {
+      if (email.toLowerCase().includes("@bookmystars.com") || email.toLowerCase().includes("admin") || email.toLowerCase().includes("staff")) {
+        setError("admin_hint");
+      } else if (rawMsg.toLowerCase().includes("internal server error") || !rawMsg) {
         setError("Invalid email or password. Please check your credentials.");
       } else {
         setError(rawMsg);
@@ -77,8 +98,28 @@ export default function SignIn() {
           <Link to="/" className="logo text-decoration-none">
             <img src={logo} alt="Book My Stars" className="navbar-logo" />
           </Link>
-          <div className="header-link">
-            Don't have an account? <Link to="/join">Sign Up</Link>
+          <div className="header-link" style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+            <span>Don't have an account? <Link to="/join">Sign Up</Link></span>
+            <span style={{ color: "#cbd5e1" }}>|</span>
+            <Link 
+              to="/admin/login" 
+              style={{ 
+                color: "#ee008f", 
+                fontWeight: "700", 
+                display: "inline-flex", 
+                alignItems: "center", 
+                gap: "5px",
+                textDecoration: "none",
+                background: "#fff1f8",
+                padding: "4px 10px",
+                borderRadius: "8px",
+                border: "1px solid #fbcfe8",
+                fontSize: "13px"
+              }}
+              title="Access Super Admin & Operations Portal"
+            >
+              <ShieldCheck size={14} /> Admin Portal
+            </Link>
           </div>
         </div>
       </header>
@@ -194,11 +235,83 @@ export default function SignIn() {
           <h2>Welcome Back!</h2>
           <p className="right-subtitle">Login to continue to Book My Stars</p>
 
-          {error && (
+          {error === "admin_hint" ? (
+            <div 
+              className="alert py-2 px-3 mb-3 w-100" 
+              role="alert" 
+              style={{ 
+                fontSize: "13px", 
+                backgroundColor: "#fff1f8", 
+                borderRadius: "8px", 
+                border: "1px solid #fbcfe8",
+                color: "#9d174d",
+                display: "flex",
+                flexDirection: "column",
+                gap: "4px"
+              }}
+            >
+              <div style={{ fontWeight: "800", display: "flex", alignItems: "center", gap: "6px" }}>
+                <ShieldCheck size={15} style={{ color: "#ee008f" }} />
+                Administrative Account Detected
+              </div>
+              <div style={{ fontSize: "12px", color: "#475569" }}>
+                This is the public talent portal. Please sign in to the{" "}
+                <Link to="/admin/login" style={{ color: "#ee008f", fontWeight: "800", textDecoration: "underline" }}>
+                  Admin Portal &rarr;
+                </Link>
+              </div>
+            </div>
+          ) : error && (error.toLowerCase().includes("pending") || error.toLowerCase().includes("verification")) ? (
+            <div 
+              className="alert py-3 px-3 mb-3 w-100" 
+              role="alert" 
+              style={{ 
+                fontSize: "13px", 
+                backgroundColor: "#fffbeb", 
+                borderRadius: "10px", 
+                border: "1px solid #fde68a",
+                color: "#92400e",
+                display: "flex",
+                flexDirection: "column",
+                gap: "6px"
+              }}
+            >
+              <div style={{ fontWeight: "800", display: "flex", alignItems: "center", gap: "6px" }}>
+                <Clock size={16} style={{ color: "#d97706" }} />
+                Partner Verification Pending
+              </div>
+              <div style={{ fontSize: "12px", color: "#78350f", lineHeight: "1.5" }}>
+                {error}
+              </div>
+            </div>
+          ) : error && error.toLowerCase().includes("rejected") ? (
+            <div 
+              className="alert py-3 px-3 mb-3 w-100" 
+              role="alert" 
+              style={{ 
+                fontSize: "13px", 
+                backgroundColor: "#fef2f2", 
+                borderRadius: "10px", 
+                border: "1px solid #fecaca",
+                color: "#991b1b",
+                display: "flex",
+                flexDirection: "column",
+                gap: "6px"
+              }}
+            >
+              <div style={{ fontWeight: "800", display: "flex", alignItems: "center", gap: "6px" }}>
+                <AlertTriangle size={16} style={{ color: "#dc2626" }} />
+                Partner Application Status
+              </div>
+              <div style={{ fontSize: "12px", color: "#7f1d1d", lineHeight: "1.5" }}>
+                {error}
+              </div>
+            </div>
+          ) : error ? (
             <div className="alert alert-danger py-2 px-3 mb-3 w-100" role="alert" style={{ fontSize: "13px", fontWeight: "600", color: "#d93025", backgroundColor: "#fde8e8", borderRadius: "8px", border: "1px solid #f8b4b4" }}>
               {error}
             </div>
-          )}
+          ) : null}
 
           <form className="auth-form" onSubmit={handleSubmit}>
             {/* Email Address */}
@@ -314,6 +427,60 @@ export default function SignIn() {
               <h5>Your data is safe with us</h5>
               <p>We never post without your permission. Your privacy is our priority.</p>
             </div>
+          </div>
+
+          {/* Dedicated Administrator Portal Access Card */}
+          <div style={{
+            marginTop: "16px",
+            padding: "12px 16px",
+            background: "#f8fafc",
+            border: "1.5px dashed #cbd5e1",
+            borderRadius: "14px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "12px",
+            transition: "all 0.2s ease"
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", textAlign: "left" }}>
+              <div style={{
+                width: "36px",
+                height: "36px",
+                borderRadius: "10px",
+                background: "#fdf2f8",
+                color: "#ee008f",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0
+              }}>
+                <ShieldCheck size={20} />
+              </div>
+              <div>
+                <div style={{ fontSize: "13px", fontWeight: "800", color: "#0f172a" }}>
+                  System Administrator?
+                </div>
+                <div style={{ fontSize: "11px", color: "#64748b" }}>
+                  Enter credentials in the Super Admin Portal
+                </div>
+              </div>
+            </div>
+            <Link
+              to="/admin/login"
+              style={{
+                fontSize: "12px",
+                fontWeight: "800",
+                color: "#ffffff",
+                background: "linear-gradient(135deg, #ee008f 0%, #7c3aed 100%)",
+                textDecoration: "none",
+                padding: "8px 14px",
+                borderRadius: "10px",
+                boxShadow: "0 2px 8px rgba(238, 0, 143, 0.25)",
+                whiteSpace: "nowrap"
+              }}
+            >
+              Admin Login &rarr;
+            </Link>
           </div>
         </div>
 

@@ -75,6 +75,14 @@ public class CastingApplicationService {
                 .toList();
     }
 
+    public List<CastingApplicationResponse> getReceivedApplications(Authentication authentication) {
+        User professional = getAuthenticatedUser(authentication);
+        return castingApplicationRepository.findByCastingCallPostedByIdOrderByAppliedAtDesc(professional.getId())
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
     public CastingApplicationResponse updateApplicationStatus(Authentication authentication, Long applicationId, ApplicationStatus status) {
         User professional = getAuthenticatedUser(authentication);
 

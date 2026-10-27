@@ -1,23 +1,10 @@
 package com.example.bookmystars.model;
 
-import jakarta.persistence.CollectionTable;
-import jakarta.persistence.Column;
-import jakarta.persistence.ElementCollection;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.persistence.*;
+import lombok.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -34,16 +21,16 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Talent or Professional
+    // Talent, Professional, or Partner
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private AccountType accountType;
 
-    // Full name
+    // Full name or Academy/Business name
     @Column(nullable = false)
     private String fullName;
 
-    // Optional
+    // Optional (e.g. Stage name or Contact Person Name for Partner)
     private String stageName;
 
     // Login email
@@ -58,16 +45,16 @@ public class User {
     @Column(nullable = false)
     private String password;
 
-    // Date of Birth
-    @Column(nullable = false)
+    // Date of Birth (optional for business / partner accounts)
+    @Column(nullable = true)
     private LocalDate dateOfBirth;
 
-    // Gender
+    // Gender (optional for business / partner accounts)
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = true)
     private Gender gender;
 
-    // City
+    // City / Location
     @Column(nullable = false)
     private String location;
 
@@ -86,8 +73,67 @@ public class User {
 
     // User must accept terms
     @Column(nullable = false)
-    private Boolean termsAccepted;
+    @Builder.Default
+    private Boolean termsAccepted = true;
 
     // Custom profession when ProfileType is OTHER
     private String customProfession;
+
+    // Primary profession from master catalog
+    @Column(name = "primary_profession", length = 120)
+    private String primaryProfession;
+
+    // --- PARTNER & APPROVAL GATEKEEPING ATTRIBUTES ---
+
+    // Whether this account has been verified and approved by the Super Admin
+    @Column(name = "is_approved")
+    @Builder.Default
+    private Boolean isApproved = true;
+
+    // Verification status: PENDING, APPROVED, REJECTED
+    @Column(name = "verification_status", length = 40)
+    @Builder.Default
+    private String verificationStatus = "APPROVED";
+
+    // Academy / Business Category (e.g. DANCE_ACADEMY, ACTING_ACADEMY, MUSIC_STUDIO, etc.)
+    @Column(name = "partner_category", length = 100)
+    private String partnerCategory;
+
+    // Partnership requirements / Goals (e.g. Hiring talent, promoting batches, ad campaigns)
+    @Column(name = "partner_requirements", columnDefinition = "TEXT")
+    private String partnerRequirements;
+
+    // Official website or portfolio link
+    @Column(name = "partner_website", length = 255)
+    private String partnerWebsite;
+
+    // Physical academy / business address
+    @Column(name = "partner_address", length = 500)
+    private String partnerAddress;
+
+    // Rejection reason note from Super Admin if rejected
+    @Column(name = "rejection_reason", length = 500)
+    private String rejectionReason;
+
+    // Timestamp when approved by Super Admin
+    @Column(name = "approved_at")
+    private LocalDateTime approvedAt;
+
+    // Registration timestamp
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    protected void onPrePersist() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+        if (accountType == AccountType.PARTNER || accountType == AccountType.CLIENT) {
+            if (isApproved == null) isApproved = false;
+            if (verificationStatus == null) verificationStatus = "PENDING";
+        } else {
+            if (isApproved == null) isApproved = true;
+            if (verificationStatus == null) verificationStatus = "APPROVED";
+        }
+    }
 }

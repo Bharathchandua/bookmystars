@@ -5,10 +5,10 @@ import { BACKEND_SERVER_URL } from "../services/BaseUrl";
  */
 export function getFullImageUrl(url) {
   if (!url) return "";
-  if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:")) {
+  if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:") || url.startsWith("blob:")) {
     return url;
   }
-  return `${BACKEND_SERVER_URL}${url.startsWith("/") ? "" : "/"}${url}`;
+  return url.startsWith("/") ? url : `/${url}`;
 }
 
 export function calculateAge(dob) {

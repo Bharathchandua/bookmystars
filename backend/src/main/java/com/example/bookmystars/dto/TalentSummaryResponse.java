@@ -21,6 +21,8 @@ public class TalentSummaryResponse {
     private String email;
     private String profilePhoto;
     private Set<ProfileType> profileTypes;
+    private String customProfession;
+    private String primaryProfession;
     private String location;
     private String dayRate;
     private Integer yearsExperience;

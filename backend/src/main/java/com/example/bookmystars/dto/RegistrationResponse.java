@@ -28,4 +28,5 @@ public class RegistrationResponse {
     private String referralSource;
     private Boolean termsAccepted;
     private String customProfession;
+    private String primaryProfession;
 }

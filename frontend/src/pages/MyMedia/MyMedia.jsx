@@ -30,7 +30,13 @@ import {
   getShareProfileData,
   getFullImageUrl,
   getStoredUser
-} from "../../services/api";
+} from "../../features/bms/api";
+import {
+  showSuccess,
+  showError,
+  confirmDelete,
+  showWarning
+} from "../../shared/utils/alert";
 
 /* ══════════════════════════════════════════
    STORAGE OVERVIEW – sub-component
@@ -85,7 +91,7 @@ function StorageOverview({ percentage, usedGB, totalGB, photosCount, videosCount
     <div className="mm-widget">
       <div className="mm-widget-head">
         <h3 className="mm-widget-title">Storage Overview</h3>
-        <PagesButton className="mm-widget-link" onClick={() => alert(`Total Storage: ${totalGB} GB\nUsed: ${usedGB.toFixed(2)} GB`)}>
+        <PagesButton className="mm-widget-link" onClick={() => showSuccess("Storage Details", `Total Storage: ${totalGB} GB | Used: ${usedGB.toFixed(2)} GB (${(percentage || 0).toFixed(1)}%)`)}>
           View Details
         </PagesButton>
       </div>
@@ -309,9 +315,9 @@ export default function MyMedia() {
       await deletePortfolioPhoto(id);
       setPhotos(p => p.filter(x => x.id !== id));
       window.dispatchEvent(new Event("portfolio_updated"));
-      toast_("Portfolio photo deleted");
+      showSuccess("Photo Deleted", "Portfolio photo has been deleted successfully.");
     } catch (err) {
-      toast_("Failed to delete photo");
+      showError("Delete Failed", err.message || "Failed to delete photo");
     }
   };
 
@@ -320,9 +326,9 @@ export default function MyMedia() {
       await deleteVideo(id);
       setVideos(v => v.filter(x => x.id !== id));
       window.dispatchEvent(new Event("videos_updated"));
-      toast_("Video deleted");
+      showSuccess("Video Deleted", "Video has been deleted successfully.");
     } catch (err) {
-      toast_("Failed to delete video");
+      showError("Delete Failed", err.message || "Failed to delete video");
     }
   };
 
@@ -331,9 +337,9 @@ export default function MyMedia() {
       await deleteDocument(id);
       setDocuments(d => d.filter(x => x.id !== id));
       window.dispatchEvent(new Event("documents_updated"));
-      toast_("Document deleted successfully");
+      showSuccess("Document Deleted", "Document has been deleted successfully.");
     } catch (err) {
-      toast_("Failed to delete document");
+      showError("Delete Failed", err.message || "Failed to delete document");
     }
   };
 
@@ -342,9 +348,9 @@ export default function MyMedia() {
       await deleteAudio(id);
       setAudios(a => a.filter(x => x.id !== id));
       window.dispatchEvent(new Event("audios_updated"));
-      toast_("Audio track deleted successfully");
+      showSuccess("Audio Track Deleted", "Audio track has been deleted successfully.");
     } catch (err) {
-      toast_("Failed to delete audio track");
+      showError("Delete Failed", err.message || "Failed to delete audio track");
     }
   };
 
@@ -361,7 +367,7 @@ export default function MyMedia() {
     e.preventDefault();
     if (uploadType === "photo") {
       if (!selFile) {
-        toast_("Please select an image file to upload");
+        showWarning("Photo Required", "Please select an image file to upload.");
         return;
       }
       try {
@@ -369,19 +375,19 @@ export default function MyMedia() {
         await uploadPortfolioPhoto(selFile, uploadTitle.trim() || selFile.name, uploadCategory);
         await fetchMedia();
         window.dispatchEvent(new Event("portfolio_updated"));
-        toast_("Photo added to portfolio and media successfully!");
+        showSuccess("Photo Uploaded!", "Your photo has been added to your portfolio.");
         setShowUpload(false);
         setSelFile(null);
         setUploadTitle("");
       } catch (err) {
-        toast_(err.message || "Failed to upload photo");
+        showError("Upload Failed", err.message || "Failed to upload photo.");
       } finally {
         setUploading(false);
       }
     } else if (uploadType === "video") {
       if (videoMode === "file") {
         if (!selFile) {
-          toast_("Please select a video file");
+          showWarning("Video Required", "Please select a video file to upload.");
           return;
         }
         try {
@@ -393,18 +399,18 @@ export default function MyMedia() {
           });
           await fetchMedia();
           window.dispatchEvent(new Event("videos_updated"));
-          toast_("Video uploaded successfully!");
+          showSuccess("Video Uploaded!", "Your video showreel has been uploaded successfully.");
           setShowUpload(false);
           setSelFile(null);
           setUploadTitle("");
         } catch (err) {
-          toast_(err.message || "Failed to upload video file");
+          showError("Upload Failed", err.message || "Failed to upload video file.");
         } finally {
           setUploading(false);
         }
       } else {
         if (!videoUrl.trim()) {
-          toast_("Please enter a video URL");
+          showWarning("URL Required", "Please enter a valid YouTube or video URL.");
           return;
         }
         try {
@@ -416,19 +422,19 @@ export default function MyMedia() {
           });
           await fetchMedia();
           window.dispatchEvent(new Event("videos_updated"));
-          toast_("Video link added successfully!");
+          showSuccess("Video Added!", "Your video link has been added successfully.");
           setShowUpload(false);
           setVideoUrl("");
           setUploadTitle("");
         } catch (err) {
-          toast_(err.message || "Failed to save video URL");
+          showError("Save Failed", err.message || "Failed to save video URL.");
         } finally {
           setUploading(false);
         }
       }
     } else if (uploadType === "audio") {
       if (!selFile) {
-        toast_("Please select an audio file to upload");
+        showWarning("Audio Required", "Please select an audio file to upload.");
         return;
       }
       try {
@@ -441,18 +447,18 @@ export default function MyMedia() {
         });
         await fetchMedia();
         window.dispatchEvent(new Event("audios_updated"));
-        toast_("Audio track uploaded successfully!");
+        showSuccess("Audio Uploaded!", "Your voice track has been uploaded successfully.");
         setShowUpload(false);
         setSelFile(null);
         setUploadTitle("");
       } catch (err) {
-        toast_(err.message || "Failed to upload audio track");
+        showError("Upload Failed", err.message || "Failed to upload audio track.");
       } finally {
         setUploading(false);
       }
     } else {
       if (!selFile) {
-        toast_("Please select a document file to upload");
+        showWarning("Document Required", "Please select a document file to upload.");
         return;
       }
       try {
@@ -464,12 +470,12 @@ export default function MyMedia() {
         });
         await fetchMedia();
         window.dispatchEvent(new Event("documents_updated"));
-        toast_("Document uploaded successfully!");
+        showSuccess("Document Uploaded!", "Your document has been uploaded successfully.");
         setShowUpload(false);
         setSelFile(null);
         setUploadTitle("");
       } catch (err) {
-        toast_(err.message || "Failed to upload document");
+        showError("Upload Failed", err.message || "Failed to upload document.");
       } finally {
         setUploading(false);
       }
@@ -480,8 +486,9 @@ export default function MyMedia() {
     e.preventDefault();
     if (!folderName.trim()) return;
     setShowFolder(false);
+    const createdName = folderName;
     setFolderName("");
-    toast_(`Folder "${folderName}" created!`);
+    showSuccess("Folder Created", `Folder "${createdName}" has been created.`);
   };
 
   // Filtered lists
@@ -650,7 +657,7 @@ export default function MyMedia() {
                       </div>
                     )}
                     <div className="mm-photos-grid">
-                      {fPhotos.map(img => (
+                      {(activeTab === "all" ? fPhotos.slice(0, 5) : fPhotos).map(img => (
                         <div key={img.id} className="mm-photo-card" onClick={() => setPreviewPhoto(img)}>
                           <img src={img.url} alt={img.name} />
                           <div className="mm-photo-overlay">
@@ -659,9 +666,10 @@ export default function MyMedia() {
                           </div>
                           <PagesButton
                             className="mm-photo-del-btn"
-                            onClick={e => {
+                            onClick={async (e) => {
                               e.stopPropagation();
-                              if (window.confirm("Delete this photo from your portfolio & media?")) delPhoto(img.id);
+                              const confirmed = await confirmDelete(img.name || "this photo");
+                              if (confirmed) delPhoto(img.id);
                             }}
                             title="Delete"
                           >
@@ -690,7 +698,7 @@ export default function MyMedia() {
                       </div>
                     )}
                     <VideosSection
-                      videos={fVideos}
+                      videos={activeTab === "all" ? fVideos.slice(0, 4) : fVideos}
                       onUploadClick={() => { setUploadType("video"); setShowUpload(true); }}
                       onDeleteVideo={delVideo}
                     />
@@ -722,7 +730,7 @@ export default function MyMedia() {
                         <div key={doc.id} className="mm-doc-card">
                           <div className="mm-doc-top">
                             <div className={docIconClass(doc.format)}>{doc.format}</div>
-                            <PagesButton className="mm-doc-menu" onClick={e => { e.stopPropagation(); if(window.confirm(`Delete "${doc.title}"?`)) delDoc(doc.id); }} title="Delete">
+                            <PagesButton className="mm-doc-menu" onClick={async (e) => { e.stopPropagation(); const confirmed = await confirmDelete(`"${doc.title}"`); if (confirmed) delDoc(doc.id); }} title="Delete">
                               <Trash2 size={14} />
                             </PagesButton>
                           </div>
@@ -779,8 +787,9 @@ export default function MyMedia() {
                           <PagesButton
                             style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", padding: "4px" }}
                             title="Delete"
-                            onClick={() => {
-                              if (!window.confirm(`Delete "${f.title || f.name}"?`)) return;
+                            onClick={async () => {
+                              const confirmed = await confirmDelete(`"${f.title || f.name}"`);
+                              if (!confirmed) return;
                               if (f.kind === "photo") delPhoto(f.id);
                               if (f.kind === "video") delVideo(f.id);
                               if (f.kind === "audio") delAudio(f.id);
@@ -885,8 +894,9 @@ export default function MyMedia() {
               <span style={{ fontSize: "12px", color: "#64748b" }}>{previewPhoto.category} • {previewPhoto.date}</span>
               <PagesButton
                 style={{ backgroundColor: "#ef4444", color: "#fff", border: "none", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
-                onClick={() => {
-                  if (window.confirm("Delete this photo?")) {
+                onClick={async () => {
+                  const confirmed = await confirmDelete(previewPhoto.name || "this photo");
+                  if (confirmed) {
                     delPhoto(previewPhoto.id);
                     setPreviewPhoto(null);
                   }

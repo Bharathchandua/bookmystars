@@ -1,9 +1,11 @@
 package com.example.bookmystars.config;
 
 import com.example.bookmystars.security.JwtAuthenticationFilter;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -36,14 +38,29 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // 1. Always permit all CORS preflight OPTIONS requests
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                        // 2. Publicly accessible authentication & registration endpoints
                         .requestMatchers(
                                 "/error",
                                 "/api/auth/**",
+                                "/api/admin/auth/**",
+                                "/api/partners/**",
+                                "/api/partners/register",
+                                "/partners/**",
+                                "/api/clients/**",
+                                "/api/clients/register",
+                                "/clients/**",
                                 "/uploads/**",
                                 "/api/profile/public/**",
                                 "/api/profile/access-request/**",
                                 "/api/professional/castings/public",
                                 "/api/professional/talents",
+                                "/api/skills/**",
+                                "/api/crafts/**",
+                                "/api/professions/**",
+                                "/api/languages/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**",

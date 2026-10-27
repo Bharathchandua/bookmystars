@@ -23,5 +23,11 @@ public interface CastingApplicationRepository extends JpaRepository<CastingAppli
 
     long countByCastingCallPostedById(Long professionalId);
 
+    List<CastingApplication> findByCastingCallPostedByIdOrderByAppliedAtDesc(Long professionalId);
+
     long countByCastingCallPostedByIdAndStatus(Long professionalId, ApplicationStatus status);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.transaction.annotation.Transactional
+    void deleteByCastingCallId(Long castingCallId);
 }

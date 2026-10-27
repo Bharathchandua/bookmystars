@@ -46,7 +46,7 @@ public class WorkExperienceController {
     @Operation(summary = "Add a new filmography or work experience entry for talent")
     public ResponseEntity<WorkExperienceResponse> addWorkExperience(
             Authentication authentication,
-            @RequestBody WorkExperienceRequest request) {
+            @jakarta.validation.Valid @RequestBody WorkExperienceRequest request) {
 
         String email = authentication.getName();
 
@@ -75,7 +75,7 @@ public class WorkExperienceController {
     public ResponseEntity<WorkExperienceResponse> updateWorkExperience(
             Authentication authentication,
             @PathVariable Long id,
-            @RequestBody WorkExperienceRequest request) {
+            @jakarta.validation.Valid @RequestBody WorkExperienceRequest request) {
 
         String email = authentication.getName();
 

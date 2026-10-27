@@ -61,4 +61,12 @@ public class RegistrationRequest {
     private Boolean termsAccepted;
 
     private String customProfession;
+
+    private String primaryProfession;
+
+    private String languages;
+
+    private String actingLanguages;
+
+    private String talentCategory;
 }

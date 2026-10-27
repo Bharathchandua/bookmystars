@@ -245,11 +245,19 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({BadCredentialsException.class, AuthenticationException.class, JwtException.class})
     public ResponseEntity<ClientResponseBean> handleAuthenticationException(Exception ex) {
         logger.warn("Authentication failed: {}", ex.getMessage());
+        String msg = (ex.getMessage() != null && (
+                ex.getMessage().toLowerCase().contains("pending") ||
+                ex.getMessage().toLowerCase().contains("partner") ||
+                ex.getMessage().toLowerCase().contains("super admin") ||
+                ex.getMessage().toLowerCase().contains("verification") ||
+                ex.getMessage().toLowerCase().contains("rejected")
+        )) ? ex.getMessage() : "Invalid email or password";
+
         ClientResponseBean response = new ClientResponseBean(
                 HttpStatus.UNAUTHORIZED.value(),
                 "FAILED",
-                "Invalid email or password",
-                "Please authenticate with valid credentials or token."
+                msg,
+                msg
         );
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
     }

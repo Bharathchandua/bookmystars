@@ -498,6 +498,22 @@ export default function ChatWindow({
       <div className="msg-chat-timeline">
         <div className="msg-messages-scroll-area">
           <div className="msg-timeline-date">Today</div>
+          {messages.length === 0 && (
+            <div style={{
+              textAlign: "center",
+              padding: "48px 20px",
+              color: "#94a3b8",
+              fontSize: "13px"
+            }}>
+              <div style={{ fontSize: "36px", marginBottom: "8px" }}>💬</div>
+              <div style={{ fontWeight: "800", color: "#334155", fontSize: "14px", marginBottom: "4px" }}>
+                Start of conversation with {activeChat.name}
+              </div>
+              <div style={{ fontSize: "12px", color: "#64748b" }}>
+                Send a message below to connect directly.
+              </div>
+            </div>
+          )}
           {messages.map((msg) => {
             const isMe = msg.sender === "me";
             return (

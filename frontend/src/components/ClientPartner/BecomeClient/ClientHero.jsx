@@ -105,6 +105,36 @@ export default function ClientHero() {
               </div>
             </div>
           </div>
+
+          {/* CTA Action */}
+          <div style={{ marginTop: "24px" }}>
+            <button
+              type="button"
+              onClick={() => {
+                const el = document.getElementById("client-registration-section");
+                if (el) el.scrollIntoView({ behavior: "smooth" });
+              }}
+              style={{
+                background: "linear-gradient(135deg, #ec008c 0%, #7c3aed 100%)",
+                color: "#ffffff",
+                padding: "13px 28px",
+                borderRadius: "12px",
+                fontWeight: "800",
+                fontSize: "14.5px",
+                border: "none",
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                boxShadow: "0 6px 18px rgba(236, 0, 140, 0.35)",
+                transition: "opacity 0.2s ease"
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.92"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; }}
+            >
+              Post Brand Requirements &rarr;
+            </button>
+          </div>
         </div>
 
         {/* RIGHT: Hero Image */}

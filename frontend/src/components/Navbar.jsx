@@ -3,14 +3,28 @@ import { ChevronDown, Menu, X } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import logo from "../assets/logo.png";
 import Button from "./common/Button";
+import { getStoredUser } from "../features/bms/api/auth/authApi";
 
 export default function Navbar({ isClientPartnerPage = false }) {
+  const [currentUser, setCurrentUser] = useState(() => getStoredUser());
   const [menuOpen, setMenuOpen] = useState(false);
   const [servicesDropdownOpen, setServicesDropdownOpen] = useState(false);
   const location = useLocation();
   const servicesDropdownRef = useRef(null);   // desktop services wrapper
   const mobileServicesRef = useRef(null);     // mobile services wrapper
   const navRef = useRef(null);               // entire nav element
+
+  useEffect(() => {
+    const handleAuthChange = () => {
+      setCurrentUser(getStoredUser());
+    };
+    window.addEventListener("auth_changed", handleAuthChange);
+    window.addEventListener("storage", handleAuthChange);
+    return () => {
+      window.removeEventListener("auth_changed", handleAuthChange);
+      window.removeEventListener("storage", handleAuthChange);
+    };
+  }, []);
 
   const links = isClientPartnerPage
     ? []
@@ -65,6 +79,35 @@ export default function Navbar({ isClientPartnerPage = false }) {
   const closeAll = () => {
     setMenuOpen(false);
     setServicesDropdownOpen(false);
+  };
+
+  const isClientPage = location.pathname === "/become-client";
+  const isPartnerPage = location.pathname === "/become-partner";
+
+  const getSignInPath = () => {
+    if (isClientPage) return "/client/signin";
+    if (isPartnerPage) return "/partner/signin";
+    return "/signin";
+  };
+
+  const handleJoinClick = (e) => {
+    if (isClientPage) {
+      if (e) e.preventDefault();
+      closeAll();
+      const el = document.getElementById("client-registration-section");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth" });
+      }
+    } else if (isPartnerPage) {
+      if (e) e.preventDefault();
+      closeAll();
+      const el = document.getElementById("partner-registration-section");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth" });
+      }
+    } else {
+      closeAll();
+    }
   };
 
   const getServiceId = (item) => {
@@ -216,15 +259,38 @@ export default function Navbar({ isClientPartnerPage = false }) {
         </div>
 
         <div className="nav-actions">
-          <Link to="/signin">
-            <Button variant="signin" icon={<i className="bi bi-person"></i>} iconPosition="left">
-              Sign In
-            </Button>
-          </Link>
+          {currentUser ? (
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <Link to="/dashboard">
+                <Button variant="signin" icon={<i className="bi bi-grid-fill"></i>} iconPosition="left">
+                  Dashboard
+                </Button>
+              </Link>
+              <Link to="/profile">
+                <Button variant="join" icon={<i className="bi bi-person-circle"></i>} iconPosition="left">
+                  {currentUser.fullName ? currentUser.fullName.split(" ")[0] : "Profile"}
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <>
+              <Link to={getSignInPath()}>
+                <Button variant="signin" icon={<i className="bi bi-person"></i>} iconPosition="left">
+                  Sign In
+                </Button>
+              </Link>
 
-          <Link to="/join">
-            <Button variant="join">Join Free</Button>
-          </Link>
+              {isClientPage || isPartnerPage ? (
+                <Button variant="join" onClick={handleJoinClick}>
+                  Join Free
+                </Button>
+              ) : (
+                <Link to="/join">
+                  <Button variant="join">Join Free</Button>
+                </Link>
+              )}
+            </>
+          )}
 
           <button
             className="mobile-menu-btn"
@@ -334,22 +400,45 @@ export default function Navbar({ isClientPartnerPage = false }) {
             );
           })}
 
-          <Link to="/signin" onClick={closeAll}>
-            <Button
-              variant="signin"
-              className="mobile-btn"
-              icon={<i className="bi bi-person"></i>}
-              iconPosition="left"
-            >
-              Sign In
-            </Button>
-          </Link>
+          {currentUser ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%", marginTop: "12px" }}>
+              <Link to="/dashboard" onClick={closeAll}>
+                <Button variant="signin" className="mobile-btn" icon={<i className="bi bi-grid-fill"></i>} iconPosition="left">
+                  My Dashboard
+                </Button>
+              </Link>
+              <Link to="/profile" onClick={closeAll}>
+                <Button variant="join" className="mobile-btn" icon={<i className="bi bi-person-circle"></i>} iconPosition="left">
+                  My Profile & Portfolio
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <>
+              <Link to={getSignInPath()} onClick={closeAll}>
+                <Button
+                  variant="signin"
+                  className="mobile-btn"
+                  icon={<i className="bi bi-person"></i>}
+                  iconPosition="left"
+                >
+                  Sign In
+                </Button>
+              </Link>
 
-          <Link to="/join" onClick={closeAll}>
-            <Button variant="join" className="mobile-btn">
-              Join Free
-            </Button>
-          </Link>
+              {isClientPage || isPartnerPage ? (
+                <Button variant="join" className="mobile-btn" onClick={handleJoinClick}>
+                  Join Free
+                </Button>
+              ) : (
+                <Link to="/join" onClick={closeAll}>
+                  <Button variant="join" className="mobile-btn">
+                    Join Free
+                  </Button>
+                </Link>
+              )}
+            </>
+          )}
         </div>
       )}
     </nav>

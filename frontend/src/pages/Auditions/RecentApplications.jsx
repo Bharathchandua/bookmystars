@@ -9,11 +9,25 @@ export default function RecentApplications({ applications, onViewUpdate, emptyMe
           <div key={item.id} className="ac-recent-item">
             
             <div className="ac-recent-media">
-              <img
-                src={item.thumbnail}
-                alt={item.project}
-                className="ac-square-thumb"
-              />
+              {item.thumbnail ? (
+                <img
+                  src={item.thumbnail}
+                  alt={item.project}
+                  className="ac-square-thumb"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                    if (e.currentTarget.nextElementSibling) {
+                      e.currentTarget.nextElementSibling.style.display = "flex";
+                    }
+                  }}
+                />
+              ) : null}
+              <div 
+                className="ac-square-thumb flex items-center justify-center bg-slate-100 text-slate-500 font-bold text-xs"
+                style={{ display: item.thumbnail ? "none" : "flex" }}
+              >
+                🎬
+              </div>
               <div className="ac-invite-info">
                 <span className="ac-project-name">{item.project}</span>
                 <span className="ac-project-type">{item.type}</span>

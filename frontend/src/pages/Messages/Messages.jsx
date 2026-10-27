@@ -1,255 +1,161 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import AppLayout from "../Layout/AppLayout.jsx";
 import ChatList from "./ChatList.jsx";
 import ChatWindow from "./ChatWindow.jsx";
 import ChatSidebar from "./ChatSidebar.jsx";
-import { CONVERSATIONS, INITIAL_MESSAGES } from "./messagesData.js";
 import { 
-  getProfileAccessRequests, 
+  getMyConversations,
+  getThreadMessages,
+  sendThreadMessage,
   respondToProfileAccessRequest, 
-  getIncomingBookingRequests, 
-  getSentBookingRequests,
   updateBookingRequestStatus,
-  getChatMessages,
-  sendChatMessage,
   getStoredUser,
   getFullImageUrl 
-} from "../../services/api";
+} from "../../features/bms/api";
+import { showSuccess, showError } from "../../shared/utils/alert";
 import "./messages.css";
 import "./messages-mobile.css";
 
 export default function Messages() {
   const location = useLocation();
   const storedUser = getStoredUser();
+  const currentUserId = storedUser?.userId || storedUser?.id;
   const isProfessional = (storedUser?.accountType || "").toUpperCase() === "PROFESSIONAL";
 
-  const [conversations, setConversations] = useState(CONVERSATIONS);
-  const [activeChatId, setActiveChatId] = useState(1);
-  const [chatMessages, setChatMessages] = useState(INITIAL_MESSAGES);
+  const [conversations, setConversations] = useState([]);
+  const [activeChatId, setActiveChatId] = useState(null);
+  const [chatMessages, setChatMessages] = useState({});
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
   const [isMobileChatOpen, setIsMobileChatOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // Fetch real incoming & sent booking requests from database
+  // Keep a ref to activeChatId for live polling without re-creating interval
+  const activeChatIdRef = useRef(activeChatId);
   useEffect(() => {
-    async function loadAllConversations() {
-      try {
-        let allNewConversations = [];
-        let newChatMessages = {};
+    activeChatIdRef.current = activeChatId;
+  }, [activeChatId]);
 
-        if (isProfessional) {
-          // 1. Casting Director: Sent Booking Requests
-          const sentReqs = await getSentBookingRequests().catch((err) => {
-            console.error("Failed to load sent bookings:", err);
-            return [];
-          });
-
-          if (Array.isArray(sentReqs) && sentReqs.length > 0) {
-            const formatted = sentReqs.map((b) => ({
-              id: `book-${b.id}`,
-              bookingId: b.id,
-              name: b.talentName || "Talent",
-              role: "Talent",
-              company: b.projectTitle || "Shoot Booking",
-              email: b.talentEmail || "",
-              avatar: b.talentPhotoUrl
-                ? getFullImageUrl(b.talentPhotoUrl)
-                : "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
-              lastMsg: b.status === "PENDING"
-                ? `⏳ Request Pending: ${b.projectTitle}`
-                : b.status === "ACCEPTED"
-                ? `✅ Offer Accepted: ${b.projectTitle}`
-                : `❌ Offer Declined: ${b.projectTitle}`,
-              time: b.createdAt
-                ? new Date(b.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-                : "Today",
-              unread: b.status === "ACCEPTED" ? 1 : 0,
-              online: true,
-              bookingRequest: b,
-              booking: {
-                id: `BMS-SH-${b.id}`,
-                project: b.projectTitle,
-                role: b.projectType || "Shoot",
-                cover: "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=150"
-              }
-            }));
-            allNewConversations.push(...formatted);
-
-            sentReqs.forEach((b) => {
-              const cId = `book-${b.id}`;
-              const detailText = `🎬 Shoot Booking Offer Details:\n• Project: ${b.projectTitle} (${b.projectType || "Shoot"})\n• Shoot Date: ${b.bookingDate || "To be discussed"}\n• Location: ${b.location || "TBD"}\n• Offered Rate: ${b.offeredRate ? "₹" + b.offeredRate : "Standard Rate"}\n\nYour Note to Talent:\n"${b.message || "We would love to book you for this shoot. Please review the offer and confirm availability!"}"`;
-
-              newChatMessages[cId] = [
-                {
-                  id: `book-info-${b.id}`,
-                  sender: "me",
-                  text: detailText,
-                  time: b.createdAt
-                    ? new Date(b.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-                    : "Today"
-                }
-              ];
-            });
-          }
-        } else {
-          // 2. Talent: Incoming Booking Requests & Profile Access Requests
-          const [accessReqs, bookingReqs] = await Promise.all([
-            getProfileAccessRequests().catch((err) => {
-              console.error("Failed to load access requests:", err);
-              return [];
-            }),
-            getIncomingBookingRequests().catch((err) => {
-              console.error("Failed to load booking requests:", err);
-              return [];
-            }),
-          ]);
-
-          if (Array.isArray(bookingReqs) && bookingReqs.length > 0) {
-            const formattedBookings = bookingReqs.map((b) => ({
-              id: `book-${b.id}`,
-              bookingId: b.id,
-              name: b.professionalName || b.professionalCompany || "Casting Director",
-              role: "Casting Director",
-              company: b.projectTitle || "Shoot Booking",
-              email: b.professionalEmail || "director@bookmystars.com",
-              phone: b.professionalMobile || "+91 98765 43210",
-              avatar: b.professionalPhotoUrl
-                ? getFullImageUrl(b.professionalPhotoUrl)
-                : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
-              lastMsg: b.status === "PENDING"
-                ? `🎬 Shoot Request: ${b.projectTitle}`
-                : b.status === "ACCEPTED"
-                ? `✅ Shoot Confirmed: ${b.projectTitle}`
-                : `❌ Offer Declined: ${b.projectTitle}`,
-              time: b.createdAt
-                ? new Date(b.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-                : "Today",
-              unread: b.status === "PENDING" ? 1 : 0,
-              online: true,
-              bookingRequest: b,
-              booking: {
-                id: `BMS-SH-${b.id}`,
-                project: b.projectTitle,
-                role: b.projectType || "Shoot",
-                cover: "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=150"
-              }
-            }));
-            allNewConversations.push(...formattedBookings);
-
-            bookingReqs.forEach((b) => {
-              const cId = `book-${b.id}`;
-              const detailText = `🎬 Shoot Booking Offer Details:\n• Project: ${b.projectTitle} (${b.projectType || "Shoot"})\n• Shoot Date: ${b.bookingDate || "To be discussed"}\n• Location: ${b.location || "TBD"}\n• Offered Rate: ${b.offeredRate ? "₹" + b.offeredRate : "Standard Rate"}\n\nDirector's Message:\n"${b.message || "We would love to book you for this shoot. Please review the offer and confirm availability!"}"`;
-
-              const threadMsgs = [
-                {
-                  id: `book-info-${b.id}`,
-                  sender: "them",
-                  text: detailText,
-                  time: b.createdAt
-                    ? new Date(b.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-                    : "Today"
-                }
-              ];
-
-              if (b.status === "ACCEPTED") {
-                threadMsgs.push({
-                  id: `book-acc-${b.id}`,
-                  sender: "me",
-                  text: `✅ You accepted this shoot booking for '${b.projectTitle}'. Shoot date (${b.bookingDate}) is confirmed on your schedule!`,
-                  time: "Confirmed"
-                });
-              } else if (b.status === "DECLINED") {
-                threadMsgs.push({
-                  id: `book-dec-${b.id}`,
-                  sender: "me",
-                  text: `❌ You declined this shoot offer for '${b.projectTitle}'.`,
-                  time: "Declined"
-                });
-              }
-
-              newChatMessages[cId] = threadMsgs;
-            });
-          }
-
-          if (Array.isArray(accessReqs) && accessReqs.length > 0) {
-            const formattedAccess = accessReqs.map((req) => ({
-              id: `req-${req.id}`,
-              requestId: req.id,
-              name: req.requesterName || "Casting Professional",
-              role: req.requesterRole || "Casting Director",
-              company: "Profile View Request",
-              email: req.requesterEmail || "",
-              avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
-              lastMsg: req.status === "PENDING"
-                ? "🔒 Requested access to view your private portfolio"
-                : req.status === "APPROVED"
-                ? "✅ Profile access approved"
-                : "❌ Profile access declined",
-              time: req.createdAt
-                ? new Date(req.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-                : "Today",
-              unread: req.status === "PENDING" ? 1 : 0,
-              online: true,
-              accessRequest: req
-            }));
-            allNewConversations.push(...formattedAccess);
-
-            accessReqs.forEach((req) => {
-              const cId = `req-${req.id}`;
-              if (!newChatMessages[cId]) {
-                newChatMessages[cId] = [
-                  {
-                    id: `req-msg-${req.id}`,
-                    sender: "them",
-                    text: req.requesterMessage || "Hello! I would like to request access to view your private portfolio, photos, and audition showreels.",
-                    time: req.createdAt
-                      ? new Date(req.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-                      : "Today"
-                  }
-                ];
-              }
-            });
-          }
-        }
-
-        if (allNewConversations.length > 0) {
-          setConversations((prev) => {
-            const nonApiConvs = prev.filter(
-              (c) => !String(c.id).startsWith("book-") && !String(c.id).startsWith("req-")
-            );
-            return [...allNewConversations, ...nonApiConvs];
-          });
-
-          setChatMessages((prev) => ({
-            ...prev,
-            ...newChatMessages
-          }));
-
-          // Target chat from navigation state (e.g. from Notification "Go to Chat")
-          if (location.state?.targetChatId) {
-            setActiveChatId(location.state.targetChatId);
-            setIsMobileChatOpen(true);
-          } else {
-            setActiveChatId(allNewConversations[0].id);
-          }
-        }
-      } catch (err) {
-        console.error("Failed to load conversations in messages:", err);
-      }
-    }
-
-    loadAllConversations();
-  }, [isProfessional, location.state]);
-
-  // Fetch real messages from database for the active booking chat
-  const fetchRealChatMessages = useCallback(async (bId) => {
-    if (!bId) return;
+  // Load all user conversations from database
+  const loadConversations = useCallback(async () => {
     try {
-      const serverMsgs = await getChatMessages(bId);
+      setLoading(true);
+      const rawConvs = await getMyConversations();
+      
+      const formatted = rawConvs.map((c) => {
+        let avatarUrl = c.avatar;
+        if (avatarUrl && !avatarUrl.startsWith("http")) {
+          avatarUrl = getFullImageUrl(avatarUrl);
+        }
+        if (!avatarUrl) {
+          avatarUrl = c.role === "Talent"
+            ? "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150"
+            : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150";
+        }
+
+        const timeStr = c.lastMsgTime
+          ? new Date(c.lastMsgTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+          : "Recently";
+
+        return {
+          id: c.id,
+          conversationKey: c.conversationKey || c.id,
+          targetUserId: c.targetUserId,
+          bookingId: c.bookingId,
+          opportunityId: c.opportunityId,
+          name: c.name || "User",
+          role: c.role || "User",
+          company: c.company || "",
+          email: c.email || "",
+          phone: c.phone || "",
+          avatar: avatarUrl,
+          lastMsg: c.lastMsg || "Conversation started",
+          time: timeStr,
+          unread: c.unreadCount || 0,
+          online: true,
+          bookingRequest: c.bookingRequest,
+          accessRequest: c.accessRequest,
+          booking: c.bookingRequest ? {
+            id: `BMS-SH-${c.bookingRequest.id}`,
+            project: c.bookingRequest.projectTitle,
+            role: c.bookingRequest.projectType || "Shoot",
+            cover: "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=150"
+          } : null
+        };
+      });
+
+      // Handle direct navigation state from opportunity cards or other pages
+      const navState = location.state;
+      let targetId = navState?.targetChatId;
+
+      if (navState?.targetUser) {
+        const tUser = navState.targetUser;
+        const oppId = navState.opportunityId;
+        const prospectiveKey = oppId ? `opp-${oppId}-${tUser.id}` : `user-${tUser.id}`;
+        
+        const existing = formatted.find(
+          (c) => c.id === prospectiveKey || (c.targetUserId && String(c.targetUserId) === String(tUser.id))
+        );
+
+        if (existing) {
+          targetId = existing.id;
+        } else {
+          // Add new prospective conversation at top
+          let avatar = tUser.photo || tUser.avatar;
+          if (avatar && !avatar.startsWith("http")) avatar = getFullImageUrl(avatar);
+          if (!avatar) avatar = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150";
+
+          const newConv = {
+            id: prospectiveKey,
+            conversationKey: prospectiveKey,
+            targetUserId: tUser.id,
+            opportunityId: oppId,
+            name: tUser.name || tUser.fullName || "Casting Director",
+            role: tUser.role || "Casting Director",
+            company: navState.opportunityTitle ? `Inquiry: ${navState.opportunityTitle}` : "Casting Call",
+            email: tUser.email || "",
+            phone: tUser.mobileNumber || "",
+            avatar,
+            lastMsg: navState.opportunityTitle
+              ? `Inquiry regarding "${navState.opportunityTitle}"`
+              : "Start a conversation",
+            time: "Just now",
+            unread: 0,
+            online: true
+          };
+
+          formatted.unshift(newConv);
+          targetId = prospectiveKey;
+        }
+      }
+
+      setConversations(formatted);
+
+      if (targetId) {
+        setActiveChatId(targetId);
+        setIsMobileChatOpen(true);
+      } else if (formatted.length > 0 && !activeChatIdRef.current) {
+        setActiveChatId(formatted[0].id);
+      }
+    } catch (err) {
+      console.error("Failed to load user conversations from DB:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [location.state]);
+
+  useEffect(() => {
+    loadConversations();
+  }, [loadConversations]);
+
+  // Fetch real messages for the active conversation thread
+  const fetchThreadMessages = useCallback(async (threadKey) => {
+    if (!threadKey) return;
+    try {
+      const serverMsgs = await getThreadMessages(threadKey);
       if (Array.isArray(serverMsgs)) {
-        const currentUserId = storedUser?.userId || storedUser?.id;
         const mapped = serverMsgs.map((m) => {
           const isMe = (currentUserId && m.senderId === currentUserId) ||
             (isProfessional && m.senderRole === "PROFESSIONAL") ||
@@ -265,37 +171,84 @@ export default function Messages() {
           };
         });
 
-        const conv = conversations.find((c) => String(c.id) === `book-${bId}`);
-        const bookingReq = conv?.bookingRequest;
-        const initialCardMsg = bookingReq ? [{
-          id: `book-info-${bId}`,
-          sender: isProfessional ? "me" : "them",
-          text: `🎬 Shoot Booking Offer Details:\n• Project: ${bookingReq.projectTitle} (${bookingReq.projectType || "Shoot"})\n• Shoot Date: ${bookingReq.bookingDate || "To be discussed"}\n• Location: ${bookingReq.location || "TBD"}\n• Offered Rate: ${bookingReq.offeredRate ? "₹" + bookingReq.offeredRate : "Standard Rate"}\n\n${isProfessional ? "Your Note:" : "Director's Note:"}\n"${bookingReq.message || "We would love to book you for this shoot. Please review the offer and confirm availability!"}"`,
-          time: bookingReq.createdAt ? new Date(bookingReq.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "Today"
-        }] : [];
-
-        setChatMessages((prev) => ({
-          ...prev,
-          [`book-${bId}`]: [...initialCardMsg, ...mapped]
-        }));
+        setChatMessages((prev) => {
+          // If conversation has bookingRequest or accessRequest card, keep it at top if no DB card exists
+          const existing = prev[threadKey] || [];
+          const initialCards = existing.filter(msg => String(msg.id).startsWith("card-"));
+          return {
+            ...prev,
+            [threadKey]: [...initialCards, ...mapped]
+          };
+        });
       }
     } catch (e) {
-      console.error("Failed to fetch live chat messages:", e);
+      console.error("Failed to fetch thread messages:", e);
     }
-  }, [conversations, isProfessional, storedUser]);
+  }, [currentUserId, isProfessional]);
 
-  // Live polling: update active booking chat every 2.5 seconds
+  // Initialize booking details card when an active chat with bookingRequest is selected
   useEffect(() => {
-    if (activeChatId && String(activeChatId).startsWith("book-")) {
-      const bId = String(activeChatId).replace("book-", "");
-      fetchRealChatMessages(bId);
-      const pollTimer = setInterval(() => {
-        fetchRealChatMessages(bId);
-      }, 2500);
-      return () => clearInterval(pollTimer);
-    }
-  }, [activeChatId, fetchRealChatMessages]);
+    if (!activeChatId) return;
+    const conv = conversations.find(c => c.id === activeChatId);
+    if (!conv) return;
 
+    if (conv.bookingRequest) {
+      const b = conv.bookingRequest;
+      const cardId = `card-book-${b.id}`;
+      const detailText = `🎬 Shoot Booking Offer Details:\n• Project: ${b.projectTitle} (${b.projectType || "Shoot"})\n• Shoot Date: ${b.bookingDate || "To be discussed"}\n• Location: ${b.location || "TBD"}\n• Offered Rate: ${b.offeredRate ? "₹" + b.offeredRate : "Standard Rate"}\n\n${isProfessional ? "Your Note:" : "Director's Note:"}\n"${b.message || "We would love to book you for this shoot. Please review the offer and confirm availability!"}"`;
+
+      setChatMessages((prev) => {
+        const threadList = prev[activeChatId] || [];
+        if (threadList.some(m => m.id === cardId)) return prev;
+        return {
+          ...prev,
+          [activeChatId]: [
+            {
+              id: cardId,
+              sender: isProfessional ? "me" : "them",
+              text: detailText,
+              time: b.createdAt ? new Date(b.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "Today"
+            },
+            ...threadList
+          ]
+        };
+      });
+    }
+
+    if (conv.accessRequest) {
+      const req = conv.accessRequest;
+      const cardId = `card-req-${req.id}`;
+      setChatMessages((prev) => {
+        const threadList = prev[activeChatId] || [];
+        if (threadList.some(m => m.id === cardId)) return prev;
+        return {
+          ...prev,
+          [activeChatId]: [
+            {
+              id: cardId,
+              sender: "them",
+              text: req.requesterMessage || "Hello! I would like to request access to view your private portfolio, photos, and audition showreels.",
+              time: req.createdAt ? new Date(req.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "Today"
+            },
+            ...threadList
+          ]
+        };
+      });
+    }
+
+    fetchThreadMessages(activeChatId);
+  }, [activeChatId, conversations, isProfessional, fetchThreadMessages]);
+
+  // Real-time live polling: update active thread every 3 seconds stably
+  useEffect(() => {
+    if (!activeChatId) return;
+    const interval = setInterval(() => {
+      fetchThreadMessages(activeChatId);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [activeChatId, fetchThreadMessages]);
+
+  // Handle responding to shoot booking request
   const handleRespondBookingRequest = async (bookingId, accepted) => {
     try {
       const statusString = accepted ? "ACCEPTED" : "DECLINED";
@@ -322,7 +275,7 @@ export default function Messages() {
         id: Date.now(),
         sender: "me",
         text: accepted
-          ? `✅ You accepted this shoot booking offer! The shoot date has been automatically scheduled.`
+          ? `✅ You accepted this shoot booking offer! The shoot date has been automatically scheduled on your calendar.`
           : `❌ You declined this shoot offer.`,
         time: timeString
       };
@@ -331,11 +284,19 @@ export default function Messages() {
         ...prev,
         [chatId]: [...(prev[chatId] || []), confirmationMsg]
       }));
+
+      // Send to DB
+      await sendThreadMessage(chatId, confirmationMsg.text, { bookingId });
+      showSuccess(
+        accepted ? "Booking Accepted! 🎉" : "Booking Declined",
+        accepted ? "Shoot date has been confirmed on your schedule." : "Shoot booking offer was declined."
+      );
     } catch (err) {
-      alert("Failed to update booking status: " + (err.message || "Network error"));
+      showError("Booking Action Failed", err.message || "Failed to update booking status.");
     }
   };
 
+  // Handle responding to profile access request
   const handleRespondAccessRequest = async (requestId, approved) => {
     try {
       await respondToProfileAccessRequest(requestId, approved);
@@ -369,8 +330,11 @@ export default function Messages() {
         ...prev,
         [chatId]: [...(prev[chatId] || []), confirmationMsg]
       }));
+
+      await sendThreadMessage(chatId, confirmationMsg.text);
+      showSuccess("Access Request", `Profile access has been ${approved ? "Approved" : "Declined"}.`);
     } catch (err) {
-      alert("Failed to respond to request: " + (err.message || "Network error"));
+      showError("Access Action Failed", err.message || "Failed to respond to request.");
     }
   };
 
@@ -391,13 +355,15 @@ export default function Messages() {
     }
   }, [activeChatId]);
 
-  // Handle message sending
+  // Handle sending a message - saved directly to database!
   const handleSendMessage = async (text) => {
+    if (!activeChatId || !text.trim()) return;
+
     const now = new Date();
     const timeString = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     
-    const newMsg = {
-      id: Date.now(),
+    const optimisticMsg = {
+      id: `tmp-${Date.now()}`,
       sender: "me",
       text,
       time: timeString,
@@ -405,10 +371,10 @@ export default function Messages() {
     };
 
     setChatMessages((prev) => {
-      const chatHistory = prev[activeChatId] || [];
+      const history = prev[activeChatId] || [];
       return {
         ...prev,
-        [activeChatId]: [...chatHistory, newMsg]
+        [activeChatId]: [...history, optimisticMsg]
       };
     });
 
@@ -418,66 +384,27 @@ export default function Messages() {
       )
     );
 
-    // If this is a real shoot booking chat, save directly to backend database!
-    if (String(activeChatId).startsWith("book-")) {
-      const bId = String(activeChatId).replace("book-", "");
-      try {
-        await sendChatMessage(bId, text);
-        fetchRealChatMessages(bId);
-      } catch (err) {
-        console.error("Failed to send chat message to server:", err);
-      }
-    } else {
-      // Mock demo contacts simulation
-      setTimeout(() => {
-        const replyText = getMockReply(activeChat?.name || "User");
-        const replyMsg = {
-          id: Date.now() + 1,
-          sender: "them",
-          text: replyText,
-          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-        };
-
-        setChatMessages((prev) => {
-          const chatHistory = prev[activeChatId] || [];
-          return {
-            ...prev,
-            [activeChatId]: [...chatHistory, replyMsg]
-          };
-        });
-
-        setConversations((prev) =>
-          prev.map((c) =>
-            c.id === activeChatId
-              ? { ...c, lastMsg: replyText, time: replyMsg.time }
-              : c
-          )
-        );
-      }, 1500);
+    try {
+      await sendThreadMessage(activeChatId, text, {
+        recipientId: activeChat?.targetUserId,
+        opportunityId: activeChat?.opportunityId,
+        bookingId: activeChat?.bookingId
+      });
+      fetchThreadMessages(activeChatId);
+    } catch (err) {
+      console.error("Failed to send chat message to database:", err);
+      showError("Message Failed", err.message || "Could not deliver message to database.");
     }
-  };
-
-  const getMockReply = (name) => {
-    const replies = [
-      `Thanks for writing back! I will coordinate with the team and update you shortly.`,
-      `Sounds great. Let me check the schedule and get back to you by end of the day.`,
-      `Perfect! I've received your updates and will forward them.`,
-      `Awesome! I'll talk to our scheduling coordinator to block this slot.`,
-      `Thank you for confirming, I'll send over the details soon.`
-    ];
-    const randomIndex = Math.floor(Math.random() * replies.length);
-    return replies[randomIndex];
   };
 
   // Filter conversations
   const filteredConversations = conversations.filter((c) => {
-    const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          c.lastMsg.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          c.role.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = (c.name || "").toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          (c.lastMsg || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          (c.role || "").toLowerCase().includes(searchQuery.toLowerCase());
     if (!matchesSearch) return false;
 
     if (activeFilter === "unread") return c.unread > 0;
-    if (activeFilter === "starred") return c.starred;
     return true;
   });
 
@@ -490,32 +417,47 @@ export default function Messages() {
       onSearchChange={setSearchQuery}
     >
       <div className="msg-page">
-        <div className={`msg-grid-layout ${isMobileChatOpen ? "mobile-chat-open" : ""}`}>
-          {/* Column 1: Chat List */}
-          <ChatList
-            conversations={filteredConversations}
-            activeChatId={activeChatId}
-            setActiveChatId={handleChatSelect}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            activeFilter={activeFilter}
-            setActiveFilter={setActiveFilter}
-          />
+        {loading && conversations.length === 0 ? (
+          <div style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            height: "70vh",
+            color: "#64748b",
+            gap: "12px"
+          }}>
+            <div style={{ fontSize: "36px", animation: "spin 1s linear infinite" }}>⏳</div>
+            <p style={{ fontSize: "14px", fontWeight: "600" }}>Loading conversations from database...</p>
+          </div>
+        ) : (
+          <div className={`msg-grid-layout ${isMobileChatOpen ? "mobile-chat-open" : ""}`}>
+            {/* Column 1: Chat List */}
+            <ChatList
+              conversations={filteredConversations}
+              activeChatId={activeChatId}
+              setActiveChatId={handleChatSelect}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              activeFilter={activeFilter}
+              setActiveFilter={setActiveFilter}
+            />
 
-          {/* Column 2: Chat Window */}
-          <ChatWindow
-            activeChat={activeChat}
-            messages={chatMessages[activeChatId] || []}
-            onSendMessage={handleSendMessage}
-            onBack={() => setIsMobileChatOpen(false)}
-            onOpenSidebar={() => setIsSidebarOpen(true)}
-            onRespondAccessRequest={handleRespondAccessRequest}
-            onRespondBookingRequest={handleRespondBookingRequest}
-          />
+            {/* Column 2: Chat Window */}
+            <ChatWindow
+              activeChat={activeChat}
+              messages={chatMessages[activeChatId] || []}
+              onSendMessage={handleSendMessage}
+              onBack={() => setIsMobileChatOpen(false)}
+              onOpenSidebar={() => setIsSidebarOpen(true)}
+              onRespondAccessRequest={handleRespondAccessRequest}
+              onRespondBookingRequest={handleRespondBookingRequest}
+            />
 
-          {/* Column 3: Contact Details Sidebar */}
-          <ChatSidebar activeChat={activeChat} />
-        </div>
+            {/* Column 3: Contact Details Sidebar */}
+            <ChatSidebar activeChat={activeChat} />
+          </div>
+        )}
 
         {/* Mobile Slide-in Contact Info Drawer */}
         {isSidebarOpen && (

@@ -158,6 +158,7 @@ public class ProfileService {
                             .location(user.getLocation())
                             .profileTypes(user.getProfileTypes())
                             .customProfession(profile.getCustomProfession() != null ? profile.getCustomProfession() : user.getCustomProfession())
+                            .primaryProfession(profile.getPrimaryProfession() != null ? profile.getPrimaryProfession() : user.getPrimaryProfession())
                             .profilePhoto(profile.getProfilePhoto())
                             .isPrivate(true)
                             .build())
@@ -320,6 +321,14 @@ public class ProfileService {
             user.setLocation(request.getLocation().trim());
         }
         if (request.getProfileTypes() != null && !request.getProfileTypes().isEmpty()) {
+            if (request.getProfileTypes().contains(ProfileType.OTHER)) {
+                String cp = request.getCustomProfession() != null ? request.getCustomProfession().trim() : "";
+                if (cp.isBlank() && (user.getCustomProfession() == null || user.getCustomProfession().isBlank())) {
+                    throw new org.springframework.web.server.ResponseStatusException(
+                            org.springframework.http.HttpStatus.BAD_REQUEST,
+                            "Custom profession / craft is required when profession is OTHER");
+                }
+            }
             if (user.getProfileTypes() == null) {
                 user.setProfileTypes(new java.util.HashSet<>(request.getProfileTypes()));
             } else {
@@ -343,6 +352,12 @@ public class ProfileService {
         }
         if (request.getLanguages() != null) {
             profile.setLanguages(request.getLanguages().trim());
+        }
+        if (request.getActingLanguages() != null) {
+            profile.setActingLanguages(request.getActingLanguages().trim());
+        }
+        if (request.getTalentCategory() != null) {
+            profile.setTalentCategory(request.getTalentCategory().trim());
         }
         if (request.getWorkType() != null) {
             profile.setWorkType(request.getWorkType().trim());
@@ -454,6 +469,8 @@ public class ProfileService {
                 .profilePhoto(profile.getProfilePhoto())
                 .about(profile.getAbout())
                 .languages(profile.getLanguages())
+                .actingLanguages(profile.getActingLanguages())
+                .talentCategory(profile.getTalentCategory())
                 .workType(profile.getWorkType())
                 .dayRate(profile.getDayRate())
                 .yearsExperience(profile.getYearsExperience())
@@ -469,6 +486,7 @@ public class ProfileService {
                 .emailVerified(profile.getEmailVerified())
                 .isPrivate(Boolean.TRUE.equals(profile.getIsPrivate()))
                 .customProfession(profile.getCustomProfession() != null ? profile.getCustomProfession() : user.getCustomProfession())
+                .primaryProfession(profile.getPrimaryProfession() != null ? profile.getPrimaryProfession() : user.getPrimaryProfession())
                 .skills(profile.getSkills() != null ? new java.util.HashSet<>(profile.getSkills()) : java.util.Collections.emptySet())
                 .build();
     }

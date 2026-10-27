@@ -1,7 +1,9 @@
 package com.example.bookmystars.security;
 
 import com.example.bookmystars.model.User;
+import com.example.bookmystars.model.AdminUser;
 import com.example.bookmystars.repository.UserRepository;
+import com.example.bookmystars.repository.AdminUserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,6 +23,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserRepository userRepository;
+    private final AdminUserRepository adminUserRepository;
 
     @Override
     protected void doFilterInternal(
@@ -40,6 +43,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = authHeader.substring(7).trim();
         if (token.toLowerCase().startsWith("bearer ")) {
             token = token.substring(7).trim();
+        }
+
+        if (token.isEmpty() || token.equalsIgnoreCase("undefined") || token.equalsIgnoreCase("null")) {
+            filterChain.doFilter(request, response);
+            return;
         }
 
         try {
@@ -70,6 +78,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     SecurityContextHolder
                             .getContext()
                             .setAuthentication(authentication);
+                } else {
+                    AdminUser adminUser = adminUserRepository.findByEmail(email).orElse(null);
+                    if (adminUser != null && jwtService.isTokenValid(token, email)) {
+                        UsernamePasswordAuthenticationToken authentication =
+                                new UsernamePasswordAuthenticationToken(
+                                        email,
+                                        null,
+                                        java.util.List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority(adminUser.getRoleId()))
+                                );
+                        authentication.setDetails(
+                                new WebAuthenticationDetailsSource()
+                                        .buildDetails(request)
+                        );
+                        SecurityContextHolder
+                                .getContext()
+                                .setAuthentication(authentication);
+                    }
                 }
             }
 

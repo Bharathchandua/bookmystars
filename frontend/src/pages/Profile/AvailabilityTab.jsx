@@ -21,9 +21,9 @@ import {
   getMyAvailability, 
   getUserAvailability, 
   saveAvailabilitySlot, 
-  deleteAvailabilityByDate,
-  getStoredToken 
-} from "../../services/api";
+  deleteAvailabilityByDate 
+} from "../../features/bms/api/availability/availabilityApi";
+import { getStoredToken } from "../../features/bms/api/auth/authApi";
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",

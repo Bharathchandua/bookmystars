@@ -28,7 +28,7 @@ public class ReviewController {
     @Operation(summary = "Submit a star rating and written review for a talent (Professionals only)")
     public ResponseEntity<ReviewResponse> createReview(
             Authentication authentication,
-            @RequestBody ReviewRequest request) {
+            @jakarta.validation.Valid @RequestBody ReviewRequest request) {
 
         ReviewResponse response =
                 reviewService.createReview(

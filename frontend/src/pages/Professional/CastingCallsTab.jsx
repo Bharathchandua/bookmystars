@@ -4,8 +4,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Plus, Users, Calendar, MapPin, Trash2, Eye, Loader2, Megaphone } from "lucide-react";
-import { getMyCastingCalls, deleteCastingCall, updateCastingCall } from "../../services/api";
+import { getMyCastingCalls, deleteCastingCall, updateCastingCall } from "../../features/bms/api/opportunities/opportunitiesApi";
 import CreateCastingModal from "./CreateCastingModal";
+import { showSuccess, showError, confirmDelete } from "../../shared/utils/alert";
 
 export default function CastingCallsTab({ onSelectCastingForReview }) {
   const [castings, setCastings] = useState([]);
@@ -29,12 +30,14 @@ export default function CastingCallsTab({ onSelectCastingForReview }) {
   }, [fetchCastings]);
 
   const handleDelete = async (id, title) => {
-    if (!window.confirm(`Are you sure you want to delete the casting call "${title}"?`)) return;
+    const confirmed = await confirmDelete(title || "this casting call", "Are you sure you want to delete this casting call? This action cannot be undone.");
+    if (!confirmed) return;
     try {
       await deleteCastingCall(id);
       fetchCastings();
+      showSuccess("Deleted!", "Casting call has been deleted successfully.");
     } catch (err) {
-      alert("Failed to delete casting call: " + err.message);
+      showError("Delete Failed", err.message || "Failed to delete casting call.");
     }
   };
 
@@ -46,8 +49,9 @@ export default function CastingCallsTab({ onSelectCastingForReview }) {
         status: newStatus,
       });
       fetchCastings();
+      showSuccess("Status Updated", `Casting call status is now ${newStatus}.`);
     } catch (err) {
-      alert("Failed to change status: " + err.message);
+      showError("Status Update Failed", err.message || "Failed to change status.");
     }
   };
 

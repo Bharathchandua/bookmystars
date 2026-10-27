@@ -1,7 +1,9 @@
-import React, { useState } from "react";
-import { Plus, X, Sparkles, Check } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Plus, X, Sparkles, Check, RefreshCw } from "lucide-react";
+import { getPublicSkills } from "../../features/bms/api/skills/skillsApi";
+import { onLiveSync } from "../../shared/utils/liveSync";
 
-const SUGGESTED_SKILLS = [
+const FALLBACK_SKILLS = [
   "Comedy",
   "Dancing",
   "Singing",
@@ -27,6 +29,35 @@ export default function SkillManagementModal({
 }) {
   const [customSkill, setCustomSkill] = useState("");
   const [error, setError] = useState("");
+  const [masterSkills, setMasterSkills] = useState([]);
+  const [loadingSkills, setLoadingSkills] = useState(false);
+
+  const fetchSkills = async () => {
+    try {
+      setLoadingSkills(true);
+      const data = await getPublicSkills();
+      if (Array.isArray(data) && data.length > 0) {
+        setMasterSkills(data);
+      }
+    } catch (err) {
+      console.warn("Failed to fetch skills:", err);
+    } finally {
+      setLoadingSkills(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchSkills();
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    const unsubscribe = onLiveSync(["skills_updated"], () => {
+      fetchSkills();
+    });
+    return () => unsubscribe();
+  }, []);
 
   if (!isOpen) return null;
 
@@ -252,20 +283,28 @@ export default function SkillManagementModal({
             </div>
           </div>
 
-          {/* Suggested Skills to Pick From */}
+          {/* Master Skills to Pick From (Live from Database) */}
           <div>
             <div
               style={{
                 fontSize: "12.5px",
                 fontWeight: "700",
                 color: "#334155",
-                marginBottom: "8px"
+                marginBottom: "8px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between"
               }}
             >
-              Popular Creative Skills:
+              <span>Popular Creative Skills:</span>
+              {loadingSkills && (
+                <span style={{ fontSize: "11px", color: "#ee008f", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                  <RefreshCw size={11} className="animate-spin" /> Live Syncing...
+                </span>
+              )}
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-              {SUGGESTED_SKILLS.map((suggested) => {
+              {(masterSkills.length > 0 ? masterSkills.map(m => m.name) : FALLBACK_SKILLS).map((suggested) => {
                 const isAdded = skills.some(
                   (s) => s.toLowerCase() === suggested.toLowerCase()
                 );

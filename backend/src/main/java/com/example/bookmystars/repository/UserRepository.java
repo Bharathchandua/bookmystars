@@ -11,11 +11,20 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     boolean existsByEmail(String email);
 
+    boolean existsByEmailIgnoreCase(String email);
+
     boolean existsByMobileNumber(String mobileNumber);
 
     long countByAccountType(com.example.bookmystars.model.AccountType accountType);
 
+    java.util.List<User> findAllByOrderByIdDesc();
+
     java.util.List<User> findByAccountTypeOrderByIdDesc(com.example.bookmystars.model.AccountType accountType);
+
+    @org.springframework.data.jpa.repository.Query("SELECT u FROM User u WHERE :profileType MEMBER OF u.profileTypes ORDER BY u.id DESC")
+    java.util.List<User> findByProfileType(
+            @org.springframework.data.repository.query.Param("profileType") com.example.bookmystars.model.ProfileType profileType
+    );
 
     @org.springframework.data.jpa.repository.Query("SELECT u FROM User u WHERE u.accountType = :accountType AND :profileType MEMBER OF u.profileTypes ORDER BY u.id DESC")
     java.util.List<User> findByAccountTypeAndProfileType(

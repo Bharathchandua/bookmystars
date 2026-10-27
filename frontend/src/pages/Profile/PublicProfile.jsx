@@ -6,7 +6,10 @@ import {
   ChevronRight, Film, Image as ImageIcon, Ruler, Award, X,
   Music, FileText, Download, Lock, Unlock, Clock, UserCheck, Shield
 } from "lucide-react";
-import { getPublicUserProfile, requestProfileAccess, getStoredUser, getFullImageUrl } from "../../services/api";
+import { getPublicUserProfile, requestProfileAccess } from "../../features/bms/api/profile/profileApi";
+import { getStoredUser } from "../../features/bms/api/auth/authApi";
+import { getFullImageUrl } from "../../features/bms/api/media/portfolioApi";
+import { showSuccess, showError, showWarning } from "../../shared/utils/alert";
 
 function getYoutubeThumb(url) {
   if (!url) return "";
@@ -77,7 +80,7 @@ export default function PublicProfile() {
   const handleSendAccessRequest = async (e) => {
     e.preventDefault();
     if (!requestForm.email) {
-      alert("Please provide your email address to request access.");
+      showWarning("Email Required", "Please provide your email address to request access.");
       return;
     }
     try {
@@ -94,12 +97,13 @@ export default function PublicProfile() {
         accessStatus: "PENDING"
       }));
       setRequestSuccess(true);
+      showSuccess("Access Requested!", "Your access request has been sent to the talent.");
       setTimeout(() => {
         setShowRequestModal(false);
         setRequestSuccess(false);
-      }, 1800);
+      }, 1500);
     } catch (err) {
-      alert("Failed to send request: " + err.message);
+      showError("Request Failed", err.message || "Failed to send access request.");
     } finally {
       setRequestSending(false);
     }
@@ -262,7 +266,12 @@ export default function PublicProfile() {
                     )}
                     {profile.languages && (
                       <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                        <Globe size={15} color="#e91e8c" /> {profile.languages}
+                        <Globe size={15} color="#e91e8c" /> <span>Spoken: {profile.languages}</span>
+                      </div>
+                    )}
+                    {profile.actingLanguages && (
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#7c3aed", fontWeight: "700" }}>
+                        <Film size={15} color="#7c3aed" /> <span>Acting: {profile.actingLanguages}</span>
                       </div>
                     )}
                     {profile.workType && (

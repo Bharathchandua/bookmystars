@@ -21,6 +21,10 @@ public class CastingCallRequest {
 
     private String projectType;
 
+    private String postType;
+
+    private String requiredLanguages;
+
     @NotNull(message = "Role type is required")
     private ProfileType roleType;
 
@@ -37,6 +41,22 @@ public class CastingCallRequest {
     private LocalDate shootEndDate;
 
     private LocalDate applicationDeadline;
+
+    private String videoUrl;
+
+    private String posterUrl;
+
+    private String customCraft;
+
+    @NotBlank(message = "Age requirement is mandatory")
+    private String age;
+
+    @NotBlank(message = "Gender requirement is mandatory")
+    private String gender;
+
+    private String height;
+
+    private String weight;
 
     private CastingStatus status;
 }

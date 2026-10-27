@@ -9,7 +9,8 @@ import {
   Users, Megaphone, UserCheck, Sparkles, Building2, 
   BarChart3, RefreshCw, Briefcase, Plus 
 } from "lucide-react";
-import { getProfessionalStats, getStoredUser } from "../../services/api";
+import { getProfessionalStats } from "../../features/bms/api/professional/professionalApi";
+import { getStoredUser } from "../../features/bms/api/auth/authApi";
 import TalentsTab from "./TalentsTab";
 import CastingCallsTab from "./CastingCallsTab";
 import ApplicantsReviewTab from "./ApplicantsReviewTab";

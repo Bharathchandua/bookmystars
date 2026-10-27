@@ -23,8 +23,19 @@ public class CastingCallController {
 
     private final CastingCallService castingCallService;
 
+    @PostMapping(value = "/upload", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Upload opportunity video monologue or poster image")
+    public ResponseEntity<java.util.Map<String, String>> uploadMedia(
+            Authentication authentication,
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file) throws java.io.IOException {
+
+        String fileUrl = castingCallService.uploadOpportunityMedia(authentication, file);
+        String fileName = file.getOriginalFilename() != null ? file.getOriginalFilename() : "media";
+        return ResponseEntity.ok(java.util.Map.of("fileUrl", fileUrl, "fileName", fileName));
+    }
+
     @PostMapping
-    @Operation(summary = "Create and publish a new casting call (Professionals only)")
+    @Operation(summary = "Create and publish a new casting call (All verified users)")
     public ResponseEntity<CastingCallResponse> createCastingCall(
             Authentication authentication,
             @Valid @RequestBody CastingCallRequest request) {

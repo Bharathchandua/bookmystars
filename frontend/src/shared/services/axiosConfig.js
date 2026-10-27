@@ -16,8 +16,8 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("bms_token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    if (token && token !== "undefined" && token !== "null" && token.trim() !== "") {
+      config.headers.Authorization = `Bearer ${token.trim()}`;
     }
     return config;
   },

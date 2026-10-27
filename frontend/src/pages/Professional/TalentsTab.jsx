@@ -9,7 +9,8 @@ import {
   Search, MapPin, Sparkles, Loader2, Users, Eye, Calendar, 
   Film, CheckCircle2, IndianRupee, Briefcase, Lock, Globe 
 } from "lucide-react";
-import { getTalentsDirectory, getFullImageUrl } from "../../services/api";
+import { getTalentsDirectory } from "../../features/bms/api/talents/talentsApi";
+import { getFullImageUrl } from "../../features/bms/api/media/portfolioApi";
 import TalentSchedulePanel from "./TalentSchedulePanel";
 import TalentWorkModal from "./TalentWorkModal";
 import BookingRequestModal from "./BookingRequestModal";

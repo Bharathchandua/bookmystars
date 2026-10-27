@@ -26,6 +26,10 @@ public class ProfileUpdateRequest {
 
     private String languages;
 
+    private String actingLanguages;
+
+    private String talentCategory;
+
     private String workType;
 
     private String dayRate;

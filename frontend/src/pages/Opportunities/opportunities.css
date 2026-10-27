@@ -747,21 +747,43 @@
 
 .opp-modal-banner-wrap {
   position: relative;
-  height: 180px;
+  height: 260px;
+  max-height: 320px;
   overflow: hidden;
   border-radius: 20px 20px 0 0;
+  background: #090d16;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.opp-modal-banner-wrap img {
+.opp-modal-banner-wrap .opp-modal-banner-blur {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  filter: blur(28px) brightness(0.35);
+  transform: scale(1.15);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.opp-modal-banner-wrap .opp-modal-banner-fit {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  z-index: 2;
+  display: block;
 }
 
 .opp-modal-banner-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to bottom, rgba(0,0,0,0.15), rgba(0,0,0,0.55));
+  background: linear-gradient(to bottom, rgba(0,0,0,0.02) 60%, rgba(9, 13, 22, 0.7) 100%);
+  pointer-events: none;
+  z-index: 3;
 }
 
 .opp-modal-close-btn {
@@ -771,15 +793,16 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: rgba(255,255,255,0.9);
+  background: rgba(255,255,255,0.92);
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   color: #334155;
-  z-index: 5;
-  transition: all 0.18s;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  transition: all 0.2s ease;
 }
 
 .opp-modal-close-btn:hover { background: #fff; color: #ee008f; }

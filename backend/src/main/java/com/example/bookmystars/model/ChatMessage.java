@@ -18,7 +18,7 @@ public class ChatMessage {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "booking_id", nullable = false)
+    @Column(name = "booking_id", nullable = true)
     private Long bookingId;
 
     @Column(name = "sender_id", nullable = false)
@@ -29,6 +29,18 @@ public class ChatMessage {
 
     @Column(name = "sender_role")
     private String senderRole; // "DIRECTOR" or "TALENT"
+
+    @Column(name = "recipient_id")
+    private Long recipientId;
+
+    @Column(name = "recipient_name")
+    private String recipientName;
+
+    @Column(name = "opportunity_id")
+    private Long opportunityId;
+
+    @Column(name = "conversation_key")
+    private String conversationKey;
 
     @Column(name = "message_text", columnDefinition = "TEXT", nullable = false)
     private String messageText;

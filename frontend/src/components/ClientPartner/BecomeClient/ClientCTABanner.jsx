@@ -17,8 +17,14 @@ export default function ClientCTABanner() {
             life.
           </p>
         </div>
-        <Button className="bc-cta-btn">
-          How It Works <ArrowRight size={16} />
+        <Button 
+          className="bc-cta-btn"
+          onClick={() => {
+            const el = document.getElementById("client-registration-section");
+            if (el) el.scrollIntoView({ behavior: "smooth" });
+          }}
+        >
+          Post Requirements <ArrowRight size={16} />
         </Button>
       </div>
     </section>

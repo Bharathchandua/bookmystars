@@ -8,7 +8,8 @@ import {
   X, Image as ImageIcon, Film, Award, Ruler, ExternalLink, 
   MapPin, IndianRupee, Play, Loader2, Sparkles, Calendar, CheckCircle2
 } from "lucide-react";
-import { getPublicUserProfile, getFullImageUrl } from "../../services/api";
+import { getPublicUserProfile } from "../../features/bms/api/profile/profileApi";
+import { getFullImageUrl } from "../../features/bms/api/media/portfolioApi";
 
 function getYoutubeEmbedUrl(url) {
   if (!url) return "";

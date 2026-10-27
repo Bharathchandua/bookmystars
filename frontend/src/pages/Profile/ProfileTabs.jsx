@@ -50,7 +50,7 @@ import {
   getUserSkills,
   removeUserSkill,
   getStoredUser
-} from "../../services/api";
+} from "../../features/bms/api";
 import {
   showSuccess,
   showError,
@@ -1778,7 +1778,7 @@ export function VideosTab() {
     if (!file) return;
 
     if (file.size > 100 * 1024 * 1024) {
-      alert("File size exceeds 100MB. Please choose a smaller video.");
+      showWarning("File Too Large", "File size exceeds 100MB. Please choose a smaller video.");
       return;
     }
 

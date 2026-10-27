@@ -5,6 +5,13 @@ import heroImg from "../../../assets/become-client-hero.jpg";
 import Button from "../../common/Button";
 
 export default function AgencyHero() {
+  const scrollToRegistration = () => {
+    const el = document.getElementById("partner-registration-section");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   return (
     <section className="agency-hero-wrapper">
       <div className="agency-hero-container">
@@ -18,30 +25,31 @@ export default function AgencyHero() {
             <span>Become Partner</span>
           </nav>
 
-          <div className="agency-badge">Agencies</div>
+          <div className="agency-badge">Agencies & Academies</div>
           <h1 className="agency-title">
-            Empowering <span className="highlight-pink">Agencies.</span> Creating <span className="highlight-purple">Impact.</span>
+            Empowering <span className="highlight-pink">Agencies & Academies.</span> Creating <span className="highlight-purple">Impact.</span>
           </h1>
           <div className="agency-divider"></div>
           <p className="agency-description">
-            <strong>BookMyStars</strong> is the all-in-one platform for agencies to connect with
-            talent, audiences, brands and professionals, unlock promotions,
-            and grow your business.
+            <strong>BookMyStars</strong> is the dedicated platform for academies, studios, and agencies to collaborate with
+            verified talent, launch audition campaigns, publish custom casting requirements, and scale your brand.
           </p>
           <div className="agency-buttons">
             <Button
               variant="join-agency"
               icon={<Users size={18} />}
               iconPosition="left"
+              onClick={scrollToRegistration}
             >
-              Join as Agency
+              Join as Partner / Agency
             </Button>
             <Button
               variant="explore-opps"
               icon={<Search size={18} />}
               iconPosition="left"
+              onClick={scrollToRegistration}
             >
-              Explore Opportunities
+              Register Business Requirements
             </Button>
           </div>
         </div>

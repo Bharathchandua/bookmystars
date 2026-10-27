@@ -50,6 +50,10 @@ public class ProfileResponse {
 
     private String languages;
 
+    private String actingLanguages;
+
+    private String talentCategory;
+
     private String workType;
 
     private String dayRate;
@@ -83,6 +87,8 @@ public class ProfileResponse {
     private Boolean isPrivate;
 
     private String customProfession;
+
+    private String primaryProfession;
     
     private Set<String> skills;
 }

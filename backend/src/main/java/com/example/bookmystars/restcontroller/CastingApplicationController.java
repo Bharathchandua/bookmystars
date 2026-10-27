@@ -50,6 +50,14 @@ public class CastingApplicationController {
         return ResponseEntity.ok(castingApplicationService.getMyApplications(authentication));
     }
 
+    @GetMapping("/received")
+    @Operation(summary = "Get all candidate applications received on any casting call posted by the logged-in user")
+    public ResponseEntity<List<CastingApplicationResponse>> getReceivedApplications(
+            Authentication authentication) {
+
+        return ResponseEntity.ok(castingApplicationService.getReceivedApplications(authentication));
+    }
+
     @PutMapping("/{id}/status")
     @Operation(summary = "Update candidate application status (e.g., SHORTLISTED, SELECTED, REJECTED)")
     public ResponseEntity<CastingApplicationResponse> updateStatus(
