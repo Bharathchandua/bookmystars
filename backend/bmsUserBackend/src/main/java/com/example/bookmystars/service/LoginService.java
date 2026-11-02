@@ -52,17 +52,13 @@ public class LoginService {
             }
         }
 
-        // 3. Partner & Client Verification Gatekeeper:
-        // If they registered and are waiting for Super Admin approval, notify them directly!
-        if (user.getAccountType() == AccountType.PARTNER || user.getAccountType() == AccountType.CLIENT) {
-            String roleName = user.getAccountType() == AccountType.CLIENT ? "Client Brand" : "Partner Academy";
-            if ("REJECTED".equalsIgnoreCase(user.getVerificationStatus())) {
-                String reason = user.getRejectionReason() != null ? user.getRejectionReason() : "Application does not meet platform criteria";
-                throw new BadCredentialsException("Your " + roleName + " account has not been approved. Reason: " + reason);
-            }
-            if (Boolean.FALSE.equals(user.getIsApproved()) || "PENDING".equalsIgnoreCase(user.getVerificationStatus())) {
-                throw new BadCredentialsException("Your account has not been approved yet. You will be able to log in once your application is approved.");
-            }
+        // 3. Admin Approval & Verification Gatekeeper for all accounts
+        if ("REJECTED".equalsIgnoreCase(user.getVerificationStatus())) {
+            String reason = user.getRejectionReason() != null ? user.getRejectionReason() : "Application does not meet platform criteria";
+            throw new BadCredentialsException("Your account has not been approved. Reason: " + reason);
+        }
+        if (Boolean.FALSE.equals(user.getIsApproved()) || "PENDING".equalsIgnoreCase(user.getVerificationStatus())) {
+            throw new BadCredentialsException("Your account has not been approved yet. You will be able to log in once your application is approved by the admin.");
         }
 
         // 4. Check password (only for approved or regular accounts)

@@ -95,6 +95,29 @@
   display: none !important;
 }
 
+/* User name and role typography in header */
+.db-header-user-info {
+  display: block;
+  max-width: 150px;
+}
+
+.db-header-user-info h4 {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  max-width: 150px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.db-header-user-info span {
+  font-size: 11px !important;
+  line-height: 1.2 !important;
+}
+
 @media (max-width: 480px) {
   .name-full {
     display: none !important;

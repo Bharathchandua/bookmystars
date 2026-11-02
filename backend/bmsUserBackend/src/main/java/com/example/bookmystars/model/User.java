@@ -93,12 +93,12 @@ public class User {
     // Whether this account has been verified and approved by the Super Admin
     @Column(name = "is_approved")
     @Builder.Default
-    private Boolean isApproved = true;
+    private Boolean isApproved = false;
 
     // Verification status: PENDING, APPROVED, REJECTED
     @Column(name = "verification_status", length = 40)
     @Builder.Default
-    private String verificationStatus = "APPROVED";
+    private String verificationStatus = "PENDING";
 
     // Academy / Business Category (e.g. DANCE_ACADEMY, ACTING_ACADEMY, MUSIC_STUDIO, etc.)
     @Column(name = "partner_category", length = 100)
@@ -133,12 +133,11 @@ public class User {
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
         }
-        if (accountType == AccountType.PARTNER || accountType == AccountType.CLIENT) {
-            if (isApproved == null) isApproved = false;
-            if (verificationStatus == null) verificationStatus = "PENDING";
-        } else {
-            if (isApproved == null) isApproved = true;
-            if (verificationStatus == null) verificationStatus = "APPROVED";
+        if (isApproved == null) {
+            isApproved = false;
+        }
+        if (verificationStatus == null) {
+            verificationStatus = "PENDING";
         }
     }
 }

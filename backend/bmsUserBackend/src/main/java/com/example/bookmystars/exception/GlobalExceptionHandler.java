@@ -203,11 +203,15 @@ public class GlobalExceptionHandler {
             clientMessage = "Database operation failed due to a data constraint conflict.";
         }
 
+        String detailMsg = (ex.getRootCause() != null && ex.getRootCause().getMessage() != null)
+                ? ex.getRootCause().getMessage()
+                : clientMessage;
+
         ClientResponseBean response = new ClientResponseBean(
                 HttpStatus.CONFLICT.value(),
                 "FAILED",
                 clientMessage,
-                clientMessage
+                detailMsg
         );
         return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
     }

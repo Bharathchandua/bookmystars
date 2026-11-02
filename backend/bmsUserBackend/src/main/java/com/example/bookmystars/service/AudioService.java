@@ -27,7 +27,9 @@ public class AudioService {
     private final AudioRepository audioRepository;
     private final UserRepository userRepository;
 
-    private final Path uploadDirectory = Paths.get("uploads/audios");
+    private Path getUploadDirectory() {
+        return com.example.bookmystars.util.UploadStorageUtil.getCategoryUploadDir("audios");
+    }
 
     public AudioResponse uploadAudio(
             String email,
@@ -42,7 +44,7 @@ public class AudioService {
         String fileExtension = com.example.bookmystars.util.FileValidationUtil.validateAudio(file);
         String originalFileName = file.getOriginalFilename();
 
-        Files.createDirectories(uploadDirectory);
+        Path uploadDirectory = com.example.bookmystars.util.UploadStorageUtil.getCategoryUploadDir("audios");
 
         String fileName = "audio_" + user.getId() + "_" + UUID.randomUUID().toString().substring(0, 8) + fileExtension;
         Path filePath = uploadDirectory.resolve(fileName);
@@ -113,7 +115,7 @@ public class AudioService {
         String audioUrl = audio.getAudioUrl();
         if (audioUrl != null && audioUrl.startsWith("/uploads/audios/")) {
             String fileName = audioUrl.substring(audioUrl.lastIndexOf("/") + 1);
-            Path filePath = uploadDirectory.resolve(fileName);
+            Path filePath = getUploadDirectory().resolve(fileName);
             Files.deleteIfExists(filePath);
         }
 

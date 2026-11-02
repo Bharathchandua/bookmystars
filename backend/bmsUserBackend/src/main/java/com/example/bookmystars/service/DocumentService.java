@@ -36,7 +36,9 @@ public class DocumentService {
     private final AdminUserRepository adminUserRepository;
     private final UserDocumentRepository userDocumentRepository;
     private final com.example.bookmystars.security.AdminSecurityService adminSecurityService;
-    private final Path uploadDirectory = Paths.get("uploads/documents");
+    private Path getUploadDirectory() {
+        return com.example.bookmystars.util.UploadStorageUtil.getCategoryUploadDir("documents");
+    }
 
     public DocumentResponse uploadDocument(
             String email,
@@ -50,7 +52,7 @@ public class DocumentService {
         // Validate document extension, MIME type, and sanitize filename
         String fileExtension = FileValidationUtil.validateDocument(file);
 
-        Files.createDirectories(uploadDirectory);
+        Path uploadDirectory = getUploadDirectory();
 
         String originalFileName = file.getOriginalFilename();
         String fileName = "doc_" + user.getId() + "_" + UUID.randomUUID().toString().substring(0, 8) + fileExtension;
@@ -142,7 +144,7 @@ public class DocumentService {
         }
 
         // Verify normalized path remains inside the intended upload storage directory
-        Path baseDir = this.uploadDirectory.toAbsolutePath().normalize();
+        Path baseDir = getUploadDirectory().toAbsolutePath().normalize();
         Path targetPath = baseDir.resolve(rawFilename).normalize().toAbsolutePath();
 
         if (!targetPath.startsWith(baseDir)) {
@@ -177,7 +179,7 @@ public class DocumentService {
         String fileUrl = doc.getFileUrl();
         if (fileUrl != null) {
             String rawFilename = Paths.get(fileUrl).getFileName().toString();
-            Path baseDir = this.uploadDirectory.toAbsolutePath().normalize();
+            Path baseDir = getUploadDirectory().toAbsolutePath().normalize();
             Path targetPath = baseDir.resolve(rawFilename).normalize().toAbsolutePath();
             if (targetPath.startsWith(baseDir)) {
                 Files.deleteIfExists(targetPath);

@@ -486,8 +486,16 @@ public class AdminOperationsService {
         profile.setIdVerified(verify);
         Profile saved = profileRepository.save(profile);
 
-        log.info("KYC VERIFICATION UPDATED: Admin '{}' set idVerified={} for talent '{}' ({}) in PostgreSQL database.",
-                admin.getName(), verify, talent.getFullName(), talent.getEmail());
+        talent.setIsApproved(verify);
+        talent.setVerificationStatus(verify ? "APPROVED" : "PENDING");
+        if (verify) {
+            talent.setApprovedAt(LocalDateTime.now());
+            talent.setRejectionReason(null);
+        }
+        userRepository.save(talent);
+
+        log.info("KYC VERIFICATION UPDATED: Admin '{}' set idVerified={} and approved={} for talent '{}' ({}) in PostgreSQL database.",
+                admin.getName(), verify, verify, talent.getFullName(), talent.getEmail());
 
         return getTalentsKycList().stream()
                 .filter(t -> t.getUserId().equals(userId))

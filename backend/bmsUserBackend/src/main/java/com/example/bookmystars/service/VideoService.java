@@ -74,7 +74,7 @@ public VideoResponse uploadVideo(
                     new RuntimeException("User not found"));
 
     String fileExtension = com.example.bookmystars.util.FileValidationUtil.validateVideo(file);
-    Path uploadDirectory = Paths.get("uploads/videos");
+    Path uploadDirectory = com.example.bookmystars.util.UploadStorageUtil.getCategoryUploadDir("videos");
     Files.createDirectories(uploadDirectory);
 
     // Generate unique filename
@@ -140,7 +140,7 @@ public VideoResponse uploadVideo(
 
         if (file != null && !file.isEmpty()) {
             String fileExtension = com.example.bookmystars.util.FileValidationUtil.validateVideo(file);
-            Path uploadDirectory = Paths.get("uploads/videos");
+            Path uploadDirectory = com.example.bookmystars.util.UploadStorageUtil.getCategoryUploadDir("videos");
             Files.createDirectories(uploadDirectory);
             String fileName = UUID.randomUUID() + fileExtension;
             Path filePath = uploadDirectory.resolve(fileName);

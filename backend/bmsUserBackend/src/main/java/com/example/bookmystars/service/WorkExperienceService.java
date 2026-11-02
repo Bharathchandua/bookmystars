@@ -29,7 +29,9 @@ public class WorkExperienceService {
     private final UserRepository userRepository;
     private final com.example.bookmystars.repository.ProfileRepository profileRepository;
 
-    private final Path workUploadDirectory = Paths.get("uploads/work-experience");
+    private Path getWorkUploadDirectory() {
+        return com.example.bookmystars.util.UploadStorageUtil.getCategoryUploadDir("work-experience");
+    }
 
     // Upload attachment file (certificates, project proof, media)
     public String uploadWorkFile(String email, MultipartFile file) throws IOException {
@@ -37,7 +39,7 @@ public class WorkExperienceService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         String fileExtension = com.example.bookmystars.util.FileValidationUtil.validateDocument(file);
-        Files.createDirectories(workUploadDirectory);
+        Path workUploadDirectory = getWorkUploadDirectory();
 
         String fileName = "work_" + user.getId() + "_" + UUID.randomUUID().toString().substring(0, 8) + fileExtension;
         Path filePath = workUploadDirectory.resolve(fileName);

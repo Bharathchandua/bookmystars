@@ -32,7 +32,9 @@ public class PortfolioService {
     private final UserRepository userRepository;
     private final ProfileRepository profileRepository;
 
-    private final Path uploadDirectory = Paths.get("uploads/portfolio");
+    private Path getUploadDirectory() {
+        return com.example.bookmystars.util.UploadStorageUtil.getCategoryUploadDir("portfolio");
+    }
 
     // =========================
     // UPLOAD PHOTO
@@ -50,7 +52,7 @@ public class PortfolioService {
         // Validate image format, MIME, and sanitize path
         String fileExtension = FileValidationUtil.validateImage(file);
 
-        Files.createDirectories(uploadDirectory);
+        Path uploadDirectory = getUploadDirectory();
 
         String fileName = UUID.randomUUID() + fileExtension;
         Path filePath = uploadDirectory.resolve(fileName);
@@ -113,10 +115,10 @@ public class PortfolioService {
 
         if (file != null && !file.isEmpty()) {
             String fileExtension = FileValidationUtil.validateImage(file);
-            Files.createDirectories(uploadDirectory);
+            Path uploadDirectory = getUploadDirectory();
 
             String fileName = UUID.randomUUID() + fileExtension;
-            Path filePath = uploadDirectory.resolve(fileName);
+            Path filePath = getUploadDirectory().resolve(fileName);
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
             // Delete old file if present
@@ -155,15 +157,19 @@ public class PortfolioService {
             if (profile.getProfilePhoto() != null && !profile.getProfilePhoto().isBlank()) {
                 boolean exists = list.stream().anyMatch(p -> profile.getProfilePhoto().equals(p.getImageUrl()));
                 if (!exists) {
-                    Portfolio headshot = Portfolio.builder()
-                            .user(user)
-                            .imageUrl(profile.getProfilePhoto())
-                            .title("Profile Headshot")
-                            .category("Headshot")
-                            .createdAt(LocalDateTime.now())
-                            .build();
-                    portfolioRepository.save(headshot);
-                    list.add(0, headshot);
+                    try {
+                        Portfolio headshot = Portfolio.builder()
+                                .user(user)
+                                .imageUrl(profile.getProfilePhoto())
+                                .title("Profile Headshot")
+                                .category("Headshot")
+                                .createdAt(LocalDateTime.now())
+                                .build();
+                        Portfolio saved = portfolioRepository.save(headshot);
+                        list.add(0, saved);
+                    } catch (Exception ex) {
+                        log.warn("Could not automatically save profile headshot to portfolio: {}", ex.getMessage());
+                    }
                 }
             }
         });
@@ -200,7 +206,7 @@ public class PortfolioService {
         String imageUrl = portfolio.getImageUrl();
         if (imageUrl != null) {
             String fileName = imageUrl.substring(imageUrl.lastIndexOf("/") + 1);
-            Path filePath = uploadDirectory.resolve(fileName);
+            Path filePath = getUploadDirectory().resolve(fileName);
             Files.deleteIfExists(filePath);
         }
 

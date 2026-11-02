@@ -396,15 +396,13 @@ public class ProfileService {
         return buildProfileResponse(user, profile);
     }
 
-    private final Path profileUploadDirectory = Paths.get("uploads/profile");
-
     public ProfileResponse uploadProfilePhoto(String email, MultipartFile file) throws IOException {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "User not found"));
 
         String fileExtension = com.example.bookmystars.util.FileValidationUtil.validateImage(file);
 
-        Files.createDirectories(profileUploadDirectory);
+        Path profileUploadDirectory = com.example.bookmystars.util.UploadStorageUtil.getCategoryUploadDir("profile");
 
         String fileName = "avatar_" + user.getId() + "_" + UUID.randomUUID().toString().substring(0, 8) + fileExtension;
         Path filePath = profileUploadDirectory.resolve(fileName);

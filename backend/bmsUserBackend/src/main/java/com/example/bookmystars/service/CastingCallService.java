@@ -33,12 +33,10 @@ public class CastingCallService {
     private final CastingApplicationRepository castingApplicationRepository;
     private final ProfessionalProfileRepository professionalProfileRepository;
     private final UserRepository userRepository;
-    private final Path oppUploadDirectory = Paths.get("uploads/opportunities");
-
     public String uploadOpportunityMedia(Authentication authentication, MultipartFile file) throws IOException {
         User user = getAuthenticatedUser(authentication);
         String fileExtension = com.example.bookmystars.util.FileValidationUtil.validateMedia(file);
-        Files.createDirectories(oppUploadDirectory);
+        Path oppUploadDirectory = com.example.bookmystars.util.UploadStorageUtil.getCategoryUploadDir("opportunities");
         String fileName = "opp_" + user.getId() + "_" + UUID.randomUUID().toString().substring(0, 8) + fileExtension;
         Path filePath = oppUploadDirectory.resolve(fileName);
         Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
