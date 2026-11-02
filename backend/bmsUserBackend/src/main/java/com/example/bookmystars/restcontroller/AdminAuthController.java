@@ -6,9 +6,12 @@ import com.example.bookmystars.dto.AdminUserDto;
 import com.example.bookmystars.service.AdminAuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
@@ -26,9 +29,19 @@ public class AdminAuthController {
 
     @PostMapping("/login")
     @Operation(summary = "Authenticate Super Admin or Staff Officer using corporate email and password")
-    public ResponseEntity<?> login(@Valid @RequestBody AdminLoginRequest request) {
+    public ResponseEntity<?> login(@Valid @RequestBody AdminLoginRequest request, HttpServletResponse httpServletResponse) {
         try {
             AdminLoginResponse response = adminAuthService.login(request);
+            if (response != null && response.getToken() != null) {
+                ResponseCookie cookie = ResponseCookie.from("jwt_token", response.getToken())
+                        .httpOnly(true)
+                        .secure(true)
+                        .path("/")
+                        .maxAge(86400)
+                        .sameSite("None")
+                        .build();
+                httpServletResponse.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+            }
             return ResponseEntity.ok(response);
         } catch (BadCredentialsException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)

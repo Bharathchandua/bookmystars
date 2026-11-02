@@ -84,6 +84,10 @@ public class ProfileResponse {
 
     private Boolean emailVerified;
 
+    private Boolean isApproved;
+
+    private String verificationStatus;
+
     private Boolean isPrivate;
 
     private String customProfession;

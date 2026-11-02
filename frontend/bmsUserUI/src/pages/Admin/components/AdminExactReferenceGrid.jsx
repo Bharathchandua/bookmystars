@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+﻿import React, { useState, useEffect, useCallback } from "react";
 import { 
   Sparkles, 
   ShieldCheck, 
@@ -50,7 +50,8 @@ import {
   getAdminTalentsKyc, 
   awardVerifiedBadge, 
   revokeVerifiedBadge,
-  updateAdminTalent
+  updateAdminTalent,
+  deleteUserAccount
 } from "../../../features/bms/api/admin/adminApi";
 import { 
   getAdminSkills, 
@@ -71,6 +72,7 @@ export default function AdminExactReferenceGrid({
   const [kycSubTab, setKycSubTab] = useState(defaultKycTab || "queue");
   const [isLoadingCastings, setIsLoadingCastings] = useState(false);
   const [isLoadingKyc, setIsLoadingKyc] = useState(false);
+  const [overviewDeskMode, setOverviewDeskMode] = useState("users"); // "users" | "castings" | "all"
 
   const adminUser = getStoredAdmin();
   const isSuperAdmin = adminUser?.roleId === "ROLE_SUPER_ADMIN" || adminUser?.role === "SUPER_ADMIN";
@@ -321,6 +323,33 @@ export default function AdminExactReferenceGrid({
     }
   };
 
+  
+  const handleDeleteAccount = async (userId, talentName) => {
+    try {
+      const { isConfirmed } = await Swal.fire({
+        title: 'Delete Account?',
+        text: 'Are you sure you want to permanently delete the account for "' + (talentName || 'this user') + '"? All profile data, portfolio photos, videos, and settings will be permanently removed. This action cannot be undone.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Yes, delete account',
+        cancelButtonText: 'Cancel'
+      });
+
+      if (isConfirmed) {
+        await deleteUserAccount(userId);
+        showSuccess('Account Deleted', 'The account for "' + (talentName || 'this user') + '" has been permanently deleted from database.');
+        await refreshKyc();
+        if (selectedTalentForDetails && (selectedTalentForDetails.userId === userId || selectedTalentForDetails.id === userId)) {
+          setSelectedTalentForDetails(null);
+        }
+      }
+    } catch (err) {
+      showError('Delete Failed', err.message || 'Failed to delete account.');
+    }
+  };
+
   const handleOpenTalentDetails = (talent) => {
     setSelectedTalentForDetails(talent);
     setIsEditingTalent(false);
@@ -533,17 +562,128 @@ export default function AdminExactReferenceGrid({
     <div style={{ display: "flex", flexDirection: "column", gap: "24px", width: "100%", boxSizing: "border-box" }}>
       
       {/* ============================================================== */}
-      {/* ROW 1: TABLES (FULL-WIDTH IF CASTING DIRECTOR OR SINGLE CARD) */}
+      {/* PRIMARY CONSOLE DESK SELECTOR (FULL-WIDTH ENTERPRISE VIEW) */}
+      {/* ============================================================== */}
+      {!singleCardView && canViewCastings && canViewKyc && (
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: "12px",
+          backgroundColor: "#ffffff",
+          padding: "10px 16px",
+          borderRadius: "18px",
+          border: "1px solid #e2e8f0",
+          boxShadow: "0 2px 8px rgba(15,23,42,0.03)"
+        }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", backgroundColor: "#f1f5f9", padding: "4px", borderRadius: "12px", flexWrap: "wrap" }}>
+            <button
+              type="button"
+              onClick={() => setOverviewDeskMode("users")}
+              style={{
+                padding: "8px 18px",
+                borderRadius: "10px",
+                border: "none",
+                backgroundColor: overviewDeskMode === "users" ? "#0f172a" : "transparent",
+                color: overviewDeskMode === "users" ? "#ffffff" : "#475569",
+                fontSize: "13px",
+                fontWeight: "800",
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                boxShadow: overviewDeskMode === "users" ? "0 2px 6px rgba(0,0,0,0.15)" : "none",
+                transition: "all 0.15s ease"
+              }}
+            >
+              <Users size={15} />
+              <span>Talent & User Management</span>
+              <span style={{
+                padding: "2px 8px",
+                borderRadius: "9999px",
+                fontSize: "11px",
+                fontWeight: "800",
+                backgroundColor: overviewDeskMode === "users" ? "#334155" : "#e2e8f0",
+                color: overviewDeskMode === "users" ? "#ffffff" : "#475569"
+              }}>
+                {kycItems.length}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setOverviewDeskMode("castings")}
+              style={{
+                padding: "8px 18px",
+                borderRadius: "10px",
+                border: "none",
+                backgroundColor: overviewDeskMode === "castings" ? "#0f172a" : "transparent",
+                color: overviewDeskMode === "castings" ? "#ffffff" : "#475569",
+                fontSize: "13px",
+                fontWeight: "800",
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                boxShadow: overviewDeskMode === "castings" ? "0 2px 6px rgba(0,0,0,0.15)" : "none",
+                transition: "all 0.15s ease"
+              }}
+            >
+              <Film size={15} />
+              <span>Casting Directory & Approvals</span>
+              <span style={{
+                padding: "2px 8px",
+                borderRadius: "9999px",
+                fontSize: "11px",
+                fontWeight: "800",
+                backgroundColor: overviewDeskMode === "castings" ? "#334155" : "#e2e8f0",
+                color: overviewDeskMode === "castings" ? "#ffffff" : "#475569"
+              }}>
+                {castings.length}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setOverviewDeskMode("all")}
+              style={{
+                padding: "8px 14px",
+                borderRadius: "10px",
+                border: "none",
+                backgroundColor: overviewDeskMode === "all" ? "#0f172a" : "transparent",
+                color: overviewDeskMode === "all" ? "#ffffff" : "#475569",
+                fontSize: "12px",
+                fontWeight: "700",
+                cursor: "pointer",
+                boxShadow: overviewDeskMode === "all" ? "0 2px 6px rgba(0,0,0,0.15)" : "none",
+                transition: "all 0.15s ease"
+              }}
+            >
+              <span>Stacked View (Both)</span>
+            </button>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12.5px", color: "#64748b" }}>
+            <span>Active Desk:</span>
+            <span style={{ fontWeight: "800", color: "#0f172a" }}>
+              {overviewDeskMode === "users" ? "Talent & Identity Roster" : overviewDeskMode === "castings" ? "Casting Approvals Console" : "Unified Management"}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* ROW 1: FULL-WIDTH ENTERPRISE CARDS (ZERO HORIZONTAL SCROLL) */}
       {/* ============================================================== */}
       <div 
-        className={`grid gap-5 w-full max-w-full min-w-0 ${singleCardView || isOnlyCastings ? "grid-cols-1" : "grid-cols-1 xl:grid-cols-2"}`}
+        className="w-full max-w-full flex flex-col gap-6"
         style={{
           boxSizing: "border-box"
         }}
       >
-        
         {/* LEFT CARD: CASTING APPROVALS */}
-        {showCastingsCard && (
+        {showCastingsCardNow && (
           <div 
             style={{
               backgroundColor: "#ffffff",
@@ -630,8 +770,8 @@ export default function AdminExactReferenceGrid({
             </div>
 
             {/* Sub-tabs Row */}
-            <div className="p-2.5 sm:p-3 sm:px-6 bg-[#fafaf9] border-b border-slate-100 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
-              <div className="flex items-center gap-2 flex-nowrap sm:flex-wrap shrink-0">
+            <div className="p-3 sm:px-6 bg-[#fafaf9] border-b border-slate-100 flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2 flex-wrap">
                 <button
                   type="button"
                   onClick={() => { setCastingSubTab("pending"); setCastingsPage(1); }}
@@ -759,7 +899,7 @@ export default function AdminExactReferenceGrid({
           {/* Secondary Filter Row: Casting Discipline / Post Type & Audition Language */}
           <div className="p-2.5 sm:p-3 sm:px-6 bg-white border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
             {/* Discipline Buttons */}
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar max-w-full pb-1 sm:pb-0 shrink-0">
+            <div className="flex items-center gap-2 flex-wrap max-w-full py-1">
               <span style={{ fontSize: "11px", fontWeight: "800", color: "#64748b", marginRight: "4px" }}>
                 DISCIPLINE:
               </span>
@@ -859,13 +999,13 @@ export default function AdminExactReferenceGrid({
 
           {/* Castings Content - List or Grid View */}
           {castingViewMode === "list" ? (
-            <div style={{ overflowX: "auto", width: "100%", WebkitOverflowScrolling: "touch" }}>
-              <table style={{ width: "100%", minWidth: displayedCastings.length === 0 ? "100%" : "440px", borderCollapse: "collapse", fontSize: "12px", textAlign: "left" }}>
+            <div className="no-scrollbar" style={{ overflowX: "auto", width: "100%", WebkitOverflowScrolling: "touch" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px", textAlign: "left" }}>
                 <thead>
                   <tr style={{ backgroundColor: "#f8fafc", color: "#94a3b8", fontSize: "11px", fontWeight: "800", textTransform: "uppercase", borderBottom: "1px solid #f1f5f9" }}>
-                    <th style={{ padding: "12px 14px", width: "45%" }}>Project / Audition</th>
-                    <th style={{ padding: "12px 10px", width: "30%" }}>Status & Date</th>
-                    <th style={{ padding: "12px 14px", width: "25%", textAlign: "right" }}>Action</th>
+                    <th style={{ padding: "12px 16px", width: "50%", whiteSpace: "nowrap" }}>Project / Audition</th>
+                    <th style={{ padding: "12px 14px", width: "24%", whiteSpace: "nowrap" }}>Status & Date</th>
+                    <th style={{ padding: "12px 16px", width: "26%", minWidth: "190px", textAlign: "right", whiteSpace: "nowrap" }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -953,8 +1093,8 @@ export default function AdminExactReferenceGrid({
                             </span>
                           </div>
                         </td>
-                        <td style={{ padding: "12px 14px", textAlign: "right", verticalAlign: "middle" }}>
-                          <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "flex-end", gap: "6px", flexWrap: "wrap" }}>
+                        <td style={{ padding: "12px 16px", textAlign: "right", verticalAlign: "middle", whiteSpace: "nowrap" }}>
+                          <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "flex-end", gap: "6px", flexWrap: "nowrap" }}>
                             {/* Dedicated View / Review Button */}
                             <button
                               type="button"
@@ -1387,7 +1527,7 @@ export default function AdminExactReferenceGrid({
       )}
 
         {/* RIGHT CARD: TALENT KYC & BADGES */}
-        {showKycCard && (
+        {showKycCardNow && (
           <div 
             style={{
               backgroundColor: "#ffffff",
@@ -1436,8 +1576,8 @@ export default function AdminExactReferenceGrid({
             </div>
 
           {/* Sub-tabs Row with User Types & Verification */}
-          <div className="p-2.5 sm:p-3 sm:px-6 bg-[#fafaf9] border-b border-slate-100 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
-            <div className="flex items-center gap-1.5 flex-nowrap sm:flex-wrap shrink-0">
+          <div className="p-3 sm:px-6 bg-[#fafaf9] border-b border-slate-100 flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <button
                 type="button"
                 onClick={() => { setKycSubTab("all"); setKycPage(1); }}
@@ -1582,26 +1722,28 @@ export default function AdminExactReferenceGrid({
 
           {/* KYC Content - List or Grid View */}
           {kycViewMode === "list" ? (
-            <div style={{ overflowX: "auto", width: "100%", WebkitOverflowScrolling: "touch" }}>
-              <table style={{ width: "100%", minWidth: displayedKyc.length === 0 ? "100%" : "440px", borderCollapse: "collapse", fontSize: "12px", textAlign: "left" }}>
+            <div className="no-scrollbar" style={{ overflowX: "auto", width: "100%", WebkitOverflowScrolling: "touch" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px", textAlign: "left" }}>
                 <thead>
                   <tr style={{ backgroundColor: "#f8fafc", color: "#94a3b8", fontSize: "11px", fontWeight: "800", textTransform: "uppercase", borderBottom: "1px solid #f1f5f9" }}>
-                    <th style={{ padding: "12px 14px", width: "45%" }}>User Profile & Role</th>
-                    <th style={{ padding: "12px 10px", width: "30%" }}>Status & Badge</th>
-                    <th style={{ padding: "12px 14px", width: "25%", textAlign: "right" }}>Action</th>
+                    <th style={{ padding: "12px 16px", width: "32%", whiteSpace: "nowrap" }}>User Profile & Role</th>
+                    <th style={{ padding: "12px 14px", width: "28%", whiteSpace: "nowrap" }}>Contact & Languages</th>
+                    <th style={{ padding: "12px 14px", width: "18%", whiteSpace: "nowrap" }}>Status & Badge</th>
+                    <th style={{ padding: "12px 16px", width: "22%", minWidth: "190px", textAlign: "right", whiteSpace: "nowrap" }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {displayedKyc.length === 0 ? (
                     <tr>
-                      <td colSpan={3} style={{ padding: "32px 16px", textAlign: "center", color: "#94a3b8", fontWeight: "600" }}>
+                      <td colSpan={4} style={{ padding: "32px 16px", textAlign: "center", color: "#94a3b8", fontWeight: "600" }}>
                         No registered user records found in this category.
                       </td>
                     </tr>
                   ) : (
                     paginatedKyc.map((row) => (
                       <tr key={row.id || row.userId} style={{ borderBottom: "1px solid #f8fafc" }}>
-                        <td style={{ padding: "12px 14px" }}>
+                        {/* Col 1: Profile & Discipline */}
+                        <td style={{ padding: "12px 16px" }}>
                           <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
                             <img 
                               src={getMediaUrl(row.avatar)} 
@@ -1610,11 +1752,11 @@ export default function AdminExactReferenceGrid({
                                 e.currentTarget.onerror = null;
                                 e.currentTarget.src = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&h=80&q=80";
                               }}
-                              style={{ width: "36px", height: "36px", borderRadius: "50%", objectFit: "cover", flexShrink: 0, marginTop: "2px" }} 
+                              style={{ width: "38px", height: "38px", borderRadius: "50%", objectFit: "cover", flexShrink: 0, marginTop: "2px" }} 
                             />
                             <div style={{ minWidth: 0, flex: 1 }}>
                               <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
-                                <div style={{ fontWeight: "800", color: "#0f172a", fontSize: "13px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={row.talent}>
+                                <div style={{ fontWeight: "800", color: "#0f172a", fontSize: "13px", whiteSpace: "nowrap" }} title={row.talent}>
                                   {row.talent}
                                 </div>
                                 <span style={{
@@ -1645,29 +1787,40 @@ export default function AdminExactReferenceGrid({
                                   );
                                 })()}
                               </div>
-                              <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                <span style={{ fontWeight: "700", color: "#ee008f" }}>{row.primaryProfession || row.craft || "Artist"}</span> &bull; {row.email || "No email"}
-                              </div>
-                              {(row.actingLanguages || row.languages) && (
-                                <div style={{ display: "flex", alignItems: "center", gap: "4px", marginTop: "3px", flexWrap: "wrap" }}>
-                                  <Globe size={10} color="#7c3aed" />
-                                  {(row.actingLanguages || row.languages).split(",").slice(0, 3).map((lang, lIdx) => (
-                                    <span key={lIdx} style={{ fontSize: "9.5px", fontWeight: "700", backgroundColor: "#f5f3ff", color: "#6d28d9", padding: "1px 5px", borderRadius: "4px", border: "1px solid #ddd6fe" }}>
-                                      {lang.trim()}
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-                              <div style={{ fontSize: "10.5px", color: "#94a3b8", marginTop: "2px" }}>
-                                {row.location || "India"} &bull; Joined: {row.submittedOn || "Recent"}
+                              <div style={{ fontSize: "11px", color: "#64748b", marginTop: "3px" }}>
+                                <span style={{ fontWeight: "700", color: "#ee008f" }}>{row.primaryProfession || row.craft || "Artist"}</span>
                               </div>
                             </div>
                           </div>
                         </td>
-                        <td style={{ padding: "12px 10px", verticalAlign: "middle" }}>
+
+                        {/* Col 2: Contact & Languages */}
+                        <td style={{ padding: "12px 14px", verticalAlign: "middle" }}>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                            <div style={{ fontSize: "11.5px", color: "#334155", fontWeight: "600", whiteSpace: "nowrap" }}>
+                              {row.email || "No email provided"}
+                            </div>
+                            {(row.actingLanguages || row.languages) && (
+                              <div style={{ display: "flex", alignItems: "center", gap: "4px", marginTop: "2px", flexWrap: "wrap" }}>
+                                <Globe size={11} color="#7c3aed" />
+                                {(row.actingLanguages || row.languages).split(",").slice(0, 3).map((lang, lIdx) => (
+                                  <span key={lIdx} style={{ fontSize: "9.5px", fontWeight: "700", backgroundColor: "#f5f3ff", color: "#6d28d9", padding: "1px 5px", borderRadius: "4px", border: "1px solid #ddd6fe" }}>
+                                    {lang.trim()}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            <div style={{ fontSize: "10.5px", color: "#94a3b8", marginTop: "2px" }}>
+                              {row.location || "India"} &bull; Joined: {row.submittedOn || "Recent"}
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Col 3: Status & Verification */}
+                        <td style={{ padding: "12px 14px", verticalAlign: "middle" }}>
                           <div style={{ display: "flex", flexDirection: "column", gap: "4px", alignItems: "flex-start" }}>
                             <span style={{ 
-                              padding: "2px 7px", 
+                              padding: "2px 8px", 
                               borderRadius: "9999px", 
                               fontSize: "10px", 
                               fontWeight: "800", 
@@ -1683,13 +1836,15 @@ export default function AdminExactReferenceGrid({
                             </span>
                           </div>
                         </td>
-                        <td style={{ padding: "12px 14px", textAlign: "right", verticalAlign: "middle" }}>
+
+                        {/* Col 4: Action Buttons */}
+                        <td style={{ padding: "12px 16px", textAlign: "right", verticalAlign: "middle", whiteSpace: "nowrap" }}>
                           <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "flex-end", gap: "6px" }}>
                             <button
                               type="button"
                               onClick={() => handleOpenTalentDetails(row)}
                               style={{
-                                padding: "5px 10px",
+                                padding: "6px 11px",
                                 borderRadius: "8px",
                                 backgroundColor: "#f8fafc",
                                 color: "#0f172a",
@@ -1701,20 +1856,21 @@ export default function AdminExactReferenceGrid({
                                 alignItems: "center",
                                 gap: "4px"
                               }}
-                              title={`View full dossier & manage details for ${row.talent}`}
+                              title={`View full dossier for ${row.talent}`}
                             >
                               <Eye size={12} />
                               <span>Details</span>
                             </button>
+
                             {!row.idVerified ? (
                               canVerifyKyc ? (
                                 <button
                                   type="button"
                                   onClick={() => handleVerifyKyc(row.userId || row.id, row.talent)}
-                                  style={{ padding: "5px 12px", borderRadius: "8px", backgroundColor: "#7c3aed", color: "#ffffff", border: "none", fontSize: "11px", fontWeight: "800", cursor: "pointer" }}
+                                  style={{ padding: "6px 12px", borderRadius: "8px", backgroundColor: "#7c3aed", color: "#ffffff", border: "none", fontSize: "11px", fontWeight: "800", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px" }}
                                   title="Award Verified Star Badge to talent profile in PostgreSQL database"
                                 >
-                                  Verify & Badge
+                                  <ShieldCheck size={12} /> Verify & Badge
                                 </button>
                               ) : (
                                 <span style={{ fontSize: "11px", color: "#94a3b8", fontWeight: "700" }}>
@@ -1730,7 +1886,7 @@ export default function AdminExactReferenceGrid({
                                   <button
                                     type="button"
                                     onClick={() => handleRevokeKyc(row.userId || row.id, row.talent)}
-                                    style={{ padding: "4px 8px", borderRadius: "6px", backgroundColor: "#ffffff", color: "#dc2626", border: "1px solid #fecaca", fontSize: "10.5px", fontWeight: "700", cursor: "pointer" }}
+                                    style={{ padding: "5px 8px", borderRadius: "6px", backgroundColor: "#ffffff", color: "#dc2626", border: "1px solid #fecaca", fontSize: "10.5px", fontWeight: "700", cursor: "pointer" }}
                                     title="Revoke Verified badge"
                                   >
                                     Revoke
@@ -1738,6 +1894,28 @@ export default function AdminExactReferenceGrid({
                                 )}
                               </div>
                             )}
+
+                            {/* Direct Delete Account Button */}
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteAccount(row.userId || row.id, row.talent)}
+                              style={{
+                                padding: "6px 8px",
+                                borderRadius: "8px",
+                                backgroundColor: "#fee2e2",
+                                color: "#dc2626",
+                                border: "1px solid #fca5a5",
+                                fontSize: "11px",
+                                fontWeight: "800",
+                                cursor: "pointer",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "4px"
+                              }}
+                              title={`Permanently delete ${row.talent}'s account and data`}
+                            >
+                              <Trash2 size={12} />
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -3163,7 +3341,27 @@ export default function AdminExactReferenceGrid({
                 <span>{isEditingTalent ? "Cancel Edit" : "Edit Details"}</span>
               </button>
 
-              <button
+                          <button
+              type="button"
+              onClick={() => handleDeleteAccount(selectedTalentForDetails.userId || selectedTalentForDetails.id, selectedTalentForDetails.talent)}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '10px',
+                backgroundColor: '#fee2e2',
+                color: '#dc2626',
+                border: '1px solid #fca5a5',
+                fontWeight: '800',
+                fontSize: '12px',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+              title="Permanently delete this user account and all data"
+            >
+              <Trash2 size={13} /> Delete Account
+            </button>
+            <button
                 type="button"
                 onClick={() => {
                   setSelectedTalentForDetails(null);

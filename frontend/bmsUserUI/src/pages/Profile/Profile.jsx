@@ -1,4 +1,4 @@
-import PagesButton from "../common/PagesButton";
+﻿import PagesButton from "../common/PagesButton";
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import AppLayout from "../Layout/AppLayout.jsx";
@@ -1110,6 +1110,11 @@ export default function Profile() {
             profilePhoto: photoUrl || prev.profilePhoto || localStorage.getItem("bms_profile_photo"),
             profileTypes: types,
             memberSince: data.memberSince ? new Date(data.memberSince).getFullYear().toString() : prev.memberSince,
+            isApproved: typeof data.isApproved !== "undefined" ? Boolean(data.isApproved) : Boolean(prev.isApproved),
+            verificationStatus: data.verificationStatus || prev.verificationStatus || "PENDING",
+            idVerified: Boolean(data.idVerified),
+            phoneVerified: Boolean(data.phoneVerified),
+            emailVerified: Boolean(data.emailVerified),
             stats: [
               { value: (data.projectsCompleted || 0).toString(), label: "Projects Completed" },
               { value: (data.brandsWorked || 0).toString(), label: "Brands Worked" },
@@ -1678,10 +1683,12 @@ export default function Profile() {
                         <h2 style={{ margin: 0, fontSize: "22px", fontWeight: "900", color: "#0f172a", lineHeight: 1.2 }}>
                           {profile.fullName}
                         </h2>
-                        <svg viewBox="0 0 24 24" width="19" height="19" style={{ flexShrink: 0 }}>
-                          <path d="M23 12l-2.44-2.78.34-3.68-3.61-.82-1.89-3.18L12 3 8.6 1.54 6.71 4.72l-3.61.81.34 3.68L1 12l2.44 2.78-.34 3.69 3.61.82 1.89 3.18L12 21l3.4 1.46 1.89-3.18 3.61-.82-.34-3.68L23 12z" fill="#2563eb"/>
-                          <path d="M10 14.17L7.41 11.59 6 13l4 4 9-9-1.41-1.41z" fill="#fff"/>
-                        </svg>
+                        {profile.isApproved && (
+                          <svg viewBox="0 0 24 24" width="19" height="19" style={{ flexShrink: 0 }} title="Verified Talent">
+                            <path d="M23 12l-2.44-2.78.34-3.68-3.61-.82-1.89-3.18L12 3 8.6 1.54 6.71 4.72l-3.61.81.34 3.68L1 12l2.44 2.78-.34 3.69 3.61.82 1.89 3.18L12 21l3.4 1.46 1.89-3.18 3.61-.82-.34-3.68L23 12z" fill="#2563eb"/>
+                            <path d="M10 14.17L7.41 11.59 6 13l4 4 9-9-1.41-1.41z" fill="#fff"/>
+                          </svg>
+                        )}
                       </div>
 
                       {/* Primary Profession Pill */}
@@ -2118,32 +2125,52 @@ export default function Profile() {
               </div>
               <div className="prof-detail-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", fontSize: "12.5px" }}>
                 <span className="prof-detail-label" style={{ color: "#64748b" }}>Profile Type</span>
-                <span className="prof-detail-value prof-verified-badge" style={{
-                  background: "#fdf2f8",
-                  color: "#be185d",
-                  border: "1px solid #fbcfe8",
-                  borderRadius: "14px",
-                  padding: "2px 8px",
-                  fontSize: "11px",
-                  fontWeight: "700"
-                }}>
-                  ✓ Verified {(() => {
-                    const primaryType = Array.isArray(profile.profileTypes) && profile.profileTypes.length > 0
-                      ? profile.profileTypes[0]
-                      : (profile.role ? profile.role.split(" · ")[0] : "Model");
-                    const isOther = primaryType.toUpperCase() === "OTHER";
-                    const customProf = isOther ? (profile.customProfession || storedUser?.customProfession || localStorage.getItem(`bms_custom_profession_${(storedUser?.email || "").toLowerCase()}`)) : "";
-                    return isOther ? (customProf || "Other") : primaryType;
-                  })()}
-                </span>
+                {profile.isApproved ? (
+                  <span className="prof-detail-value prof-verified-badge" style={{
+                    background: "#fdf2f8",
+                    color: "#be185d",
+                    border: "1px solid #fbcfe8",
+                    borderRadius: "14px",
+                    padding: "2px 8px",
+                    fontSize: "11px",
+                    fontWeight: "700"
+                  }}>
+                    ✓ Verified {(() => {
+                      const primaryType = Array.isArray(profile.profileTypes) && profile.profileTypes.length > 0
+                        ? profile.profileTypes[0]
+                        : (profile.role ? profile.role.split(" • ")[0] : "Model");
+                      const isOther = primaryType.toUpperCase() === "OTHER";
+                      const customProf = isOther ? (profile.customProfession || storedUser?.customProfession || localStorage.getItem("bms_custom_profession_" + (storedUser?.email || "").toLowerCase())) : "";
+                      return isOther ? (customProf || "Other") : primaryType;
+                    })()}
+                  </span>
+                ) : (
+                  <span className="prof-detail-value" style={{
+                    background: "#fffbeb",
+                    color: "#b45309",
+                    border: "1px solid #fde68a",
+                    borderRadius: "14px",
+                    padding: "2px 8px",
+                    fontSize: "11px",
+                    fontWeight: "700"
+                  }}>
+                    ⏳ Pending Approval
+                  </span>
+                )}
               </div>
               <div className="prof-verify-items" style={{ marginTop: "12px", borderTop: "1px solid #f1f5f9", paddingTop: "12px" }}>
-                {["ID Verified", "Phone Verified", "Email Verified"].map((item, i) => (
-                  <div key={i} className="prof-verify-item" style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12.5px", color: "#334155", fontWeight: "600", marginBottom: "8px" }}>
-                    <CheckCircle2 size={16} color="#10b981" />
-                    <span>{item}</span>
-                  </div>
-                ))}
+                <div className="prof-verify-item" style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12.5px", color: profile.idVerified ? "#334155" : "#64748b", fontWeight: "600", marginBottom: "8px" }}>
+                  {profile.idVerified ? <CheckCircle2 size={16} color="#10b981" /> : <Clock size={16} color="#f59e0b" />}
+                  <span>{profile.idVerified ? "ID Verified" : "ID Pending Review"}</span>
+                </div>
+                <div className="prof-verify-item" style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12.5px", color: profile.phoneVerified ? "#334155" : "#64748b", fontWeight: "600", marginBottom: "8px" }}>
+                  {profile.phoneVerified ? <CheckCircle2 size={16} color="#10b981" /> : <Clock size={16} color="#f59e0b" />}
+                  <span>{profile.phoneVerified ? "Phone Verified" : "Phone Pending"}</span>
+                </div>
+                <div className="prof-verify-item" style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12.5px", color: profile.emailVerified ? "#334155" : "#64748b", fontWeight: "600", marginBottom: "8px" }}>
+                  {profile.emailVerified ? <CheckCircle2 size={16} color="#10b981" /> : <Clock size={16} color="#f59e0b" />}
+                  <span>{profile.emailVerified ? "Email Verified" : "Email Pending"}</span>
+                </div>
               </div>
 
               {/* Action Buttons inside Profile Details Sidebar (matching Image 2) */}

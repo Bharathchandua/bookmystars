@@ -7,6 +7,7 @@ import lombok.Setter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -32,4 +33,6 @@ public class WorkExperienceResponse {
     private String fileUrl;
 
     private String fileName;
+
+    private LocalDateTime createdAt;
 }

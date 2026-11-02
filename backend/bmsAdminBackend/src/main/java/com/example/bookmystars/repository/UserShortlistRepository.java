@@ -11,6 +11,7 @@ import java.util.Optional;
 @Repository
 public interface UserShortlistRepository extends JpaRepository<UserShortlist, Long> {
     List<UserShortlist> findByUserOrderByCreatedAtDesc(User user);
+    List<UserShortlist> findByTalent(User talent);
     Optional<UserShortlist> findByUserAndTalent(User user, User talent);
     boolean existsByUserAndTalent(User user, User talent);
     void deleteByUserAndTalent(User user, User talent);

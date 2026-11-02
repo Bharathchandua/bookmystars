@@ -113,4 +113,24 @@ public class AdminOperationsController {
         AdminTalentKycDto updated = adminOperationsService.updateTalentDetails(authentication, id, updates);
         return ResponseEntity.ok(updated);
     }
+
+    @DeleteMapping("/users/{id}")
+    @PreAuthorize("@rbac.hasPermission(authentication, 'talents', 'delete')")
+    @Operation(summary = "Permanently delete a user account and all associated profile data from database")
+    public ResponseEntity<?> deleteUser(
+            Authentication authentication,
+            @PathVariable Long id) {
+        adminOperationsService.deleteUserAccount(authentication, id);
+        return ResponseEntity.ok(Map.of("message", "User account and all associated data permanently deleted."));
+    }
+
+    @DeleteMapping("/talents/{id}")
+    @PreAuthorize("@rbac.hasPermission(authentication, 'talents', 'delete')")
+    @Operation(summary = "Permanently delete a talent user account from database")
+    public ResponseEntity<?> deleteTalent(
+            Authentication authentication,
+            @PathVariable Long id) {
+        adminOperationsService.deleteUserAccount(authentication, id);
+        return ResponseEntity.ok(Map.of("message", "Talent user account permanently deleted."));
+    }
 }

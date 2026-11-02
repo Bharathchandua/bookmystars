@@ -14,6 +14,10 @@ public interface ProfileAccessRequestRepository extends JpaRepository<ProfileAcc
 
     List<ProfileAccessRequest> findByTalentOrderByCreatedAtDesc(User talent);
 
+    List<ProfileAccessRequest> findByTalent(User talent);
+
+    List<ProfileAccessRequest> findByRequester(User requester);
+
     List<ProfileAccessRequest> findByTalentAndStatus(User talent, AccessRequestStatus status);
 
     Optional<ProfileAccessRequest> findByTalentAndRequester(User talent, User requester);

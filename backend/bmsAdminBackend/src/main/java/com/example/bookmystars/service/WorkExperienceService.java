@@ -212,6 +212,7 @@ public class WorkExperienceService {
                 .endDate(workExperience.getEndDate())
                 .fileUrl(workExperience.getFileUrl())
                 .fileName(workExperience.getFileName())
+                .createdAt(workExperience.getCreatedAt())
                 .build();
     }
 

@@ -37,6 +37,19 @@ public class AdminOperationsService {
     private final AdminUserRepository adminUserRepository;
     private final AdminRoleRepository adminRoleRepository;
     private final BookingRequestRepository bookingRequestRepository;
+    private final PortfolioRepository portfolioRepository;
+    private final VideoRepository videoRepository;
+    private final AudioRepository audioRepository;
+    private final WorkExperienceRepository workExperienceRepository;
+    private final UserDocumentRepository userDocumentRepository;
+    private final MeasurementRepository measurementRepository;
+    private final RatePackageRepository ratePackageRepository;
+    private final AvailabilityRepository availabilityRepository;
+    private final ReviewRepository reviewRepository;
+    private final ProfileAccessRequestRepository profileAccessRequestRepository;
+    private final ClientPartnerProfileRepository clientPartnerProfileRepository;
+    private final ProfessionalProfileRepository professionalProfileRepository;
+    private final UserShortlistRepository userShortlistRepository;
     private final com.example.bookmystars.security.AdminSecurityService adminSecurityService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -560,5 +573,90 @@ public class AdminOperationsService {
                 .escrowLockedAmount(escrowStr)
                 .securityHealthPercent(healthPercent)
                 .build();
+    }
+
+    @Transactional
+    public void deleteUserAccount(Authentication auth, Long userId) {
+        AdminUser admin = verifyAdminPermission(auth, "talents", "delete");
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User account not found with ID: " + userId));
+
+        log.warn("ADMIN ACCOUNT DELETION: Admin '{}' ({}) is permanently deleting user ID {}: {} ({})",
+                admin.getName(), admin.getEmail(), user.getId(), user.getFullName(), user.getEmail());
+
+        // Delete all child data linked to this user
+        try {
+            portfolioRepository.deleteAll(portfolioRepository.findByUser(user));
+        } catch (Exception e) { log.warn("Error deleting portfolio: {}", e.getMessage()); }
+
+        try {
+            videoRepository.deleteAll(videoRepository.findByUser(user));
+        } catch (Exception e) { log.warn("Error deleting videos: {}", e.getMessage()); }
+
+        try {
+            audioRepository.deleteAll(audioRepository.findByUser(user));
+        } catch (Exception e) { log.warn("Error deleting audios: {}", e.getMessage()); }
+
+        try {
+            workExperienceRepository.deleteAll(workExperienceRepository.findByUser(user));
+        } catch (Exception e) { log.warn("Error deleting work experience: {}", e.getMessage()); }
+
+        try {
+            userDocumentRepository.deleteAll(userDocumentRepository.findByUser(user));
+        } catch (Exception e) { log.warn("Error deleting documents: {}", e.getMessage()); }
+
+        try {
+            measurementRepository.findByUser(user).ifPresent(measurementRepository::delete);
+        } catch (Exception e) { log.warn("Error deleting measurement: {}", e.getMessage()); }
+
+        try {
+            ratePackageRepository.deleteAll(ratePackageRepository.findByUserIdOrderByIdAsc(userId));
+        } catch (Exception e) { log.warn("Error deleting rate packages: {}", e.getMessage()); }
+
+        try {
+            availabilityRepository.deleteAll(availabilityRepository.findByUserIdOrderByAvailabilityDateAsc(userId));
+        } catch (Exception e) { log.warn("Error deleting availability: {}", e.getMessage()); }
+
+        try {
+            reviewRepository.deleteAll(reviewRepository.findByProfileUserIdOrderByCreatedAtDesc(userId));
+        } catch (Exception e) { log.warn("Error deleting reviews: {}", e.getMessage()); }
+
+        try {
+            profileAccessRequestRepository.deleteAll(profileAccessRequestRepository.findByTalent(user));
+            profileAccessRequestRepository.deleteAll(profileAccessRequestRepository.findByRequester(user));
+        } catch (Exception e) { log.warn("Error deleting access requests: {}", e.getMessage()); }
+
+        try {
+            castingApplicationRepository.deleteAll(castingApplicationRepository.findByApplicantIdOrderByAppliedAtDesc(userId));
+        } catch (Exception e) { log.warn("Error deleting casting applications: {}", e.getMessage()); }
+
+        try {
+            clientPartnerProfileRepository.findByUser(user).ifPresent(clientPartnerProfileRepository::delete);
+        } catch (Exception e) { log.warn("Error deleting client/partner profile: {}", e.getMessage()); }
+
+        try {
+            professionalProfileRepository.findByUser(user).ifPresent(professionalProfileRepository::delete);
+        } catch (Exception e) { log.warn("Error deleting professional profile: {}", e.getMessage()); }
+
+        try {
+            bookingRequestRepository.deleteAll(bookingRequestRepository.findByTalentOrderByCreatedAtDesc(user));
+            bookingRequestRepository.deleteAll(bookingRequestRepository.findByProfessionalOrderByCreatedAtDesc(user));
+        } catch (Exception e) { log.warn("Error deleting bookings: {}", e.getMessage()); }
+
+        try {
+            userShortlistRepository.deleteAll(userShortlistRepository.findByUserOrderByCreatedAtDesc(user));
+            userShortlistRepository.deleteAll(userShortlistRepository.findByTalent(user));
+        } catch (Exception e) { log.warn("Error deleting shortlists: {}", e.getMessage()); }
+
+        try {
+            profileRepository.findByUser(user).ifPresent(profileRepository::delete);
+        } catch (Exception e) { log.warn("Error deleting profile: {}", e.getMessage()); }
+
+        // Finally, delete the User record
+        userRepository.delete(user);
+
+        log.info("ACCOUNT DELETED: User ID {} ({}) was permanently deleted from PostgreSQL database.",
+                userId, user.getEmail());
     }
 }

@@ -8,6 +8,7 @@ import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -41,19 +42,31 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String authHeader = request.getHeader("Authorization");
+        String token = null;
 
-        // No Authorization header
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            filterChain.doFilter(request, response);
-            return;
+        // 1. Check Authorization Bearer header
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            token = authHeader.substring(7).trim();
+            if (token.toLowerCase().startsWith("bearer ")) {
+                token = token.substring(7).trim();
+            }
         }
 
-        String token = authHeader.substring(7).trim();
-        if (token.toLowerCase().startsWith("bearer ")) {
-            token = token.substring(7).trim();
+        // 2. Fallback: Check HttpOnly / Browser Cookies (jwt_token, token, bms_token)
+        if ((token == null || token.isEmpty()) && request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if ("jwt_token".equalsIgnoreCase(cookie.getName())
+                        || "token".equalsIgnoreCase(cookie.getName())
+                        || "bms_token".equalsIgnoreCase(cookie.getName())) {
+                    if (cookie.getValue() != null && !cookie.getValue().isBlank()) {
+                        token = cookie.getValue().trim();
+                        break;
+                    }
+                }
+            }
         }
 
-        if (token.isEmpty() || token.equalsIgnoreCase("undefined") || token.equalsIgnoreCase("null")) {
+        if (token == null || token.isEmpty() || token.equalsIgnoreCase("undefined") || token.equalsIgnoreCase("null")) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -86,8 +99,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         String rawRole = adminUser.getRoleId() != null ? adminUser.getRoleId().trim() : "STAFF";
 
                         // Granular Role Assignment:
-                        // Only SUPER_ADMIN accounts receive unrestricted ROLE_SUPER_ADMIN privileges.
-                        // Standard staff members receive ROLE_STAFF and their specific departmental authority.
                         if ("SUPER_ADMIN".equalsIgnoreCase(rawRole) || "ROLE_SUPER_ADMIN".equalsIgnoreCase(rawRole)) {
                             authorities.add(new SimpleGrantedAuthority("ROLE_SUPER_ADMIN"));
                             authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));

@@ -55,3 +55,16 @@ export const updateAdminTalent = async (userId, updates) => {
     throw new Error(msg);
   }
 };
+
+/**
+ * Permanently delete a user account and all profile data from database
+ */
+export const deleteUserAccount = async (userId) => {
+  try {
+    const res = await apiClient.delete(`/admin/users/${userId}`);
+    return res.data;
+  } catch (err) {
+    const msg = err.response?.data?.message || err.message;
+    throw new Error(msg);
+  }
+};

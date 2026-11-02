@@ -9,9 +9,12 @@ import com.example.bookmystars.service.LoginService;
 import com.example.bookmystars.service.RegistrationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -58,10 +61,21 @@ public class AuthController {
     @PostMapping("/login")
     @Operation(summary = "Authenticate user and get JWT access token")
     public ResponseEntity<?> login(
-            @Valid @RequestBody LoginRequest request) {
+            @Valid @RequestBody LoginRequest request,
+            HttpServletResponse httpServletResponse) {
 
         try {
             LoginResponse response = loginService.login(request);
+            if (response != null && response.getToken() != null) {
+                ResponseCookie cookie = ResponseCookie.from("jwt_token", response.getToken())
+                        .httpOnly(true)
+                        .secure(true)
+                        .path("/")
+                        .maxAge(86400)
+                        .sameSite("None")
+                        .build();
+                httpServletResponse.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+            }
             return ResponseEntity.ok(response);
         } catch (org.springframework.security.authentication.BadCredentialsException e) {
             String msg = (e.getMessage() != null && !e.getMessage().isBlank()) ? e.getMessage() : "Invalid email or password";

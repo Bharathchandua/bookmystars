@@ -3,6 +3,8 @@ package com.example.bookmystars.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "videos")
 @Getter
@@ -26,9 +28,10 @@ public class Video {
     @Column(nullable = false)
     private String category;
 
-    @Column(nullable = false, length = 1000)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String videoUrl;
 
+    @Column(columnDefinition = "TEXT")
     private String thumbnailUrl;
 
     private String duration;
@@ -37,4 +40,15 @@ public class Video {
 
     @Builder.Default
     private Long views = 0L;
+
+    @Column(name = "created_at")
+    @Builder.Default
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    @PrePersist
+    protected void onCreate() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+    }
 }

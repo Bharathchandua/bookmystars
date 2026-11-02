@@ -474,6 +474,8 @@ public class ProfileService {
                 .idVerified(profile.getIdVerified())
                 .phoneVerified(profile.getPhoneVerified())
                 .emailVerified(profile.getEmailVerified())
+                .isApproved(user.getIsApproved())
+                .verificationStatus(user.getVerificationStatus())
                 .isPrivate(Boolean.TRUE.equals(profile.getIsPrivate()))
                 .customProfession(profile.getCustomProfession() != null ? profile.getCustomProfession() : user.getCustomProfession())
                 .primaryProfession(profile.getPrimaryProfession() != null ? profile.getPrimaryProfession() : user.getPrimaryProfession())
