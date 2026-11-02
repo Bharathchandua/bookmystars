@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Book My Stars - Backend Architecture & API Guide</title>
+  <style>
+    :root {
+      --primary: #e91e8c;
+      --primary-dark: #c2185b;
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --card-border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --code-bg: #090d16;
+      --accent-green: #22c55e;
+      --accent-blue: #38bdf8;
+      --accent-purple: #c084fc;
+      --accent-amber: #f59e0b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 16px;
+      -webkit-font-smoothing: antialiased;
+    }
+    .container { max-width: 900px; margin: 0 auto; padding-bottom: 60px; }
+    header {
+      text-align: center;
+      padding: 24px 0 20px;
+      border-bottom: 1px solid var(--card-border);
+      margin-bottom: 24px;
+    }
+    .badge {
+      display: inline-block;
+      background: rgba(233, 30, 140, 0.15);
+      color: var(--primary);
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+      border: 1px solid rgba(233, 30, 140, 0.3);
+    }
+    h1 { font-size: 24px; font-weight: 800; color: #fff; margin-bottom: 8px; line-height: 1.3; }
+    .subtitle { color: var(--text-muted); font-size: 14px; }
+    
+    .toc {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 28px;
+    }
+    .toc h3 { font-size: 15px; margin-bottom: 10px; color: var(--accent-blue); }
+    .toc ul { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .toc a {
+      color: var(--text);
+      text-decoration: none;
+      font-size: 13px;
+      display: block;
+      padding: 6px 10px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.03);
+      transition: background 0.2s;
+    }
+    .toc a:hover { background: rgba(233, 30, 140, 0.15); color: var(--primary); }
+
+    .section-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 32px 0 16px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--primary);
+    }
+    .section-desc { color: var(--text-muted); font-size: 13.5px; margin-bottom: 16px; }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--accent-blue);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .pill {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent-blue);
+      font-weight: 600;
+    }
+    .card p { font-size: 13.5px; color: #cbd5e1; margin-bottom: 8px; }
+    .anno-tag {
+      display: inline-block;
+      background: rgba(192, 132, 252, 0.15);
+      color: var(--accent-purple);
+      font-size: 11.5px;
+      font-family: monospace;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin: 2px 4px 2px 0;
+      border: 1px solid rgba(192, 132, 252, 0.3);
+    }
+    .method-list {
+      margin-top: 10px;
+      background: var(--code-bg);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 12.5px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .method-item { margin-bottom: 6px; }
+    .method-item:last-child { margin-bottom: 0; }
+    .method-name { color: var(--accent-green); font-family: monospace; font-weight: 600; }
+
+    .table-container {
+      overflow-x: auto;
+      border-radius: 10px;
+      border: 1px solid var(--card-border);
+      margin-bottom: 18px;
+      -webkit-overflow-scrolling: touch;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 12.5px;
+      min-width: 580px;
+    }
+    th {
+      background: #090d16;
+      color: #94a3b8;
+      padding: 10px 12px;
+      font-weight: 700;
+      border-bottom: 1px solid var(--card-border);
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.5px;
+    }
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--card-border);
+      color: #e2e8f0;
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    .method-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 800;
+      font-size: 10.5px;
+      font-family: monospace;
+    }
+    .get { background: rgba(56, 189, 248, 0.2); color: #38bdf8; }
+    .post { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+    .put { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+    .delete { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+
+    .flow-step {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+      align-items: flex-start;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 800;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .step-content {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      flex-grow: 1;
+      font-size: 13px;
+    }
+    .step-title { font-weight: 700; color: #fff; margin-bottom: 4px; font-size: 14px; }
+
+    code {
+      font-family: SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+      background: var(--code-bg);
+      padding: 2px 5px;
+      border-radius: 4px;
+      color: var(--accent-amber);
+    }
+    footer {
+      text-align: center;
+      padding: 30px 0 10px;
+      color: var(--text-muted);
+      font-size: 12px;
+      border-top: 1px solid var(--card-border);
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="badge">Master Documentation</div>
+    <h1>Book My Stars Platform Guide</h1>
+    <div class="subtitle">Complete Architecture, Spring Boot Classes, Annotations & API Reference</div>
+  </header>
+
+  <nav class="toc">
+    <h3>📑 Table of Contents</h3>
+    <ul>
+      <li><a href="#part1">1. Frontend Routing & State Architecture</a></li>
+      <li><a href="#part2">2. Backend Classes & Annotations Deep-Dive</a></li>
+      <li><a href="#part3">3. Complete API Endpoints Catalog</a></li>
+      <li><a href="#part4">4. End-to-End Request Journey & Navigation</a></li>
+    </ul>
+  </nav>
+
+  <!-- PART 1 -->
+  <section id="part1">
+    <div class="section-title">1. Routing & State Management</div>
+    <div class="section-desc">How navigation and data synchronization work across the React application.</div>
+
+    <div class="card">
+      <div class="card-title">Routing Architecture (React Router DOM v7) <span class="pill">react-router-dom</span></div>
+      <p>The application uses <code>&lt;BrowserRouter&gt;</code> in <code>main.jsx</code> leveraging HTML5 History API for seamless client-side single page routing.</p>
+      <div class="method-list">
+        <div class="method-item"><strong>Public Routes:</strong> <code>/</code> (Landing Page), <code>/become-client</code>, <code>/become-partner</code>, <code>/podcast</code>, <code>/public-profile/:userId</code></div>
+        <div class="method-item"><strong>Auth Routes:</strong> <code>/signin</code>, <code>/join</code> (Multi-step wizard)</div>
+        <div class="method-item"><strong>Protected Routes:</strong> <code>&lt;ProtectedRoute&gt;</code> guards <code>/profile</code>, <code>/my-media</code>, <code>/dashboard</code>, <code>/auditions</code>, <code>/bookings</code>, <code>/calendar</code>, <code>/messages</code>, <code>/contacts</code>. Redirects unauthorized users to <code>/</code>.</div>
+        <div class="method-item"><strong>Smart History:</strong> On logout, <code>window.history.replaceState(null, "", "/")</code> ensures browser Back button never re-enters private pages.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">4-Tier State Management <span class="pill">Zero Redux Bloat</span></div>
+      <p>Clean, high-performance hybrid state architecture:</p>
+      <div class="method-list">
+        <div class="method-item"><strong>1. Local Component State (<code>useState</code>):</strong> Controls UI tabs (Overview, Media, About), modals, cropper, and form inputs.</div>
+        <div class="method-item"><strong>2. Persistent Storage (<code>localStorage</code>):</strong> <code>bms_token</code> (JWT header), <code>bms_user</code> (cached identity), <code>bms_profile_photo</code> (instant avatar load without flash).</div>
+        <div class="method-item"><strong>3. Reactive Event Bus (<code>window.dispatchEvent</code>):</strong> Non-parent-child updates via custom events: <code>profile_photo_updated</code>, <code>portfolio_updated</code>, <code>videos_updated</code>, <code>work_experience_updated</code>.</div>
+        <div class="method-item"><strong>4. Server State & API Service:</strong> Centralized in <code>src/services/api.js</code> with optimistic UI updates.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PART 2 -->
+  <section id="part2">
+    <div class="section-title">2. Backend Classes & Annotations</div>
+    <div class="section-desc">Top-to-bottom breakdown of what each Java class does and why annotations are used.</div>
+
+    <div class="card">
+      <div class="card-title">BookmystarsApplication.java <span class="pill">Bootstrap</span></div>
+      <p>Application entry point that boots Spring context and embedded Tomcat on port 8080.</p>
+      <div><span class="anno-tag">@SpringBootApplication</span></div>
+      <div class="method-list">
+        <div class="method-item"><span class="method-name">main(String[] args):</span> Calls <code>SpringApplication.run(...)</code> to scan components and launch the server.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">SecurityConfig.java <span class="pill">Security</span></div>
+      <p>Defines endpoint access rules, stateless JWT filter chain, password hashing, and CORS.</p>
+      <div><span class="anno-tag">@Configuration</span><span class="anno-tag">@EnableWebSecurity</span><span class="anno-tag">@Bean</span></div>
+      <div class="method-list">
+        <div class="method-item"><span class="method-name">passwordEncoder():</span> Returns <code>BCryptPasswordEncoder</code> for secure one-way salted password hashing.</div>
+        <div class="method-item"><span class="method-name">securityFilterChain(...):</span> Disables CSRF (stateless API), whitelists <code>/api/auth/**</code> & <code>/uploads/**</code>, protects everything else, and injects <code>JwtAuthenticationFilter</code>.</div>
+        <div class="method-item"><span class="method-name">corsConfigurationSource():</span> Allows Vite frontend (port 5173) to communicate without browser CORS errors.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">JwtService.java & JwtAuthenticationFilter.java <span class="pill">JWT Auth</span></div>
+      <p>Generates, validates, and intercepts JSON Web Tokens for stateless authentication.</p>
+      <div><span class="anno-tag">@Service</span><span class="anno-tag">@Component</span><span class="anno-tag">@RequiredArgsConstructor</span></div>
+      <div class="method-list">
+        <div class="method-item"><span class="method-name">generateToken(email):</span> Signs HMAC-SHA256 token containing email and 24h expiration timestamp.</div>
+        <div class="method-item"><span class="method-name">doFilterInternal(...):</span> Intercepts every request, extracts <code>Authorization: Bearer</code> token, verifies signature, and authenticates the user in <code>SecurityContextHolder</code>.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">ProfileController.java & ProfileService.java <span class="pill">Profile & Sharing</span></div>
+      <p>Central hub for talent bio, rates, headshot uploads, public URLs, and multi-channel sharing.</p>
+      <div><span class="anno-tag">@RestController</span><span class="anno-tag">@RequestMapping("/api/profile")</span><span class="anno-tag">@Service</span></div>
+      <div class="method-list">
+        <div class="method-item"><span class="method-name">getMyProfile():</span> Returns full talent stats (credits, features, rates, about).</div>
+        <div class="method-item"><span class="method-name">uploadProfilePhoto():</span> Saves image to <code>uploads/profile/</code>, updates <code>Profile</code>, and copies headshot into <code>Portfolio</code>.</div>
+        <div class="method-item"><span class="method-name">getShareProfile():</span> Returns pre-filled URLs for WhatsApp, Gmail, Outlook Web, and ASCII-safe <code>mailto:</code> link (&lt;400 chars).</div>
+        <div class="method-item"><span class="method-name">getPublicProfile(userId):</span> Public endpoint aggregating bio, photos, reels, and credits for casting directors.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">WorkExperienceController.java & WorkExperienceService.java <span class="pill">Experience</span></div>
+      <p>Handles acting credits and brand endorsements with lenient date handling.</p>
+      <div><span class="anno-tag">@RestController</span><span class="anno-tag">@Service</span><span class="anno-tag">@Valid</span></div>
+      <div class="method-list">
+        <div class="method-item"><span class="method-name">parseDate(input):</span> Lenient date parser accepting 4-digit years (<code>"2024"</code>), ranges (<code>"2022 - 2024"</code>), ISO dates, or empty strings without throwing crashes.</div>
+        <div class="method-item"><span class="method-name">addExperience(...), getMyExperiences(...):</span> CRUD operations on <code>work_experiences</code> table.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Media Controllers (Portfolio, Video, Audio, Document) <span class="pill">Media Assets</span></div>
+      <p>Unified modules for storing and serving photos, 16:9 reels, voice demos, and resume documents.</p>
+      <div><span class="anno-tag">@RestController</span><span class="anno-tag">@RequestParam MultipartFile</span></div>
+      <div class="method-list">
+        <div class="method-item">Validates file formats (JPG, PNG, MP4, MP3, PDF, DOCX), generates UUID filenames, saves to physical disk under <code>uploads/</code>, and creates database records.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PART 3 -->
+  <section id="part3">
+    <div class="section-title">3. Complete API Catalog</div>
+    <div class="section-desc">Comprehensive reference of all endpoints, HTTP methods, and required payloads.</div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Method</th>
+            <th>Endpoint</th>
+            <th>Access</th>
+            <th>Description & Payload</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="method-badge post">POST</span></td>
+            <td><code>/api/auth/register</code></td>
+            <td>Public</td>
+            <td>RegistrationRequest (fullName, email, password, DOB, gender, profileTypes)</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge post">POST</span></td>
+            <td><code>/api/auth/login</code></td>
+            <td>Public</td>
+            <td>LoginRequest (email, password) -> Returns JWT token + User info</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge get">GET</span></td>
+            <td><code>/api/profile/me</code></td>
+            <td>Auth</td>
+            <td>Fetches authenticated talent profile, bio, rates, and stats</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge put">PUT</span></td>
+            <td><code>/api/profile/me</code></td>
+            <td>Auth</td>
+            <td>ProfileUpdateRequest (about, languages, dayRate, experience, location)</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge post">POST</span></td>
+            <td><code>/api/profile/photo</code></td>
+            <td>Auth</td>
+            <td>Multipart <code>file</code>: Uploads avatar and syncs to portfolio</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge get">GET</span></td>
+            <td><code>/api/profile/share</code></td>
+            <td>Auth</td>
+            <td>Returns WhatsApp, Gmail, Outlook, and Mailto sharing URLs</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge get">GET</span></td>
+            <td><code>/api/profile/public/{id}</code></td>
+            <td>Public</td>
+            <td>Complete public portfolio and credits view for visitors</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge get">GET</span></td>
+            <td><code>/api/portfolio/my</code></td>
+            <td>Auth</td>
+            <td>Fetches all uploaded talent photos</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge post">POST</span></td>
+            <td><code>/api/portfolio/upload</code></td>
+            <td>Auth</td>
+            <td>Multipart <code>file</code>, <code>title</code>, <code>category</code>: Uploads photo</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge get">GET</span></td>
+            <td><code>/api/profile/videos</code></td>
+            <td>Auth</td>
+            <td>Fetches user showreels and video audition clips</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge post">POST</span></td>
+            <td><code>/api/profile/videos/upload</code></td>
+            <td>Auth</td>
+            <td>Multipart <code>file</code>: Uploads MP4/MOV showreel file</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge post">POST</span></td>
+            <td><code>/api/profile/videos/link</code></td>
+            <td>Auth</td>
+            <td>VideoRequest: Saves external YouTube/Vimeo video link</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge get">GET</span></td>
+            <td><code>/api/profile/audio</code></td>
+            <td>Auth</td>
+            <td>Fetches audio voiceover demos and singing clips</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge post">POST</span></td>
+            <td><code>/api/profile/audio/upload</code></td>
+            <td>Auth</td>
+            <td>Multipart <code>file</code>: Uploads MP3/WAV audio track</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge get">GET</span></td>
+            <td><code>/api/profile/documents</code></td>
+            <td>Auth</td>
+            <td>Fetches resume, CV, and contract documents</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge post">POST</span></td>
+            <td><code>/api/profile/documents/upload</code></td>
+            <td>Auth</td>
+            <td>Multipart <code>file</code>: Uploads PDF/DOCX resume file</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge get">GET</span></td>
+            <td><code>/api/profile/work-experience</code></td>
+            <td>Auth</td>
+            <td>Lists all acting and modeling credits</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge post">POST</span></td>
+            <td><code>/api/profile/work-experience</code></td>
+            <td>Auth</td>
+            <td>WorkExperienceRequest (company, title, category, startDate, endDate)</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge get">GET</span></td>
+            <td><code>/api/profile/measurements</code></td>
+            <td>Auth</td>
+            <td>Fetches physical casting stats (height, chest, waist, shoes)</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge post">POST</span></td>
+            <td><code>/api/profile/measurements</code></td>
+            <td>Auth</td>
+            <td>MeasurementRequest: Saves/updates physical casting stats</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge get">GET</span></td>
+            <td><code>/api/profile/availability</code></td>
+            <td>Auth</td>
+            <td>Fetches calendar schedule (AVAILABLE, BOOKED, TENTATIVE)</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge get">GET</span></td>
+            <td><code>/api/profile/rates</code></td>
+            <td>Auth</td>
+            <td>Lists pricing packages (Full day, commercial, hourly)</td>
+          </tr>
+          <tr>
+            <td><span class="method-badge get">GET</span></td>
+            <td><code>/api/profile/reviews/{id}</code></td>
+            <td>Public</td>
+            <td>Returns client ratings and computed average score</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- PART 4 -->
+  <section id="part4">
+    <div class="section-title">4. End-to-End Request Journey</div>
+    <div class="section-desc">Trace of what happens when a button is clicked in React until PostgreSQL responds.</div>
+
+    <div class="flow-step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <div class="step-title">Trigger in React UI</div>
+        User clicks a button (e.g. "Share Profile" or "Save Bio"). React invokes an asynchronous function in <code>src/services/api.js</code>.
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <div class="step-title">Token Injection via api.js</div>
+        <code>getAuthHeaders()</code> reads <code>localStorage.getItem("bms_token")</code> and attaches <code>Authorization: Bearer &lt;JWT&gt;</code> to the fetch request.
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <div class="step-title">Security Filter Interception</div>
+        <code>JwtAuthenticationFilter</code> intercepts the request before any controller. It verifies the HMAC-SHA256 signature, validates the timestamp, and stores the authenticated user into <code>SecurityContextHolder</code>.
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <div class="step-title">Controller Routing</div>
+        Spring's <code>DispatcherServlet</code> routes the request to the matching <code>@RestController</code> method (e.g., <code>ProfileController.getShareProfile</code>), injecting <code>Authentication auth</code>.
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num">5</div>
+      <div class="step-content">
+        <div class="step-title">Service Business Logic</div>
+        The controller delegates to <code>@Service</code> (e.g., <code>ProfileService</code>). It validates data, formats strings, and prepares URLs.
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num">6</div>
+      <div class="step-content">
+        <div class="step-title">Repository & Database Execution</div>
+        <code>@Repository</code> executes Spring Data JPA queries. Hibernate generates SQL, queries PostgreSQL (port 5432), and hydrates the returned rows into Java entity objects.
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num">7</div>
+      <div class="step-content">
+        <div class="step-title">JSON Serialization & UI Re-Render</div>
+        Jackson converts the Java DTO into a JSON response with HTTP 200 OK. The Promise resolves in React, <code>useState</code> updates, and the UI re-renders with fresh data.
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Book My Stars &copy; 2026 &bull; High-Performance Casting & Talent Management Platform
+  </footer>
+</div>
+
+</body>
+</html>

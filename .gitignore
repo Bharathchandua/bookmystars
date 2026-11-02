@@ -37,6 +37,8 @@ node_modules/
 **/node_modules/
 dist/
 **/dist/
+.vite/
+**/.vite/
 .env
 .env.local
 
@@ -50,5 +52,16 @@ uploads/
 *.rar
 context.md
 fix_roles.sql
+
+### Build, Deploy & Binary Artifacts ###
+*.war
+*.jar
+deploy/
+**/deploy/
+logs/
+**/logs/
+book_my_stars_main-main/
+src/
+
 
 
