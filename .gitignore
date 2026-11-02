@@ -52,6 +52,7 @@ uploads/
 *.rar
 context.md
 fix_roles.sql
+local_database_data.sql
 
 ### Build, Deploy & Binary Artifacts ###
 *.war
