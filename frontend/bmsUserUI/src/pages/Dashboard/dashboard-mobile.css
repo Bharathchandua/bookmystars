@@ -1,0 +1,417 @@
+/* Mobile & Tablet Off-Screen Sidebar Overrides (< 1024px) */
+@media (max-width: 1023px) {
+  .db-sidebar {
+    left: -260px !important;
+    width: 260px !important;
+  }
+  
+  .db-sidebar.collapsed {
+    left: -260px !important;
+    width: 260px !important;
+    overflow: hidden !important;
+  }
+  
+  .db-sidebar:not(.collapsed) {
+    left: 0 !important;
+    box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.05) !important;
+  }
+}
+
+/* Dashboard Profile card responsive font sizes */
+@media (max-width: 768px) {
+  .db-profile-header h2 {
+    font-size: 20px !important;
+  }
+  .db-profile-title-tags {
+    font-size: 11.5px !important;
+  }
+  .db-meta-item {
+    font-size: 11.5px !important;
+    gap: 8px !important;
+  }
+  .btn-primary-db, .btn-secondary-db {
+    font-size: 11px !important;
+    padding: 7px 11px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .db-profile-header h2 {
+    font-size: 17px !important;
+  }
+  .db-profile-title-tags {
+    font-size: 10.5px !important;
+    margin-top: 4px !important;
+  }
+  .db-meta-item {
+    font-size: 10.5px !important;
+    gap: 6px !important;
+  }
+  .db-profile-meta-grid {
+    gap: 8px !important;
+    margin-top: -6px !important;
+    margin-bottom: 12px !important;
+  }
+  .btn-primary-db, .btn-secondary-db {
+    font-size: 9px !important;
+    padding: 5px 6px !important;
+    gap: 4px !important;
+    white-space: nowrap !important;
+    flex: 1 !important;
+    justify-content: center !important;
+  }
+}
+
+/* -------------------------------------------------------------
+   MOBILE OVERFLOW & VIEWPORT PAD FIXES
+   ------------------------------------------------------------- */
+.db-main-content {
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+@media (max-width: 1023px) {
+  .db-layout-container {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+}
+
+@media (max-width: 576px) {
+  /* Hide header separator on small screen to save space */
+  .db-header-separator {
+    display: none !important;
+  }
+  
+  /* Compact profile trigger switcher */
+  .db-profile-trigger {
+    gap: 0 !important;
+    padding: 2px !important;
+  }
+  .db-profile-trigger svg {
+    display: none !important;
+  }
+
+  /* Keep profile photo and details side-by-side */
+  .db-profile-row {
+    flex-direction: row !important;
+    align-items: start !important;
+    text-align: left !important;
+    gap: 10px !important;
+  }
+
+  /* Set profile photo to a balanced 125px width x 180px height to fit details next to it */
+  .db-profile-photo-wrapper {
+    width: 125px !important;
+    height: 180px !important;
+    margin-top: 0 !important;
+    border-radius: 12px !important;
+  }
+
+  /* Restore details column alignment */
+  .db-profile-info {
+    width: auto !important;
+    flex: 1 !important;
+    display: block !important;
+    text-align: left !important;
+  }
+
+  .db-profile-header {
+    justify-content: flex-start !important;
+    margin-top: 8px !important;
+  }
+
+  .db-profile-meta-grid {
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 6px !important;
+    margin-top: -6px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .db-meta-item {
+    justify-content: flex-start !important;
+    font-size: 10.5px !important;
+    gap: 6px !important;
+  }
+
+  /* Position Edit & Download buttons side-by-side with compact padding */
+  .db-profile-actions {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    gap: 4px !important;
+    width: 100% !important;
+  }
+
+  .btn-primary-db, .btn-secondary-db {
+    font-size: 8px !important;
+    padding: 4px 5px !important;
+    gap: 2px !important;
+    white-space: nowrap !important;
+    flex: 1 !important;
+    justify-content: center !important;
+  }
+
+  .btn-primary-db svg, .btn-secondary-db svg {
+    width: 10px !important;
+    height: 10px !important;
+    display: inline-block !important;
+  }
+
+  /* Compact quick actions button sizes for mobile */
+  .db-action-item-btn {
+    padding: 6px 6px !important;
+    gap: 4px !important;
+  }
+  .db-action-icon-box {
+    width: 22px !important;
+    height: 22px !important;
+  }
+  .db-action-item-btn span {
+    font-size: 9px !important;
+  }
+
+  /* Add centered horizontal padding to prevent containers from touching screen borders */
+  .db-workspace {
+    padding: 16px 20px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Prevent stat trends from overflowing inside grid cards */
+  .db-stat-trend {
+    font-size: 8px !important;
+  }
+  .db-profile-photo-wrapper {
+    width: 110px !important;
+    height: 160px !important;
+  }
+  .db-profile-row {
+    gap: 8px !important;
+  }
+  .btn-primary-db svg, .btn-secondary-db svg {
+    display: none !important;
+  }
+  .db-quick-actions-grid-wrapper {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .db-stat-item-card {
+    padding: 10px 8px !important;
+    height: 110px !important;
+  }
+  .db-stat-top-row {
+    gap: 8px !important;
+  }
+  .db-stat-icon-wrapper {
+    width: 32px !important;
+    height: 32px !important;
+  }
+  .db-stat-icon-wrapper svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+  .db-stat-val {
+    font-size: 15px !important;
+  }
+  .db-stat-lbl {
+    font-size: 8.5px !important;
+  }
+}
+
+@media (max-width: 400px) {
+  /* Fallbacks for extremely small viewports to prevent overflow */
+  .db-workspace {
+    padding: 16px 14px !important;
+  }
+}
+
+/* Performance chart responsiveness */
+.perf-chart-grid {
+  display: grid !important;
+  grid-template-columns: repeat(12, 1fr) !important;
+  gap: 16px !important;
+  width: 100% !important;
+  align-items: start !important;
+}
+
+.perf-chart-left {
+  grid-column: span 7 / span 7 !important;
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.perf-metrics-list {
+  grid-column: span 5 / span 5 !important;
+  width: 100% !important;
+  max-width: 260px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  margin-left: auto !important;
+  height: 220px !important;
+}
+
+@media (max-width: 767px) {
+  .perf-chart-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 24px !important;
+  }
+  
+  .perf-chart-left {
+    width: 100% !important;
+  }
+  
+  .perf-metrics-list {
+    grid-column: span 12 / span 12 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+    margin-left: 0 !important;
+    height: auto !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .perf-metrics-list {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+}
+
+.perf-metric-info {
+  margin-left: 10px !important;
+}
+
+@media (min-width: 768px) {
+  .perf-metric-info {
+    margin-left: 18px !important;
+  }
+}
+
+@media (max-width: 1023px) {
+  .perf-metric-button {
+    padding: 8px 10px !important;
+  }
+}
+
+/* Mobile menu button visibility rules */
+.db-mobile-menu-btn {
+  display: none !important;
+}
+
+@media (max-width: 1023px) {
+  .db-mobile-menu-btn {
+    display: flex !important;
+  }
+}
+
+/* Tablet view styling for profile card */
+@media (max-width: 1023px) {
+  .db-profile-photo-wrapper {
+    width: 130px !important;
+    height: 190px !important;
+  }
+  .db-profile-row {
+    gap: 12px !important;
+  }
+}
+
+/* ---------------------------------------------------------------
+   iPad Mini / Tablet (768px - 1023px) Comprehensive Layout Fixes
+   DO NOT TOUCH DESKTOP (≥1024px) RULES ABOVE
+   --------------------------------------------------------------- */
+@media (min-width: 768px) and (max-width: 1023px) {
+  /* Workspace padding for tablets */
+  .db-workspace {
+    padding: 24px 20px !important;
+  }
+
+  /* Ensure stats grid stays 2 columns on iPad Mini */
+  .db-stats-grid-wrapper {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  /* Quick actions use 3 columns on tablet for a compact row */
+  .db-quick-actions-grid-wrapper {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+
+  /* All card widgets and containers must stay within bounds */
+  .card-widget,
+  .db-stats-container-box,
+  .db-quick-actions-container-box {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Widget cards fill properly in 2-col grid */
+  .db-widgets-grid > * {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Make messages and calendar widgets span full row each */
+  .messages-widget-card {
+    grid-column: span 1 !important;
+  }
+
+  /* —— Profile: left-align on iPad Mini —— */
+  /* The profile photo + details row should hug the left edge */
+  .db-profile-row {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    justify-content: flex-start !important;
+    align-items: flex-start !important;
+    text-align: left !important;
+  }
+
+  /* Profile info details stay left-aligned */
+  .db-profile-info {
+    text-align: left !important;
+  }
+
+  .db-profile-header {
+    justify-content: flex-start !important;
+  }
+
+  /* Top row: profile card left, stats right – side by side on tablet */
+  .db-profile-no-container {
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    gap: 16px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .edit-profile-body {
+    padding: 16px !important;
+    gap: 16px !important;
+  }
+  .edit-profile-header {
+    padding: 14px 16px !important;
+  }
+  .edit-profile-footer {
+    padding: 14px 16px !important;
+  }
+  .edit-profile-role-chips {
+    gap: 6px !important;
+  }
+  .edit-profile-role-chip {
+    padding: 5px 12px !important;
+    font-size: 11px !important;
+  }
+  .edit-profile-photo-preview-wrapper {
+    width: 130px !important;
+    height: 130px !important;
+  }
+}
+

@@ -1,0 +1,929 @@
+/* â”€â”€ Mobile: full-screen calendar modal (MUST be after base rules) â”€â”€ */
+@media (max-width: 1023px) {
+  .cal-modal-overlay-fixed {
+    padding: 24px 16px !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  .cal-modal-container {
+    width: 100% !important;
+    max-width: 540px !important;
+    height: 80vh !important;
+    max-height: 80vh !important;
+    border-radius: 20px !important;
+  }
+  .cal-modal-header {
+    padding: 12px 16px !important;
+  }
+  /* Stack calendar grid + agenda vertically */
+  .cal-modal-body {
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-y: auto !important;
+  }
+  .cal-modal-grid-side {
+    grid-column: unset !important;
+    padding: 14px !important;
+    overflow-y: visible !important;
+    flex-shrink: 0 !important;
+  }
+  .cal-modal-agenda-side {
+    grid-column: unset !important;
+    padding: 14px !important;
+    border-left: none !important;
+    border-top: 1px solid #f1f5f9 !important;
+    overflow-y: visible !important;
+    flex-shrink: 0 !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .cal-modal-overlay-fixed {
+    padding: 12px 8px !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  .cal-modal-container {
+    height: 82vh !important;
+    max-height: 82vh !important;
+    max-width: 100% !important;
+    border-radius: 16px !important;
+  }
+  .cal-modal-header {
+    padding: 10px 14px !important;
+  }
+  .cal-modal-header h3 {
+    font-size: 14px !important;
+  }
+  .cal-modal-grid-side {
+    padding: 10px !important;
+  }
+  .cal-modal-agenda-side {
+    padding: 10px !important;
+  }
+  .cal-modal-dates-grid {
+    gap: 4px !important;
+  }
+  .cal-modal-day-cell {
+    padding: 4px 3px !important;
+    border-radius: 8px !important;
+    min-height: 44px !important;
+  }
+  .cal-modal-day-number {
+    font-size: 10px !important;
+  }
+  /* Show chips as tiny dots on mobile â€” text hidden, just color */
+  .cal-modal-chip-list {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    gap: 2px !important;
+    margin-top: 3px !important;
+  }
+  .cal-modal-chip {
+    font-size: 0 !important;
+    width: 6px !important;
+    height: 6px !important;
+    border-radius: 50% !important;
+    padding: 0 !important;
+    min-width: 6px !important;
+    border: none !important;
+  }
+  /* Override pastel backgrounds with vivid dark dot colors */
+  .cal-modal-chip.audition {
+    background-color: #ec4899 !important;  /* vivid pink */
+  }
+  .cal-modal-chip.booking {
+    background-color: #10b981 !important;  /* vivid green */
+  }
+  .cal-modal-chip.meeting {
+    background-color: #f59e0b !important;  /* vivid amber */
+  }
+  .cal-modal-chip.shoot {
+    background-color: #7c3aed !important;  /* vivid purple */
+  }
+  .cal-modal-weekday-label {
+    font-size: 8px !important;
+  }
+}
+
+/* Agenda sidebar list styling */
+.cal-agenda-header {
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  color: #0f172a !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  padding-bottom: 10px !important;
+  margin-bottom: 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.cal-agenda-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+}
+
+.cal-agenda-card {
+  background-color: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 16px !important;
+  padding: 14px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  transition: all 0.2s ease !important;
+  border-left-width: 4px !important;
+}
+
+.cal-agenda-card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04) !important;
+}
+
+.cal-agenda-card.audition {
+  border-left-color: #e11d48 !important;
+}
+
+.cal-agenda-card.booking {
+  border-left-color: #059669 !important;
+}
+
+.cal-agenda-card.meeting {
+  border-left-color: #d97706 !important;
+}
+
+.cal-agenda-card.shoot {
+  border-left-color: #7c3aed !important;
+}
+
+.cal-agenda-card-meta {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+.cal-agenda-badge {
+  font-size: 8.5px !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  padding: 2px 8px !important;
+  border-radius: 20px !important;
+}
+
+.cal-agenda-badge.audition {
+  background-color: #FFF0F2 !important;
+  color: #e11d48 !important;
+}
+
+.cal-agenda-badge.booking {
+  background-color: #ECFDF5 !important;
+  color: #059669 !important;
+}
+
+.cal-agenda-badge.meeting {
+  background-color: #FFF8F0 !important;
+  color: #d97706 !important;
+}
+
+.cal-agenda-badge.shoot {
+  background-color: #F5F3FF !important;
+  color: #7c3aed !important;
+}
+
+.cal-agenda-time {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  font-size: 9.5px !important;
+  font-weight: 800 !important;
+  color: #94a3b8 !important;
+}
+
+.cal-agenda-title {
+  font-size: 12.5px !important;
+  font-weight: 900 !important;
+  color: #0f172a !important;
+  margin: 0 !important;
+  line-height: 1.3 !important;
+  text-align: left !important;
+}
+
+.cal-agenda-details {
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  color: #64748b !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  border-top: 1px solid #f1f5f9 !important;
+  padding-top: 8px !important;
+}
+
+.cal-agenda-location {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  margin-top: 2px !important;
+  font-weight: 700 !important;
+}
+
+.cal-agenda-empty {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  padding: 40px 20px !important;
+  margin-top: 40px !important;
+}
+
+.cal-agenda-empty-icon {
+  font-size: 28px !important;
+  margin-bottom: 8px !important;
+}
+
+.cal-agenda-empty-title {
+  font-size: 11.5px !important;
+  font-weight: 900 !important;
+  color: #64748b !important;
+  margin: 0 !important;
+}
+
+.cal-agenda-empty-desc {
+  font-size: 9.5px !important;
+  color: #94a3b8 !important;
+  margin: 4px 0 0 0 !important;
+  font-weight: 600 !important;
+}
+
+/* Dashed Add Event Placeholder for visual completeness */
+.cal-agenda-add-btn {
+  background: transparent !important;
+  border: 1px dashed #cbd5e1 !important;
+  border-radius: 12px !important;
+  padding: 10px !important;
+  color: #64748b !important;
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  margin-top: 12px !important;
+  width: 100% !important;
+}
+
+.cal-agenda-add-btn:hover {
+  border-color: #661AF1 !important;
+  color: #661AF1 !important;
+  background-color: rgba(102, 26, 241, 0.02) !important;
+}
+
+/* Add Event Form Sub-Modal Styles */
+.cal-add-event-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  background-color: rgba(15, 23, 42, 0.4) !important;
+  backdrop-filter: blur(4px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 10000 !important; /* sits on top of full calendar modal */
+  padding: 20px !important;
+  animation: fadeIn 0.2s ease-out forwards !important;
+}
+
+.cal-add-event-container {
+  background: #ffffff !important;
+  border-radius: 20px !important;
+  width: 100% !important;
+  max-width: 460px !important;
+  box-shadow: 0 20px 40px -5px rgba(102, 26, 241, 0.12), 0 10px 20px -5px rgba(0, 0, 0, 0.08) !important;
+  border: 1px solid #f1f5f9 !important;
+  overflow: hidden !important;
+  cursor: default !important;
+  animation: scaleIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards !important;
+  font-family: Inter, sans-serif !important;
+}
+
+.cal-add-event-header {
+  padding: 16px 20px !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  background-color: #fafbfc !important;
+}
+
+.cal-add-event-close-btn {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 50% !important;
+  border: none !important;
+  background-color: #f1f5f9 !important;
+  color: #64748b !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.cal-add-event-close-btn:hover {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+  transform: rotate(90deg) !important;
+}
+
+.cal-add-event-form {
+  padding: 20px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+}
+
+.cal-form-group {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+}
+
+.cal-form-row {
+  display: flex !important;
+  gap: 12px !important;
+}
+
+.cal-form-label {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #64748b !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  text-align: left !important;
+  margin: 0 !important;
+}
+
+.cal-form-input, .cal-form-select {
+  padding: 10px 12px !important;
+  border-radius: 8px !important;
+  border: 1.5px solid #e2e8f0 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #1e293b !important;
+  outline: none !important;
+  transition: all 0.2s ease !important;
+  background-color: #ffffff !important;
+  width: 100% !important;
+}
+
+.cal-form-input:focus, .cal-form-select:focus {
+  border-color: #661AF1 !important;
+  box-shadow: 0 0 0 3px rgba(102, 26, 241, 0.1) !important;
+  background-color: #ffffff !important;
+}
+
+.cal-form-actions {
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+  margin-top: 10px !important;
+}
+
+.cal-form-btn-cancel {
+  padding: 10px 18px !important;
+  border-radius: 8px !important;
+  border: 1px solid #e2e8f0 !important;
+  background-color: #ffffff !important;
+  color: #64748b !important;
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.cal-form-btn-cancel:hover {
+  background-color: #f8fafc !important;
+  color: #334155 !important;
+}
+
+.cal-form-btn-submit {
+  padding: 10px 22px !important;
+  border-radius: 8px !important;
+  border: none !important;
+  background: linear-gradient(100deg, var(--pink), var(--purple)) !important;
+  color: #ffffff !important;
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 12px rgba(235, 63, 160, 0.2) !important;
+  transition: all 0.15s ease !important;
+}
+
+.cal-form-btn-submit:hover {
+  opacity: 0.95 !important;
+  transform: translateY(-0.5px) !important;
+}
+
+.cal-form-btn-submit:active {
+  transform: scale(0.98) !important;
+}
+
+.cal-header-select {
+  width: auto !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 4px 24px 4px 8px !important;
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  color: #1e293b !important;
+  outline: none !important;
+  cursor: pointer !important;
+  box-shadow: none !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 4px center !important;
+  background-size: 12px !important;
+}
+
+
+
+
+/* Custom Timeline Checklist inside Status Modal */
+.ac-timeline-container {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+  position: relative !important;
+  padding-left: 20px !important;
+  border-left: 2px solid #f1f5f9 !important;
+  margin-left: 8px !important;
+}
+
+.ac-timeline-item {
+  position: relative !important;
+  display: flex !important;
+  gap: 12px !important;
+  align-items: flex-start !important;
+  text-align: left !important;
+}
+
+.ac-timeline-bullet {
+  position: absolute !important;
+  left: -28px !important;
+  top: 2px !important;
+  width: 14px !important;
+  height: 14px !important;
+  border-radius: 50% !important;
+  border: 2px solid #cbd5e1 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background-color: #ffffff !important;
+  z-index: 2 !important;
+}
+
+.ac-timeline-bullet.done {
+  border-color: #10b981 !important;
+  background-color: #10b981 !important;
+  color: #ffffff !important;
+}
+
+.ac-timeline-content {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+}
+
+.ac-timeline-title {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: #64748b !important;
+  line-height: 1.2 !important;
+}
+
+.ac-timeline-title.done {
+  color: #1e293b !important;
+}
+
+.ac-timeline-date {
+  font-size: 10px !important;
+  color: #94a3b8 !important;
+  font-weight: 500 !important;
+}
+
+/* ─── Mobile and Tablet Responsiveness ─── */
+@media (max-width: 1023px) {
+  .ac-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (min-width: 600px) and (max-width: 1023px) {
+  .ac-list {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 16px !important;
+  }
+
+  /* Center the 5th card in Audition Invites (if there are exactly 5 items) */
+  .ac-list > :nth-child(5):last-child {
+    grid-column: span 2 !important;
+    justify-self: center !important;
+    width: calc(50% - 8px) !important;
+  }
+
+  /* Center the 3rd card in Recent Applications (if there are exactly 3 items) */
+  .ac-list > :nth-child(3):last-child {
+    grid-column: span 2 !important;
+    justify-self: center !important;
+    width: calc(50% - 8px) !important;
+  }
+
+  /* Layout the 4 sidebar cards in a 2x2 grid to prevent stretching on tablet */
+  .ac-sidebar-col {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 24px !important;
+  }
+}
+
+@media (max-width: 1023px) {
+  .ac-header-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+  
+  .ac-tabs-container {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+    width: 100% !important;
+    gap: 12px !important;
+  }
+  .ac-tabs-container::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .ac-tab-btn {
+    padding: 6px 6px 8px 6px !important;
+    font-size: 12px !important;
+  }
+
+  .ac-filters-container {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    width: 100% !important;
+    gap: 4px !important;
+    padding-bottom: 4px !important;
+  }
+
+  .ac-filters-container > :last-child {
+    margin-right: 16px !important;
+  }
+
+  .ac-dropdown-container {
+    flex-shrink: 0 !important;
+  }
+
+  .ac-select-db {
+    min-width: unset !important;
+    padding: 5px 8px !important;
+    font-size: 10.5px !important;
+    gap: 4px !important;
+    font-weight: 500 !important;
+  }
+
+  .ac-select-db svg {
+    width: 10px !important;
+    height: 10px !important;
+  }
+
+  .ac-filter-label {
+    font-size: 11px !important;
+  }
+
+  .ac-sort-wrapper .ac-filter-label {
+    display: none !important;
+  }
+
+  .ac-dropdown-menu {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: translate(-50%, -50%) !important;
+    width: 260px !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+    border: 1px solid #cbd5e1 !important;
+    z-index: 10000 !important;
+  }
+
+  .ac-stats-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+
+  .ac-stats-row > :nth-child(5) {
+    grid-column: span 2 !important;
+    justify-self: center !important;
+    width: calc(50% - 6px) !important;
+  }
+
+  .ac-stat-card {
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    padding: 16px 12px !important;
+    gap: 10px !important;
+  }
+
+  .ac-stat-info {
+    align-items: center !important;
+    text-align: center !important;
+  }
+
+  .ac-invite-item {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 12px !important;
+    padding: 12px !important;
+    align-items: flex-start !important;
+  }
+  
+  .ac-invite-media {
+    grid-column: span 3 !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    text-align: left !important;
+    width: 100% !important;
+    min-width: unset !important;
+    flex: none !important;
+    gap: 12px !important;
+  }
+  
+  .ac-invite-item .ac-invite-meta-block {
+    grid-column: span 1 !important;
+    align-items: flex-start !important;
+    text-align: left !important;
+    width: 100% !important;
+    flex: none !important;
+  }
+  
+  .ac-action-col {
+    grid-column: span 3 !important;
+    width: 100% !important;
+    justify-content: center !important;
+    margin-top: 4px !important;
+  }
+
+  .ac-recent-item {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 12px !important;
+    padding: 12px !important;
+    align-items: flex-start !important;
+  }
+
+  .ac-recent-media {
+    grid-column: span 3 !important;
+    order: 1 !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    text-align: left !important;
+    width: 100% !important;
+    min-width: unset !important;
+    flex: none !important;
+    gap: 12px !important;
+  }
+
+  /* Child 4 is Role */
+  .ac-recent-item > :nth-child(4) {
+    grid-column: span 1 !important;
+    order: 2 !important;
+    align-items: flex-start !important;
+    text-align: left !important;
+    width: 100% !important;
+    flex: none !important;
+  }
+
+  /* Child 2 is Applied on */
+  .ac-recent-item > :nth-child(2) {
+    grid-column: span 1 !important;
+    order: 3 !important;
+    align-items: flex-start !important;
+    text-align: left !important;
+    width: 100% !important;
+    flex: none !important;
+  }
+
+  /* Child 3 is Status */
+  .ac-recent-item > :nth-child(3) {
+    grid-column: span 1 !important;
+    order: 4 !important;
+    align-items: center !important;
+    text-align: center !important;
+    width: 100% !important;
+    flex: none !important;
+  }
+
+  .ac-recent-item .ac-actions-group {
+    grid-column: span 3 !important;
+    order: 5 !important;
+    justify-content: center !important;
+    width: 100% !important;
+    margin-top: 4px !important;
+  }
+  
+  .ac-outline-btn {
+    width: 100% !important;
+    text-align: center !important;
+    padding: 8px 16px !important;
+    font-size: 12px !important;
+  }
+
+  .ac-section-card {
+    padding: 16px !important;
+  }
+
+  .ac-section-header {
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .ac-stats-row {
+    gap: 10px !important;
+  }
+
+  .ac-stats-row > :nth-child(5) {
+    width: calc(50% - 5px) !important;
+  }
+  
+  .ac-stat-card {
+    padding: 12px 8px !important;
+  }
+  
+  .ac-tab-btn {
+    padding: 4px 6px 6px 6px !important;
+    font-size: 11px !important;
+  }
+
+  .ac-tabs-container {
+    gap: 8px !important;
+  }
+
+  .ac-select-db {
+    padding: 4px 5px !important;
+    font-size: 9.5px !important;
+    gap: 3px !important;
+  }
+  
+  .ac-filters-container {
+    gap: 4px !important;
+  }
+}
+
+/* ─── Compact Desktop adjustments for iPad / iPad Air / iPad Pro (768px - 1120px) ─── */
+@media (min-width: 768px) and (max-width: 1120px) {
+  /* Stats row in a tight single row */
+  .ac-stats-row {
+    display: grid !important;
+    grid-template-columns: repeat(5, 1fr) !important;
+    gap: 6px !important;
+    width: 100% !important;
+  }
+  .ac-stats-row > :nth-child(5) {
+    grid-column: unset !important;
+    justify-self: unset !important;
+    width: 100% !important;
+  }
+  .ac-stat-card {
+    padding: 8px 6px !important;
+    gap: 6px !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+  .ac-stat-icon-wrapper {
+    width: 28px !important;
+    height: 28px !important;
+  }
+  .ac-stat-icon-wrapper svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
+  .ac-stat-value {
+    font-size: 15px !important;
+  }
+  .ac-stat-label {
+    font-size: 9px !important;
+    line-height: 1.1 !important;
+  }
+  .ac-stat-status {
+    font-size: 9px !important;
+    line-height: 1.1 !important;
+  }
+
+  /* Header filters and tabs in a tight single row */
+  .ac-header-row {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important; /* Force single line! */
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 4px !important;
+    width: 100% !important;
+  }
+  .ac-tabs-container {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    gap: 4px !important;
+    width: auto !important;
+  }
+  .ac-tab-btn {
+    padding: 4px 4px !important;
+    font-size: 10.5px !important;
+    white-space: nowrap !important;
+  }
+  .ac-filters-container {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    gap: 2px !important;
+    width: auto !important;
+  }
+  .ac-select-db {
+    padding: 4px 4px !important;
+    font-size: 9.5px !important;
+    min-width: 55px !important;
+    height: 28px !important;
+    white-space: nowrap !important;
+  }
+  .ac-filter-label {
+    display: none !important; /* Hide label to save space on iPad Pro */
+  }
+
+  /* Horizontal card items tight spacing to fit inside 530px left column */
+  .ac-invite-item, .ac-recent-item {
+    gap: 10px !important;
+    padding: 10px 12px !important;
+  }
+  .ac-invite-media, .ac-recent-media {
+    min-width: 140px !important;
+    gap: 8px !important;
+  }
+  .ac-poster-img {
+    width: 38px !important;
+    height: 50px !important;
+  }
+  .ac-square-thumb {
+    width: 36px !important;
+    height: 36px !important;
+  }
+  .ac-project-name, .ac-recent-item .ac-project-name {
+    font-size: 12.5px !important;
+  }
+  .ac-project-type {
+    font-size: 10.5px !important;
+  }
+  .ac-meta-label {
+    font-size: 9.5px !important;
+    margin-bottom: 2px !important;
+  }
+  .ac-meta-val {
+    font-size: 11px !important;
+  }
+  .ac-solid-btn, .ac-outline-btn, .ac-recent-item .ac-solid-btn {
+    padding: 6px 10px !important;
+    font-size: 11px !important;
+    width: auto !important;
+    min-width: 80px !important;
+  }
+  .ac-status-pill {
+    padding: 3px 8px !important;
+    font-size: 10px !important;
+  }
+}

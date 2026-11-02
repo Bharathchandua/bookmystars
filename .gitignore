@@ -61,7 +61,7 @@ deploy/
 logs/
 **/logs/
 book_my_stars_main-main/
-src/
+/src/
 
 
 

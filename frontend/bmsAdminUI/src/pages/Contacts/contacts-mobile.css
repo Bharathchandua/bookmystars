@@ -1,0 +1,421 @@
+@media (max-width: 1024px) {
+  .contacts-page-container {
+    position: fixed !important;
+    top: 80px !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: calc(100vh - 80px) !important;
+    width: 100% !important;
+    overflow: hidden !important;
+    z-index: 10 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  /* 2-Column layout for Tablet (769px to 1024px) */
+  .contacts-grid-layout {
+    grid-template-columns: 260px 1fr !important;
+    gap: 16px !important;
+    flex: 1 !important;
+    height: auto !important;
+    min-height: 0 !important; /* Reset desktop min-height to prevent vertical overflow */
+  }
+
+  /* Flat layout overrides for columns on both tablet and mobile */
+  .contact-list-column {
+    display: flex !important;
+    padding: 16px !important;
+    background: #ffffff !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    overflow: hidden !important; /* Prevent expanding and ensure inner scrolling */
+    height: 100% !important;
+  }
+
+  .contact-details-column {
+    display: flex !important; /* Both columns visible side-by-side by default on tablet */
+    padding: 16px !important; /* Scaled down padding from 24px */
+    min-width: 0 !important;  /* Prevent horizontal stretch from children */
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    background: #ffffff !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    height: 100% !important;
+    overflow: hidden !important;
+  }
+
+  /* Scaled down header details and auto-wrap for narrow tablet width */
+  .contact-details-header {
+    flex-wrap: wrap !important;
+    gap: 12px !important;
+    padding-bottom: 16px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .contact-header-identity {
+    gap: 12px !important;
+  }
+
+  .contact-header-name {
+    font-size: 16.5px !important; /* Scaled down from 19px */
+  }
+
+  .contact-header-role {
+    font-size: 12.5px !important; /* Scaled down from 13.5px */
+  }
+
+  .contact-header-company-loc {
+    font-size: 11.5px !important; /* Scaled down from 12.5px */
+    margin-bottom: 6px !important;
+  }
+
+  .contact-header-avatar-wrapper {
+    width: 60px !important;
+    height: 60px !important;
+  }
+
+  .contact-header-avatar {
+    width: 60px !important;
+    height: 60px !important;
+  }
+
+  .contact-header-avatar-placeholder {
+    width: 60px !important;
+    height: 60px !important;
+    font-size: 20px !important;
+  }
+
+  /* Scaled down subtabs gap and enable horizontal scroll on mobile/tablet */
+  .contact-details-subtabs {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    gap: 14px !important;
+    margin-bottom: 16px !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    scrollbar-width: none !important; /* Firefox */
+    -ms-overflow-style: none !important;
+  }
+
+  .contact-details-subtabs::-webkit-scrollbar {
+    display: none !important; /* Safari/Chrome */
+  }
+
+  .contact-subtab-btn {
+    font-size: 12px !important;
+    padding-bottom: 8px !important;
+    flex-shrink: 0 !important; /* Prevent tab text from squishing */
+    white-space: nowrap !important; /* Prevent button text wrapping */
+  }
+
+  /* Scaled down contact details overview items */
+  .card-panel {
+    margin-bottom: 16px !important;
+    padding-bottom: 16px !important;
+  }
+
+  .panel-title {
+    font-size: 13.5px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .contact-info-grid {
+    grid-template-columns: 1fr !important; /* Stack columns on small screens */
+    gap: 14px !important;
+  }
+
+  .info-value {
+    font-size: 12.5px !important;
+  }
+
+  .about-text {
+    font-size: 12.5px !important;
+    line-height: 1.5 !important;
+  }
+
+  /* Responsive projects grid scaling */
+  .projects-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important;
+    gap: 12px !important;
+  }
+
+  .project-card {
+    padding: 6px !important;
+    gap: 10px !important;
+  }
+
+  .project-cover {
+    width: 56px !important;
+    height: 80px !important;
+  }
+
+  .project-title {
+    font-size: 12.5px !important;
+  }
+
+  .project-meta-role {
+    font-size: 11px !important;
+  }
+
+  .project-meta-year {
+    font-size: 10px !important;
+  }
+
+  /* List directory panel scaling on mobile */
+  .contact-search-bar {
+    margin-bottom: 12px !important;
+  }
+
+  .contact-search-input {
+    height: 38px !important;
+    font-size: 12.5px !important;
+  }
+
+  .contact-filter-btn,
+  .contact-more-btn {
+    width: 38px !important;
+    height: 38px !important;
+  }
+
+  .contact-item-card {
+    padding: 8px 10px !important;
+    gap: 10px !important;
+  }
+
+  .contact-item-avatar-wrapper,
+  .contact-item-avatar,
+  .contact-item-avatar-placeholder {
+    width: 38px !important;
+    height: 38px !important;
+  }
+
+  .contact-item-avatar-placeholder {
+    font-size: 12.5px !important;
+  }
+
+  .contact-item-name {
+    font-size: 13px !important;
+  }
+
+  .contact-item-role {
+    font-size: 11px !important;
+  }
+}
+
+/* Mobile-Only Rules (max-width: 768px) */
+@media (max-width: 768px) {
+  /* Hide top category tabs entirely on mobile */
+  .contacts-top-tabs {
+    display: none !important;
+  }
+
+  .contacts-page-container:has(.mobile-details-active) .contacts-top-tabs {
+    display: none !important;
+  }
+
+  /* Force 1-Column grid layout on mobile */
+  .contacts-grid-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* By default on mobile, show directory list and hide details column */
+  .contact-list-column {
+    display: flex !important;
+  }
+
+  .contact-details-column {
+    display: none !important;
+  }
+
+  /* When details are open on mobile, show details column, hide search directory */
+  .contacts-grid-layout.mobile-details-active .contact-list-column {
+    display: none !important;
+  }
+
+  .contacts-grid-layout.mobile-details-active .contact-details-column {
+    display: flex !important;
+  }
+
+  /* Mobile-specific centering of contact details header */
+  .contact-details-header {
+    position: relative !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 16px !important;
+    text-align: center !important;
+  }
+
+  .contact-header-actions {
+    width: 100% !important;
+    justify-content: center !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    box-sizing: border-box !important;
+    gap: 12px !important;
+  }
+
+  .contact-action-btn {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .contact-header-identity {
+    width: 100% !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    gap: 16px !important;
+  }
+
+  .contact-header-meta {
+    align-items: center !important;
+    text-align: center !important;
+  }
+
+  .contact-header-tags {
+    justify-content: center !important;
+  }
+
+  .contact-header-identity .contact-details-back-btn {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    margin-right: 0 !important;
+    margin-top: 0 !important;
+  }
+}
+
+@media (max-width: 580px) {
+  .contacts-page-container {
+    padding: 0 !important;
+    top: 50px !important;
+    height: calc(100vh - 50px) !important;
+  }
+
+  .contact-details-column {
+    padding: 12px !important;
+  }
+
+  .contact-header-identity {
+    gap: 8px !important;
+  }
+
+  .contact-header-avatar-wrapper,
+  .contact-header-avatar,
+  .contact-header-avatar-placeholder {
+    width: 48px !important;
+    height: 48px !important;
+  }
+
+  .contact-header-avatar-placeholder {
+    font-size: 16px !important;
+  }
+
+  .contact-header-identity .contact-details-back-btn {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 32px !important;
+    height: 32px !important;
+    margin-right: 0 !important;
+  }
+
+  .contact-header-actions {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    justify-content: center !important;
+    gap: 8px !important;
+  }
+
+  .contact-action-btn {
+    width: 28px !important;
+    height: 28px !important;
+  }
+
+  .contact-action-btn svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
+
+  .contact-info-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .info-item.full-width {
+    grid-column: span 1 !important;
+  }
+
+  .contacts-top-tabs {
+    display: none !important;
+  }
+
+  /* Even more compact subtabs on mobile screens < 580px */
+  .contact-details-subtabs {
+    gap: 8px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .contact-subtab-btn {
+    font-size: 11px !important;
+    padding-bottom: 6px !important;
+  }
+
+  .projects-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .project-card {
+    padding: 6px !important;
+  }
+
+  .project-cover {
+    width: 48px !important;
+    height: 68px !important;
+  }
+
+  .project-title {
+    font-size: 12px !important;
+  }
+
+  .project-meta-role {
+    font-size: 10.5px !important;
+  }
+
+  .project-meta-year {
+    font-size: 9.5px !important;
+  }
+}
+
+.contact-details-back-btn {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin-right: 12px !important;
+  align-self: flex-start !important; /* Align to the top of header */
+  margin-top: 2px !important; /* Center vertically with name line */
+  color: #64748b !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: color 0.2s ease !important;
+  outline: none !important;
+  z-index: 999 !important;
+  pointer-events: auto !important;
+  width: 36px !important;
+  height: 36px !important;
+}
+
+.contact-details-back-btn:hover {
+  color: #0f172a !important;
+}
