@@ -3261,7 +3261,7 @@ div:nth-child(3) > div > .big-card a,
   width: 100% !important;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .auth-grid-row-2col {
     grid-template-columns: 1fr !important;
     gap: 12px !important;
@@ -3399,8 +3399,10 @@ div:nth-child(3) > div > .big-card a,
 
 .auth-select {
   width: 100% !important;
-  padding: 15px 16px !important;
-  font-size: 14.5px !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 14px 38px 14px 14px !important;
+  font-size: 14px !important;
   background: #fdfcff !important;
   border: 1.5px solid #e2e8f0 !important;
   border-radius: 8px !important;
@@ -3408,9 +3410,12 @@ div:nth-child(3) > div > .big-card a,
   font-weight: 500 !important;
   outline: none !important;
   appearance: none !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
   background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
   background-repeat: no-repeat !important;
-  background-position: right 16px center !important;
+  background-position: right 14px center !important;
   background-size: 16px !important;
 }
 

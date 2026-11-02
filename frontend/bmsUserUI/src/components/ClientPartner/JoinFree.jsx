@@ -1004,14 +1004,15 @@ export default function JoinFree() {
               {/* Row 6: Creative Craft & Primary Profession (Clean Side-by-Side Dropdowns) */}
               <div className="auth-grid-row-2col" style={{ marginBottom: "16px" }}>
                 {/* Dropdown 1: Craft / Department */}
-                <div className="auth-field" style={{ marginBottom: "0 !important" }}>
-                  <label htmlFor="craftSelect">
-                    Creative Craft / Department <span className="pink">*</span>
+                <div className="auth-field" style={{ marginBottom: "0 !important", minWidth: 0 }}>
+                  <label htmlFor="craftSelect" style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" }} title="Creative Craft / Department">
+                    Creative Craft <span className="pink">*</span>
                   </label>
                   <div className="auth-input-wrapper">
                     <select
                       id="craftSelect"
                       className="auth-select"
+                      style={{ textOverflow: "ellipsis", whiteSpace: "nowrap", overflow: "hidden" }}
                       value={selectedCraft}
                       onChange={(e) => {
                         const newCraft = e.target.value;
@@ -1026,13 +1027,13 @@ export default function JoinFree() {
                       }}
                       required
                     >
-                      <option value="" disabled>-- Select Your Craft --</option>
+                      <option value="" disabled>-- Select Craft --</option>
                       {availableCrafts.map((craft) => {
                         const meta = CRAFT_METADATA[craft] || { icon: "🎬" };
                         const count = rawProfessions.filter(p => (p.craftCategory || "General Craft") === craft).length;
                         return (
                           <option key={craft} value={craft}>
-                            {meta.icon} {craft} ({count} roles)
+                            {meta.icon} {craft} {count > 0 ? `(${count})` : ''}
                           </option>
                         );
                       })}
@@ -1041,10 +1042,10 @@ export default function JoinFree() {
                 </div>
 
                 {/* Dropdown 2: Specific Profession */}
-                <div className="auth-field" style={{ marginBottom: "0 !important" }}>
+                <div className="auth-field" style={{ marginBottom: "0 !important", minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <label htmlFor="professionSelect" style={{ margin: 0 }}>
-                      Primary Profession / Role <span className="pink">*</span>
+                    <label htmlFor="professionSelect" style={{ margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" }} title="Primary Profession / Role">
+                      Primary Profession <span className="pink">*</span>
                     </label>
                     {loadingProfessions && (
                       <span style={{ fontSize: "11px", color: "#94a3b8" }}>Syncing...</span>
@@ -1054,20 +1055,21 @@ export default function JoinFree() {
                     <select
                       id="professionSelect"
                       className="auth-select"
+                      style={{ textOverflow: "ellipsis", whiteSpace: "nowrap", overflow: "hidden" }}
                       value={selectedProfiles[0] || ""}
                       onChange={(e) => setSelectedProfiles([e.target.value])}
                       disabled={!selectedCraft}
                       required
                     >
                       <option value="" disabled>
-                        {selectedCraft ? `-- Select your role in ${selectedCraft} --` : "-- Choose Craft first --"}
+                        {selectedCraft ? `-- Select Role --` : "-- Choose Craft first --"}
                       </option>
                       {(() => {
                         const craftRoles = rawProfessions.filter(p => (p.craftCategory || "General Craft") === selectedCraft);
                         if (craftRoles.length === 0) {
                           return (
                             <option value={`${selectedCraft} Specialist`}>
-                              {selectedCraft} Specialist (General)
+                              {selectedCraft} Specialist
                             </option>
                           );
                         }
