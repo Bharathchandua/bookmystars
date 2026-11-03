@@ -50,7 +50,7 @@ export default function Sidebar({ isOpen, isPinned, onToggle, onHoverOpen, onHov
     { id: "messages",     label: "Messages",            icon: MessageSquare,   path: "/messages" },
     { id: "talents",      label: "Talent Search",       icon: Users,           path: "/talents" },
     { id: "contacts",     label: "Contacts",           icon: Users,           path: "/contacts" },
-    { id: "analytics",    label: "Analytics",           icon: BarChart2,       path: "/dashboard" },
+    { id: "analytics",    label: "Analytics",           icon: BarChart2,       path: "/analytics" },
     { id: "earnings",     label: "Earnings",            icon: DollarSign,      path: "/profile?tab=rates" },
     { id: "reviews",      label: "Reviews",             icon: Star,            path: "/profile?tab=reviews" },
     { id: "settings",     label: "Settings",            icon: Settings,        path: "/profile?tab=overview" },
@@ -92,8 +92,9 @@ export default function Sidebar({ isOpen, isPinned, onToggle, onHoverOpen, onHov
         <nav className="db-sidebar-menu">
           {menuItems.map((item) => {
             const Icon = item.icon;
-            const isActive = location.pathname === item.path ||
-              (item.path === "/dashboard" && location.pathname === "/");
+            const isActive = item.id === "dashboard"
+              ? (location.pathname === "/dashboard" || location.pathname === "/")
+              : (item.path !== "/dashboard" && location.pathname === item.path);
 
             return (
               <PagesButton

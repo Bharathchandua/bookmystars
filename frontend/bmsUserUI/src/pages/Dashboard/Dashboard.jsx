@@ -2090,9 +2090,11 @@ export default function Dashboard() {
                   gap: "22px"
                 }}>
                   {myCastings.map((c) => {
-                    const poster = c.posterUrl
-                      ? (c.posterUrl.startsWith("http") ? c.posterUrl : getFullImageUrl(c.posterUrl))
-                      : "https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=800&auto=format&fit=crop&q=80";
+                    const rawPoster = c.posterUrl || c.poster || c.coverUrl || c.banner || c.image;
+                    const isDeadBlob = typeof rawPoster === "string" && rawPoster.startsWith("blob:");
+                    const poster = (rawPoster && !isDeadBlob)
+                      ? (rawPoster.startsWith("http") ? rawPoster : getFullImageUrl(rawPoster))
+                      : "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=800&auto=format&fit=crop&q=80";
                     const videoSrc = c.videoUrl
                       ? (c.videoUrl.startsWith("http") ? c.videoUrl : getFullImageUrl(c.videoUrl))
                       : null;
@@ -2130,6 +2132,10 @@ export default function Dashboard() {
                             <img
                               src={poster}
                               alt={c.title}
+                              onError={(e) => {
+                                e.currentTarget.onerror = null;
+                                e.currentTarget.src = "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=800&auto=format&fit=crop&q=80";
+                              }}
                               style={{
                                 width: "100%",
                                 height: "100%",

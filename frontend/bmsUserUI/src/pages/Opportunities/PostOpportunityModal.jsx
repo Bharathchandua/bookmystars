@@ -153,7 +153,12 @@ export default function PostOpportunityModal({ onClose, onCreated }) {
           uploadedPosterUrl = res.fileUrl;
         } catch (err) {
           console.warn("Poster upload error:", err);
-          uploadedPosterUrl = URL.createObjectURL(posterFile);
+          uploadedPosterUrl = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = () => resolve("https://images.unsplash.com/photo-1485846234645-a62644f84728?w=800&auto=format&fit=crop&q=80");
+            reader.readAsDataURL(posterFile);
+          });
         }
       }
 

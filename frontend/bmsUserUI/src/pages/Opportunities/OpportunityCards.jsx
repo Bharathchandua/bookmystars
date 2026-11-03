@@ -50,9 +50,11 @@ function OpportunityListCard({ opp, onOpen, onUpdateBookingStatus }) {
     }
   };
 
-  const bannerImg = opp.banner
-    ? (opp.banner.startsWith("http") ? opp.banner : getFullImageUrl(opp.banner))
-    : (opp.posterUrl ? (opp.posterUrl.startsWith("http") ? opp.posterUrl : getFullImageUrl(opp.posterUrl)) : "https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=400&auto=format&fit=crop&q=80");
+  const rawBanner = opp.banner || opp.posterUrl;
+  const isBlob = typeof rawBanner === "string" && rawBanner.startsWith("blob:");
+  const bannerImg = (rawBanner && !isBlob)
+    ? (rawBanner.startsWith("http") ? rawBanner : getFullImageUrl(rawBanner))
+    : "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=400&auto=format&fit=crop&q=80";
 
   const isDirect = Boolean(opp.isDirectTargeted);
 
@@ -413,9 +415,11 @@ function OpportunityGridCard({ opp, onOpen, onUpdateBookingStatus }) {
     }
   };
 
-  const bannerImg = opp.banner
-    ? (opp.banner.startsWith("http") ? opp.banner : getFullImageUrl(opp.banner))
-    : (opp.posterUrl ? (opp.posterUrl.startsWith("http") ? opp.posterUrl : getFullImageUrl(opp.posterUrl)) : "https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=400&auto=format&fit=crop&q=80");
+  const rawBanner = opp.banner || opp.posterUrl;
+  const isBlob = typeof rawBanner === "string" && rawBanner.startsWith("blob:");
+  const bannerImg = (rawBanner && !isBlob)
+    ? (rawBanner.startsWith("http") ? rawBanner : getFullImageUrl(rawBanner))
+    : "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=400&auto=format&fit=crop&q=80";
 
   const isDirect = Boolean(opp.isDirectTargeted);
 
