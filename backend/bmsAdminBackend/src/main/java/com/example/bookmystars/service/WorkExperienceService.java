@@ -28,6 +28,7 @@ public class WorkExperienceService {
     private final WorkExperienceRepository workExperienceRepository;
     private final UserRepository userRepository;
     private final com.example.bookmystars.repository.ProfileRepository profileRepository;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     private final Path workUploadDirectory = Paths.get("uploads/work-experience");
 
@@ -78,8 +79,17 @@ public class WorkExperienceService {
                 .fileName(request.getFileName())
                 .build();
 
-        WorkExperience saved =
-                workExperienceRepository.save(workExperience);
+        WorkExperience saved;
+        try {
+            saved = workExperienceRepository.save(workExperience);
+        } catch (Exception ex) {
+            try {
+                jdbcTemplate.execute("ALTER TABLE work_experience ALTER COLUMN professionals_profile_id DROP NOT NULL");
+                saved = workExperienceRepository.save(workExperience);
+            } catch (Exception retryEx) {
+                throw ex;
+            }
+        }
 
         syncProfileStats(user);
 
