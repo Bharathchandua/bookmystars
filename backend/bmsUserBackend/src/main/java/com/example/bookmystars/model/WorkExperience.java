@@ -45,6 +45,9 @@ public class WorkExperience {
 
     private String fileName;
 
+    @Column(name = "professionals_profile_id", nullable = true)
+    private Long professionalsProfileId;
+
     @Column(name = "created_at")
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
