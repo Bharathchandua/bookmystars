@@ -2,7 +2,7 @@
  * BookMyStars Admin Portal - Central Backend Configuration
  * Change BACKEND_ENV to 'local' or 'cloud' to switch the entire application backend.
  */
-export const BACKEND_ENV = 'local'; // 'local' | 'cloud'
+export const BACKEND_ENV = 'cloud'; // 'local' | 'cloud'
 
 export const BACKENDS = {
   local: {
@@ -10,8 +10,8 @@ export const BACKENDS = {
     users: 'http://localhost:8080',
   },
   cloud: {
-    admin: 'https://kwinwsproducts.cloudjiffy.net/bmsadmin',
-    users: 'https://kwinwsproducts.cloudjiffy.net/bmsuser',
+    admin: 'https://bookmystarsproduct.cloudjiffy.net/bmsadmin',
+    users: 'https://bookmystarsproduct.cloudjiffy.net/bmsuser',
   },
 };
 

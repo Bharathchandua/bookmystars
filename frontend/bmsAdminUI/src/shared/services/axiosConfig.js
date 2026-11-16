@@ -21,6 +21,7 @@ apiClient.interceptors.request.use(
     const token =
       sessionStorage.getItem("bms_admin_token") ||
       sessionStorage.getItem("bms_token") ||
+      localStorage.getItem("bms_admin_token") ||
       localStorage.getItem("bms_token");
     if (token && token !== "undefined" && token !== "null" && token.trim() !== "") {
       config.headers.Authorization = `Bearer ${token.trim()}`;

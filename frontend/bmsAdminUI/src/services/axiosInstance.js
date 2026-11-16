@@ -12,9 +12,13 @@ const axiosInstance = axios.create({
 // Request interceptor to attach JWT admin token
 axiosInstance.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("bms_admin_token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    const token =
+      sessionStorage.getItem("bms_admin_token") ||
+      sessionStorage.getItem("bms_token") ||
+      localStorage.getItem("bms_admin_token") ||
+      localStorage.getItem("bms_token");
+    if (token && token !== "undefined" && token !== "null" && token.trim() !== "") {
+      config.headers.Authorization = `Bearer ${token.trim()}`;
     }
     return config;
   },
@@ -28,8 +32,14 @@ axiosInstance.interceptors.response.use(
     if (error.response && (error.response.status === 401 || error.response.status === 403)) {
       // Clear token if invalid session
       if (error.response.status === 401) {
+        sessionStorage.removeItem("bms_admin_token");
+        sessionStorage.removeItem("bms_token");
+        sessionStorage.removeItem("bms_admin_user");
+        sessionStorage.removeItem("bms_admin_logged_in");
         localStorage.removeItem("bms_admin_token");
+        localStorage.removeItem("bms_token");
         localStorage.removeItem("bms_admin_user");
+        localStorage.removeItem("bms_admin_logged_in");
         window.dispatchEvent(new Event("bms_admin_auth_changed"));
       }
     }

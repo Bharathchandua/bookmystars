@@ -2,7 +2,7 @@
  * BookMyStars Admin Portal - Central Environment-Aware API Configuration
  */
 
-export const BACKEND_ENV = 'local'; // 'local' | 'cloud'
+export const BACKEND_ENV = 'cloud'; // 'local' | 'cloud'
 
 export const BACKENDS = {
   local: {

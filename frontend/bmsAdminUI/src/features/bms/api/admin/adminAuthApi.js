@@ -53,9 +53,11 @@ export const loginAdminUser = async (email, password) => {
       sessionStorage.setItem("bms_admin_logged_in", "true");
       sessionStorage.setItem("bms_admin_user", JSON.stringify(user));
       sessionStorage.setItem("bms_token", token);
-      localStorage.removeItem("bms_admin_logged_in");
-      localStorage.removeItem("bms_admin_user");
-      localStorage.removeItem("bms_token");
+      sessionStorage.setItem("bms_admin_token", token);
+      localStorage.setItem("bms_admin_logged_in", "true");
+      localStorage.setItem("bms_admin_user", JSON.stringify(user));
+      localStorage.setItem("bms_token", token);
+      localStorage.setItem("bms_admin_token", token);
       window.dispatchEvent(new Event("bms_admin_auth_changed"));
       return { success: true, user };
     }
@@ -70,9 +72,11 @@ export const logoutAdminUser = () => {
   sessionStorage.removeItem("bms_admin_logged_in");
   sessionStorage.removeItem("bms_admin_user");
   sessionStorage.removeItem("bms_token");
+  sessionStorage.removeItem("bms_admin_token");
   localStorage.removeItem("bms_admin_logged_in");
   localStorage.removeItem("bms_admin_user");
   localStorage.removeItem("bms_token");
+  localStorage.removeItem("bms_admin_token");
   window.dispatchEvent(new Event("bms_admin_auth_changed"));
 };
 
