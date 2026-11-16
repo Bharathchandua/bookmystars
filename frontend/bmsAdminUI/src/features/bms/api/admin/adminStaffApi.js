@@ -1,4 +1,5 @@
 import apiClient from "../../../../shared/services/axiosConfig";
+import { getStoredAdmin } from "./adminAuthApi";
 
 /**
  * Super Admin Staff Members & Account Provisioning API
@@ -154,4 +155,59 @@ export const removeStaffMember = async (staffId) => {
     const msg = err.response?.data?.message || err.message;
     throw new Error(msg);
   }
+};
+
+/**
+ * Super Admin: Update own administrator profile (Name, Photo, Metadata)
+ */
+export const updateAdminProfile = async (name, avatarUrl) => {
+  const currentAdmin = getStoredAdmin() || {};
+  const staffId = currentAdmin.id || 1;
+  const email = currentAdmin.email || "admin@bookmystars.com";
+  const roleId = currentAdmin.roleId || "ROLE_SUPER_ADMIN";
+  const department = currentAdmin.department || "Executive Management";
+
+  const cleanName = (name || "").trim() || currentAdmin.name || "Bharath Chandu";
+
+  // 1. Update name and metadata in PostgreSQL admin_users table
+  try {
+    await apiClient.put(`/admin/staff/${staffId}`, {
+      name: cleanName,
+      email: email,
+      department: department,
+      roleId: roleId,
+      status: "ACTIVE"
+    });
+  } catch (err) {
+    console.warn("Backend updateStaff error notice:", err);
+  }
+
+  // 2. Update avatar in PostgreSQL admin_users table
+  try {
+    await apiClient.put(`/admin/staff/${staffId}/avatar`, {
+      avatarUrl: avatarUrl || null
+    });
+  } catch (err) {
+    try {
+      await apiClient.put("/admin/auth/avatar", {
+        avatarUrl: avatarUrl || null,
+        email: email
+      });
+    } catch (err2) {
+      console.warn("Backend avatar update notice:", err2);
+    }
+  }
+
+  // 3. Update local session & local storage
+  const updatedUser = {
+    ...currentAdmin,
+    name: cleanName,
+    avatar: avatarUrl || null
+  };
+
+  sessionStorage.setItem("bms_admin_user", JSON.stringify(updatedUser));
+  localStorage.setItem("bms_admin_user", JSON.stringify(updatedUser));
+  window.dispatchEvent(new Event("bms_admin_auth_changed"));
+  window.dispatchEvent(new Event("bms_staff_updated"));
+  return updatedUser;
 };

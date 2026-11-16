@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { 
   Zap, 
   Calendar, 
-  Crown 
+  Crown,
+  Edit3 
 } from "lucide-react";
 import { getStoredAdmin } from "../../../features/bms/api/admin/adminApi";
 
@@ -146,18 +147,51 @@ export default function AdminExecutiveBanner({
 
           {/* Heading */}
           <div>
-            <h1 
-              style={{
-                fontSize: "32px",
-                fontWeight: "900",
-                color: "#ffffff",
-                letterSpacing: "-0.5px",
-                margin: 0,
-                lineHeight: 1.2
-              }}
-            >
-              Welcome, <span style={{ color: "#ff2d95" }}>{adminUser?.name || "Bharath"}</span>
-            </h1>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+              <h1 
+                style={{
+                  fontSize: "32px",
+                  fontWeight: "900",
+                  color: "#ffffff",
+                  letterSpacing: "-0.5px",
+                  margin: 0,
+                  lineHeight: 1.2
+                }}
+              >
+                Welcome, <span style={{ color: "#ff2d95" }}>{adminUser?.name || "Bharath Chandu"}</span>
+              </h1>
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new CustomEvent("bms_open_admin_profile_modal"))}
+                title="Edit Super Admin Name & Profile Photo"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  backgroundColor: "rgba(255, 255, 255, 0.12)",
+                  border: "1px solid rgba(255, 255, 255, 0.25)",
+                  color: "#ffffff",
+                  fontSize: "12px",
+                  fontWeight: "700",
+                  padding: "4px 12px",
+                  borderRadius: "20px",
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                  backdropFilter: "blur(6px)"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "rgba(238, 0, 143, 0.3)";
+                  e.currentTarget.style.borderColor = "rgba(238, 0, 143, 0.6)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.12)";
+                  e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.25)";
+                }}
+              >
+                <Edit3 size={13} style={{ color: "#ff4bb8" }} />
+                <span>Edit Profile</span>
+              </button>
+            </div>
             <p 
               style={{
                 fontSize: "13px",

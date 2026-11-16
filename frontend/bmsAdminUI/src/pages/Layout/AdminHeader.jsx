@@ -12,11 +12,13 @@ import {
   X,
   Trash2,
   Check,
-  Menu
+  Menu,
+  Edit3,
+  User
 } from "lucide-react";
 import apiClient from "../../shared/services/axiosConfig";
 import { showSuccess, showError } from "../../shared/utils/alert";
-import { getStoredAdmin, logoutAdminUser } from "../../features/bms/api/admin/adminApi";
+import { getStoredAdmin, logoutAdminUser, updateAdminProfile } from "../../features/bms/api/admin/adminApi";
 import { getPendingPartnersCount, getAdminPartners } from "../../features/bms/api/partners/partnerApi";
 import { getPendingClientsCount, getAdminClients } from "../../features/bms/api/clients/clientApi";
 import switchPortalGif from "../../assets/switch-portal.gif";
@@ -64,6 +66,7 @@ export default function AdminHeader({
   const [notificationTab, setNotificationTab] = useState("ALL"); // ALL | CLIENTS | PARTNERS
   const [loadingNotifications, setLoadingNotifications] = useState(false);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [nameInput, setNameInput] = useState("");
   const [previewPhoto, setPreviewPhoto] = useState(null);
   const [photoUrlInput, setPhotoUrlInput] = useState("");
   const [isSavingPhoto, setIsSavingPhoto] = useState(false);
@@ -194,10 +197,18 @@ export default function AdminHeader({
 
   const handleOpenPhotoModal = () => {
     setShowProfileMenu(false);
-    setPreviewPhoto(adminUser?.avatar || null);
-    setPhotoUrlInput(adminUser?.avatar || "");
+    const current = getStoredAdmin() || adminUser;
+    setNameInput(current?.name || "Bharath Chandu");
+    setPreviewPhoto(current?.avatar || null);
+    setPhotoUrlInput(current?.avatar || "");
     setShowPhotoModal(true);
   };
+
+  useEffect(() => {
+    const handleOpenExternal = () => handleOpenPhotoModal();
+    window.addEventListener("bms_open_admin_profile_modal", handleOpenExternal);
+    return () => window.removeEventListener("bms_open_admin_profile_modal", handleOpenExternal);
+  }, [adminUser]);
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
@@ -215,38 +226,37 @@ export default function AdminHeader({
   };
 
   const handleSavePhoto = async () => {
+    if (!nameInput || !nameInput.trim()) {
+      showError("Validation Error", "Please enter an administrator name.");
+      return;
+    }
+
     setIsSavingPhoto(true);
     const finalAvatar = previewPhoto || (photoUrlInput.trim() ? photoUrlInput.trim() : null);
 
     try {
-      // 1. Persist directly to PostgreSQL admin_users table via /admin/auth/avatar
-      await apiClient.put("/admin/auth/avatar", { 
-        avatarUrl: finalAvatar, 
-        email: adminUser?.email || "admin@bookmystars.com" 
-      });
+      const updated = await updateAdminProfile(nameInput.trim(), finalAvatar);
+      setAdminUser(updated);
+      setIsSavingPhoto(false);
+      setShowPhotoModal(false);
+      showSuccess("Profile Updated", "Super Admin name and photo updated successfully!");
     } catch (err) {
-      console.warn("Backend auth avatar update notice:", err);
-      try {
-        const staffId = adminUser?.id || 1;
-        await apiClient.put(`/admin/staff/${staffId}/avatar`, { avatarUrl: finalAvatar });
-      } catch (err2) {
-        console.warn("Fallback staff avatar update notice:", err2);
-      }
+      console.warn("Update admin profile notice:", err);
+      // Fallback local update
+      const currentStored = getStoredAdmin() || {};
+      const updated = { 
+        ...currentStored, 
+        name: nameInput.trim(),
+        avatar: finalAvatar 
+      };
+      sessionStorage.setItem("bms_admin_user", JSON.stringify(updated));
+      localStorage.setItem("bms_admin_user", JSON.stringify(updated));
+      setAdminUser(updated);
+      window.dispatchEvent(new Event("bms_admin_auth_changed"));
+      setIsSavingPhoto(false);
+      setShowPhotoModal(false);
+      showSuccess("Profile Updated", "Super Admin profile updated successfully!");
     }
-
-    const currentStored = getStoredAdmin() || {};
-    const updated = { 
-      ...currentStored, 
-      name: currentStored.name || "Bharath",
-      avatar: finalAvatar 
-    };
-    localStorage.setItem("bms_admin_user", JSON.stringify(updated));
-    setAdminUser(updated);
-    window.dispatchEvent(new Event("bms_admin_auth_changed"));
-
-    setIsSavingPhoto(false);
-    setShowPhotoModal(false);
-    showSuccess("Photo Updated", finalAvatar ? "Profile photo updated successfully!" : "Profile photo removed.");
   };
 
   const portalOptions = [
@@ -1333,7 +1343,7 @@ export default function AdminHeader({
               </div>
 
               <div style={{ padding: "4px" }}>
-                {/* EDIT / UPDATE PROFILE PHOTO (Above Sign Out button for all admins) */}
+                {/* EDIT / UPDATE PROFILE (Name & Photo) */}
                 <button
                   type="button"
                   onClick={handleOpenPhotoModal}
@@ -1355,8 +1365,8 @@ export default function AdminHeader({
                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f1f5f9"}
                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
                 >
-                  <Camera size={14} style={{ color: "#ee008f" }} />
-                  <span>Update Profile Photo</span>
+                  <Edit3 size={14} style={{ color: "#ee008f" }} />
+                  <span>Edit Profile (Name & Photo)</span>
                 </button>
 
                 {/* SIGN OUT */}
@@ -1424,11 +1434,11 @@ export default function AdminHeader({
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                 <div style={{ width: "36px", height: "36px", borderRadius: "10px", backgroundColor: "#fdf2f8", display: "flex", alignItems: "center", justifyContent: "center", color: "#ee008f" }}>
-                  <Camera size={20} />
+                  <User size={20} />
                 </div>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "#0f172a" }}>Profile Photo</h3>
-                  <p style={{ margin: 0, fontSize: "11px", color: "#64748b" }}>Update avatar for {adminUser?.name || "Bharath"}</p>
+                  <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "#0f172a" }}>Edit Admin Profile</h3>
+                  <p style={{ margin: 0, fontSize: "11px", color: "#64748b" }}>Update administrator name and profile picture</p>
                 </div>
               </div>
               <button
@@ -1440,8 +1450,60 @@ export default function AdminHeader({
               </button>
             </div>
 
+            {/* Input: Administrator Name */}
+            <div style={{ marginBottom: "16px" }}>
+              <label style={{ display: "block", fontSize: "11.5px", fontWeight: "800", color: "#334155", marginBottom: "6px" }}>
+                Administrator Full Name
+              </label>
+              <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                <User size={15} style={{ position: "absolute", left: "12px", color: "#94a3b8" }} />
+                <input
+                  type="text"
+                  placeholder="e.g. Bharath Chandu"
+                  value={nameInput}
+                  onChange={(e) => setNameInput(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "10px 14px 10px 36px",
+                    borderRadius: "10px",
+                    border: "1px solid #cbd5e1",
+                    fontSize: "13px",
+                    fontWeight: "600",
+                    color: "#0f172a",
+                    boxSizing: "border-box",
+                    outline: "none"
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = "#ee008f"}
+                  onBlur={(e) => e.target.style.borderColor = "#cbd5e1"}
+                />
+              </div>
+            </div>
+
+            {/* Input: Corporate Email (Read-Only) */}
+            <div style={{ marginBottom: "20px" }}>
+              <label style={{ display: "block", fontSize: "11px", fontWeight: "700", color: "#64748b", marginBottom: "4px" }}>
+                Corporate Email (Permanent Root Admin ID)
+              </label>
+              <input
+                type="email"
+                value={adminUser?.email || "admin@bookmystars.com"}
+                disabled
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  borderRadius: "10px",
+                  border: "1px solid #e2e8f0",
+                  backgroundColor: "#f8fafc",
+                  fontSize: "12px",
+                  color: "#64748b",
+                  boxSizing: "border-box",
+                  cursor: "not-allowed"
+                }}
+              />
+            </div>
+
             {/* Current / Preview Avatar */}
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", marginBottom: "24px" }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
               <div
                 style={{
                   width: "90px",
@@ -1479,12 +1541,12 @@ export default function AdminHeader({
                       fontWeight: "900"
                     }}
                   >
-                    {(adminUser?.name || "Bharath").charAt(0).toUpperCase()}
+                    {(nameInput || adminUser?.name || "Bharath").charAt(0).toUpperCase()}
                   </div>
                 )}
               </div>
               <span style={{ fontSize: "11px", color: "#64748b", fontWeight: "600" }}>
-                {previewPhoto || photoUrlInput ? "Photo Preview" : "No photo uploaded (Default Initials Badge)"}
+                {previewPhoto || photoUrlInput ? "Profile Photo Preview" : `Default Initials Badge (${(nameInput || adminUser?.name || "B").charAt(0).toUpperCase()})`}
               </span>
             </div>
 
@@ -1520,7 +1582,7 @@ export default function AdminHeader({
                 onMouseLeave={(e) => e.currentTarget.style.borderColor = "#cbd5e1"}
               >
                 <Upload size={16} style={{ color: "#ee008f" }} />
-                <span>Upload Image from Device</span>
+                <span>Upload Photo from Device</span>
               </button>
 
               {/* Option B: Direct URL Input */}
@@ -1616,7 +1678,7 @@ export default function AdminHeader({
                   boxShadow: "0 4px 12px rgba(238, 0, 143, 0.3)"
                 }}
               >
-                {isSavingPhoto ? "Saving..." : "Save Photo"}
+                {isSavingPhoto ? "Saving..." : "Save Profile"}
               </button>
             </div>
           </div>
