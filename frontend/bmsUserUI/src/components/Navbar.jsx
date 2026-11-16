@@ -268,16 +268,16 @@ export default function Navbar({ isClientPartnerPage = false }) {
             }
             if (l === "Become a Client") {
               return (
-                <a key={l} href={CLIENT_PORTAL_URL || "/become-client"} className="nav-btn-custom">
+                <Link key={l} to="/become-client" className="nav-btn-custom">
                   {l}
-                </a>
+                </Link>
               );
             }
             if (l === "Become a Partner") {
               return (
-                <a key={l} href={PARTNER_PORTAL_URL || "/become-partner"} className="nav-btn-custom">
+                <Link key={l} to="/become-partner" className="nav-btn-custom">
                   {l}
-                </a>
+                </Link>
               );
             }
             return (
@@ -408,26 +408,26 @@ export default function Navbar({ isClientPartnerPage = false }) {
             }
             if (l === "Become a Client") {
               return (
-                <a
+                <Link
                   key={l}
-                  href={CLIENT_PORTAL_URL || "/become-client"}
+                  to="/become-client"
                   className="nav-btn-custom mobile-btn-custom"
                   onClick={closeAll}
                 >
                   {l}
-                </a>
+                </Link>
               );
             }
             if (l === "Become a Partner") {
               return (
-                <a
+                <Link
                   key={l}
-                  href={PARTNER_PORTAL_URL || "/become-partner"}
+                  to="/become-partner"
                   className="nav-btn-custom mobile-btn-custom"
                   onClick={closeAll}
                 >
                   {l}
-                </a>
+                </Link>
               );
             }
             return (

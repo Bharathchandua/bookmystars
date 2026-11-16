@@ -35,6 +35,8 @@ import Promotion from "../components/Services/Promotion/Promotion.jsx";
 import PostProduction from "../components/Services/PostProduction/PostProduction.jsx";
 import DigitalMarketing from "../components/Services/DigitalMarketing/DigitalMarketing.jsx";
 import Media from "../components/Media/Media.jsx";
+import BecomeClient from "../components/ClientPartner/BecomeClient/BecomeClient.jsx";
+import BecomePartner from "../components/ClientPartner/BecomePartner/BecomePartner.jsx";
 
 function HomePage() {
   const { hash } = useLocation();
@@ -196,11 +198,11 @@ export default function UserRouter() {
         <Route path="/services/digital-marketing" element={<DigitalMarketing />} />
         <Route path="/media" element={<Media />} />
 
-        {/* Dedicated Portal Bridges */}
+        {/* Dedicated Client & Partner Pages */}
+        <Route path="/become-client" element={<BecomeClient />} />
+        <Route path="/become-partner" element={<BecomePartner />} />
         <Route path="/client/*" element={<RedirectToClient />} />
-        <Route path="/become-client" element={<RedirectToClient />} />
         <Route path="/partner/*" element={<RedirectToPartner />} />
-        <Route path="/become-partner" element={<RedirectToPartner />} />
         <Route path="/admin/*" element={<RedirectToAdmin />} />
         <Route path="/admin" element={<RedirectToAdmin />} />
 
