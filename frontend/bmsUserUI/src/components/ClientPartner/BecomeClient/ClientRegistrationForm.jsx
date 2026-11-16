@@ -353,7 +353,7 @@ export default function ClientRegistrationForm({ onRegistrationSuccess }) {
 
             <div style={{ marginTop: "20px", paddingTop: "16px", borderTop: "1px solid #e2e8f0", fontSize: "13px", color: "#64748b", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <span>Already a verified brand client?</span>
-              <Link to="/client/signin" style={{ color: "#ec008c", fontWeight: "800", textDecoration: "none" }}>
+              <Link to="/signin" style={{ color: "#ec008c", fontWeight: "800", textDecoration: "none" }}>
                 Log in to Client Portal &rarr;
               </Link>
             </div>
@@ -826,7 +826,7 @@ export default function ClientRegistrationForm({ onRegistrationSuccess }) {
               </p>
               <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
                 <Link
-                  to="/client/signin"
+                  to="/signin"
                   style={{
                     padding: "12px 24px",
                     borderRadius: "10px",

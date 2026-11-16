@@ -331,7 +331,7 @@ export default function PartnerRegistrationForm({ onRegistrationSuccess }) {
 
             <div style={{ marginTop: "24px", paddingTop: "16px", borderTop: "1px solid #e2e8f0", fontSize: "13px", color: "#64748b", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <span>Already a verified partner?</span>
-              <Link to="/partner/signin" style={{ color: "#ec008c", fontWeight: "800", textDecoration: "none" }}>
+              <Link to="/signin" style={{ color: "#ec008c", fontWeight: "800", textDecoration: "none" }}>
                 Log in to Partner Portal &rarr;
               </Link>
             </div>

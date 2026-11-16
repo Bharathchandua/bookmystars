@@ -240,26 +240,10 @@ export default function SignIn() {
             >
               <div style={{ fontWeight: "800", display: "flex", alignItems: "center", gap: "6px" }}>
                 <AlertTriangle size={16} style={{ color: "#2563eb" }} />
-                Account Portal Mismatch
+                Account Notice
               </div>
               <div style={{ fontSize: "12px", color: "#1e3a8a", lineHeight: "1.5" }}>
                 {error}
-              </div>
-              <div>
-                <Link
-                  to={error.toLowerCase().includes("partner") ? "/partner/signin" : "/client/signin"}
-                  style={{ 
-                    display: "inline-flex", 
-                    alignItems: "center", 
-                    gap: "4px", 
-                    color: "#1d4ed8", 
-                    fontWeight: "800", 
-                    fontSize: "12.5px", 
-                    textDecoration: "underline" 
-                  }}
-                >
-                  Go to {error.toLowerCase().includes("partner") ? "Partner Academy" : "Client Brand"} Sign-In Portal &rarr;
-                </Link>
               </div>
             </div>
           ) : error === "admin_hint" ? (

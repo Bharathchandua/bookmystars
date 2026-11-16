@@ -165,6 +165,10 @@ export default function UserRouter() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/signin" element={<SignIn />} />
+        <Route path="/client/signin" element={<Navigate to="/signin" replace />} />
+        <Route path="/partner/signin" element={<Navigate to="/signin" replace />} />
+        <Route path="/client/login" element={<Navigate to="/signin" replace />} />
+        <Route path="/partner/login" element={<Navigate to="/signin" replace />} />
         <Route path="/client-partner/signin" element={<SignIn />} />
         <Route path="/join" element={<JoinFree />} />
         <Route path="/client-partner/join" element={<JoinFree />} />
@@ -201,8 +205,8 @@ export default function UserRouter() {
         {/* Dedicated Client & Partner Pages */}
         <Route path="/become-client" element={<BecomeClient />} />
         <Route path="/become-partner" element={<BecomePartner />} />
-        <Route path="/client/*" element={<RedirectToClient />} />
-        <Route path="/partner/*" element={<RedirectToPartner />} />
+        <Route path="/client/*" element={<Navigate to="/become-client" replace />} />
+        <Route path="/partner/*" element={<Navigate to="/become-partner" replace />} />
         <Route path="/admin/*" element={<RedirectToAdmin />} />
         <Route path="/admin" element={<RedirectToAdmin />} />
 
