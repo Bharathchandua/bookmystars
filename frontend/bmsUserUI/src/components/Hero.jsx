@@ -160,27 +160,15 @@ export default function Hero() {
               </Link>
             )}
 
-            {CLIENT_PORTAL_URL ? (
-              <a href={postCastingHref} style={{ textDecoration: "none" }}>
-                <Button
-                  variant="secondary-hero"
-                  icon={<Camera size={17} />}
-                  iconPosition="left"
-                >
-                  Post a Casting Call
-                </Button>
-              </a>
-            ) : (
-              <Link to="/become-client" style={{ textDecoration: "none" }}>
-                <Button
-                  variant="secondary-hero"
-                  icon={<Camera size={17} />}
-                  iconPosition="left"
-                >
-                  Post a Casting Call
-                </Button>
-              </Link>
-            )}
+            <Link to="/become-client" style={{ textDecoration: "none" }}>
+              <Button
+                variant="secondary-hero"
+                icon={<Camera size={17} />}
+                iconPosition="left"
+              >
+                Post a Casting Call
+              </Button>
+            </Link>
           </div>
         </div>
 

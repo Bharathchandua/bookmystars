@@ -45,15 +45,13 @@ export default function SignIn() {
     setError("");
     setLoading(true);
     try {
-      // 1. First attempt login as a standard platform user (Talent, Professional)
-      const authData = await loginUser(email, password, "TALENT");
-      if (authData?.accountType === "PARTNER" || authData?.accountType === "CLIENT") {
-        logoutUser();
-        const role = authData?.accountType === "PARTNER" ? "Partner Academy" : "Client Brand";
-        setError(`This account is registered as ${role}. Please use the ${role} sign-in portal.`);
-        return;
-      }
-      if (authData?.accountType === "PROFESSIONAL") {
+      // 1. Authenticate user across any platform role (Talent, Professional, Client, Partner)
+      const authData = await loginUser(email, password, null);
+      if (authData?.accountType === "CLIENT") {
+        navigate("/client/dashboard");
+      } else if (authData?.accountType === "PARTNER") {
+        navigate("/partner/dashboard");
+      } else if (authData?.accountType === "PROFESSIONAL") {
         navigate("/professional/dashboard");
       } else {
         navigate("/dashboard");

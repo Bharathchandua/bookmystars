@@ -86,11 +86,7 @@ export default function Navbar({ isClientPartnerPage = false }) {
   const isClientPage = location.pathname === "/become-client";
   const isPartnerPage = location.pathname === "/become-partner";
 
-  const getSignInPath = () => {
-    if (isClientPage) return "/client/signin";
-    if (isPartnerPage) return "/partner/signin";
-    return "/signin";
-  };
+  const getSignInPath = () => "/signin";
 
   const getDashboardPath = () => {
     if (!currentUser) return "/signin";
