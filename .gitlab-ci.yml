@@ -1,0 +1,87 @@
+stages:
+  - build-frontend
+  - build-backend
+
+variables:
+  MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN"
+
+# Global Cache across pipelines
+cache:
+  key: "$CI_COMMIT_REF_SLUG"
+  paths:
+    - .m2/repository
+    - ~/.npm
+
+# ------------------------------------------------------------------------------
+# 1. FRONTEND BUILDS (Node.js 20)
+# ------------------------------------------------------------------------------
+build:user-ui:
+  stage: build-frontend
+  image: node:20-alpine
+  before_script:
+    - cd frontend/bmsUserUI
+  script:
+    - npm ci || npm install
+    - npm run build
+  artifacts:
+    name: "bms-user-ui-dist-$CI_COMMIT_SHORT_SHA"
+    expire_in: 1 week
+    paths:
+      - frontend/bmsUserUI/dist/
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+
+build:admin-ui:
+  stage: build-frontend
+  image: node:20-alpine
+  before_script:
+    - cd frontend/bmsAdminUI
+  script:
+    - npm ci || npm install
+    - npm run build
+  artifacts:
+    name: "bms-admin-ui-dist-$CI_COMMIT_SHORT_SHA"
+    expire_in: 1 week
+    paths:
+      - frontend/bmsAdminUI/dist/
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+
+# ------------------------------------------------------------------------------
+# 2. BACKEND BUILDS (Java 17 & Maven)
+# ------------------------------------------------------------------------------
+build:user-backend:
+  stage: build-backend
+  image: maven:3.9.6-eclipse-temurin-17-alpine
+  before_script:
+    - cd backend/bmsUserBackend
+  script:
+    - mvn clean package -Pprod -DskipTests
+    - cp target/prod-deploy/bms-user-backend-prod.war target/prod-deploy/bmsuser.war || true
+  artifacts:
+    name: "bmsuser-war-$CI_COMMIT_SHORT_SHA"
+    expire_in: 1 week
+    paths:
+      - backend/bmsUserBackend/target/prod-deploy/*.war
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+
+build:admin-backend:
+  stage: build-backend
+  image: maven:3.9.6-eclipse-temurin-17-alpine
+  before_script:
+    - cd backend/bmsAdminBackend
+  script:
+    - mvn clean package -Pprod -DskipTests
+    - cp target/prod-deploy/bms-admin-backend-prod.war target/prod-deploy/bmsadmin.war || true
+  artifacts:
+    name: "bmsadmin-war-$CI_COMMIT_SHORT_SHA"
+    expire_in: 1 week
+    paths:
+      - backend/bmsAdminBackend/target/prod-deploy/*.war
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
