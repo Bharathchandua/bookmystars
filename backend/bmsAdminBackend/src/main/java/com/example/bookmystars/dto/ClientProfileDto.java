@@ -25,6 +25,11 @@ public class ClientProfileDto {
     private String instagram;
     private String linkedin;
     private String youtube;
+    private String facebook;
+    private String twitter;
+    private String whatsapp;
+    private String socialVisibility;
+    private String mapCoordinates;
     private String establishedYear;
     private String annualShoots;
     private String budgetRange;

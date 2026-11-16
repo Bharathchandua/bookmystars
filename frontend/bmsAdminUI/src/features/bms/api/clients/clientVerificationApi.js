@@ -52,11 +52,25 @@ export async function rejectAdminClient(clientId, reason) {
   }
 }
 
+/**
+ * Super Admin: Permanently delete a client brand account and all data
+ */
+export async function deleteAdminClient(clientId) {
+  try {
+    const res = await apiClient.delete(`/admin/clients/${clientId}`);
+    return res.data;
+  } catch (err) {
+    console.error("Failed to delete client:", err);
+    throw err;
+  }
+}
+
 export const clientVerificationApi = {
   getAdminClients,
   getPendingClientsCount,
   verifyAdminClient,
   rejectAdminClient,
+  deleteAdminClient,
 };
 
 export default clientVerificationApi;

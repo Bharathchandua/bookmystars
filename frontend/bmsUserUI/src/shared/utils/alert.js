@@ -1,5 +1,9 @@
 import Swal from "sweetalert2";
 
+if (typeof window !== "undefined") {
+  window.Swal = Swal;
+}
+
 /**
  * Standardized SweetAlert dialog utility for BookMyStars.
  * Matches brand styling (#ee008f, #e91e8c, rounded borders, clear messaging).

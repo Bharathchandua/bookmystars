@@ -1,0 +1,339 @@
+/* ==========================================================================
+   ONE PLATFORM. ENDLESS OPPORTUNITIES & HOW IT WORKS
+   ========================================================================== */
+.one-platform-wrapper {
+  width: 100%;
+  max-width: 1420px;
+  margin: 25px auto 65px;
+  padding: 0 40px;
+  box-sizing: border-box;
+}
+
+.one-platform-header {
+  text-align: center;
+  margin-bottom: 36px;
+}
+
+.one-platform-badge {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 900;
+  color: #7b2cbf;
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+}
+
+.one-platform-title {
+  font-size: 38px;
+  font-weight: 900;
+  color: #0c0e2b;
+  letter-spacing: -0.6px;
+  margin: 0 0 10px 0;
+  line-height: 1.2;
+}
+
+.one-platform-title .text-pink {
+  background: linear-gradient(135deg, #ec008c, #7b2cbf);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.one-platform-subtitle {
+  font-size: 15.5px;
+  color: #64748b;
+  max-width: 680px;
+  margin: 0 auto;
+  line-height: 1.55;
+}
+
+/* 6-Card Grid */
+.one-platform-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 18px;
+  margin-bottom: 45px;
+}
+
+.platform-grid-card {
+  position: relative;
+  height: 310px;
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.platform-grid-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 16px 36px rgba(123, 44, 255, 0.18);
+}
+
+.platform-card-bg-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1;
+}
+
+.platform-grid-card:hover .platform-card-bg-img {
+  transform: scale(1.08);
+}
+
+.platform-card-dark-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(10, 12, 38, 0.96) 0%,
+    rgba(10, 12, 38, 0.78) 38%,
+    rgba(10, 12, 38, 0.25) 65%,
+    transparent 85%
+  );
+  z-index: 2;
+}
+
+/* Featured Makeover Card Glowing Ring */
+.platform-grid-card.featured-makeover-card {
+  border: 2.5px solid #ec008c;
+  box-shadow: 0 0 24px rgba(236, 0, 140, 0.45);
+}
+
+.platform-grid-card.featured-makeover-card .platform-card-dark-overlay {
+  background: linear-gradient(
+    to top,
+    rgba(40, 5, 30, 0.96) 0%,
+    rgba(30, 5, 25, 0.8) 40%,
+    rgba(236, 0, 140, 0.15) 70%,
+    transparent 90%
+  );
+}
+
+.platform-card-body {
+  position: relative;
+  z-index: 3;
+  padding: 18px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.platform-card-icon-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(8px);
+  color: #ffffff;
+  margin-bottom: 2px;
+  transition: all 0.25s ease;
+}
+
+.platform-grid-card:hover .platform-card-icon-pill {
+  background: #ec008c;
+  border-color: #ec008c;
+  transform: scale(1.08);
+}
+
+.featured-makeover-card .platform-card-icon-pill {
+  background: rgba(236, 0, 140, 0.25);
+  border-color: #ec008c;
+  color: #ffffff;
+}
+
+.platform-card-heading {
+  font-size: 15px;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.25;
+  margin: 0;
+}
+
+.featured-makeover-card .platform-card-heading {
+  color: #ff52bf;
+}
+
+.platform-card-text {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: #cbd5e1;
+  margin: 0;
+}
+
+/* ==========================================================================
+   HOW BOOK MY STARS WORKS?
+   ========================================================================== */
+.how-it-works-box {
+  background: #ffffff;
+  border-radius: 24px;
+  border: 1.5px solid #ece8f5;
+  box-shadow: 0 12px 40px rgba(123, 44, 255, 0.05);
+  padding: 40px 36px 54px;
+  box-sizing: border-box;
+}
+
+.how-it-works-title {
+  text-align: center;
+  font-size: 36px;
+  font-weight: 900;
+  color: #0c0e2b;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.6px;
+}
+
+.how-it-works-title .how-brand-text {
+  background: linear-gradient(135deg, #ec008c, #7b2cbf);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.how-it-works-subtitle {
+  text-align: center;
+  font-size: 15px;
+  color: #64748b;
+  margin: 0 0 46px 0;
+}
+
+.how-it-works-timeline {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  position: relative;
+  gap: 12px;
+}
+
+.how-it-works-step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+}
+
+.how-step-icon-bubble {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  margin-bottom: 16px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.how-it-works-step:hover .how-step-icon-bubble {
+  transform: translateY(-4px) scale(1.08);
+}
+
+.how-step-icon-bubble.step-grad-1 {
+  background: linear-gradient(135deg, #ff3399, #ec008c);
+  box-shadow: 0 8px 20px rgba(236, 0, 140, 0.35);
+}
+
+.how-step-icon-bubble.step-grad-2 {
+  background: linear-gradient(135deg, #8a2be2, #6a0dad);
+  box-shadow: 0 8px 20px rgba(138, 43, 226, 0.3);
+}
+
+.how-step-icon-bubble.step-grad-3 {
+  background: linear-gradient(135deg, #ff007f, #b30059);
+  box-shadow: 0 8px 20px rgba(255, 0, 127, 0.3);
+}
+
+.how-step-icon-bubble.step-grad-4 {
+  background: linear-gradient(135deg, #9b30ff, #581845);
+  box-shadow: 0 8px 20px rgba(155, 48, 255, 0.3);
+}
+
+.how-step-icon-bubble.step-grad-5 {
+  background: linear-gradient(135deg, #ec008c, #9c27b0);
+  box-shadow: 0 8px 20px rgba(236, 0, 140, 0.35);
+}
+
+.how-step-headline {
+  font-size: 15px;
+  font-weight: 800;
+  color: #0c0e2b;
+  margin: 0 0 8px 0;
+  line-height: 1.3;
+}
+
+.how-step-caption {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #64748b;
+  max-width: 200px;
+  margin: 0 auto;
+}
+
+.how-step-connector-arrow {
+  flex: 0 0 auto;
+  margin-top: 22px;
+  color: #d1c8e6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Responsive queries */
+@media (max-width: 1200px) {
+  .one-platform-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .platform-grid-card {
+    height: 280px;
+  }
+}
+
+@media (max-width: 768px) {
+  .one-platform-wrapper {
+    padding: 0 20px;
+    margin: 20px auto 50px;
+  }
+  .one-platform-title {
+    font-size: 28px;
+  }
+  .one-platform-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .how-it-works-box {
+    padding: 30px 20px 40px;
+  }
+  .how-it-works-title {
+    font-size: 28px;
+  }
+  .how-it-works-timeline {
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+  }
+  .how-step-connector-arrow {
+    transform: rotate(90deg);
+    margin: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .one-platform-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}

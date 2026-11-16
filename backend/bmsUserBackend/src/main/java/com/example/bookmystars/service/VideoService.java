@@ -17,7 +17,6 @@ import com.example.bookmystars.repository.VideoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-
 import java.util.List;
 
 @Service
@@ -26,7 +25,6 @@ public class VideoService {
 
     private final VideoRepository videoRepository;
     private final UserRepository userRepository;
-
 
     // =========================
     // CREATE VIDEO
@@ -40,6 +38,10 @@ public class VideoService {
                 .orElseThrow(() ->
                         new RuntimeException("User not found"));
 
+        boolean isUserVerified = (user.getIsApproved() != null && user.getIsApproved()) ||
+                "APPROVED".equalsIgnoreCase(user.getVerificationStatus());
+        String initialStatus = isUserVerified ? "APPROVED" : "PENDING";
+
         Video video = Video.builder()
                 .user(user)
                 .title(request.getTitle())
@@ -49,64 +51,63 @@ public class VideoService {
                 .duration(request.getDuration())
                 .year(request.getYear())
                 .views(0L)
+                .status(initialStatus)
                 .build();
 
-        Video savedVideo =
-                videoRepository.save(video);
-
+        Video savedVideo = videoRepository.save(video);
         return mapToResponse(savedVideo);
     }
 
     // =========================
-// UPLOAD VIDEO FROM LOCAL
-// =========================
+    // UPLOAD VIDEO FROM LOCAL
+    // =========================
 
-public VideoResponse uploadVideo(
-        String email,
-        MultipartFile file,
-        String title,
-        String category,
-        String duration,
-        Integer year) throws IOException {
+    public VideoResponse uploadVideo(
+            String email,
+            MultipartFile file,
+            String title,
+            String category,
+            String duration,
+            Integer year) throws IOException {
 
-    User user = userRepository.findByEmail(email)
-            .orElseThrow(() ->
-                    new RuntimeException("User not found"));
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new RuntimeException("User not found"));
 
-    String fileExtension = com.example.bookmystars.util.FileValidationUtil.validateVideo(file);
-    Path uploadDirectory = com.example.bookmystars.util.UploadStorageUtil.getCategoryUploadDir("videos");
-    Files.createDirectories(uploadDirectory);
+        String fileExtension = com.example.bookmystars.util.FileValidationUtil.validateVideo(file);
+        Path uploadDirectory = com.example.bookmystars.util.UploadStorageUtil.getCategoryUploadDir("videos");
+        Files.createDirectories(uploadDirectory);
 
-    // Generate unique filename
-    String fileName =
-            UUID.randomUUID() + fileExtension;
+        // Generate unique filename
+        String fileName = UUID.randomUUID() + fileExtension;
+        Path filePath = uploadDirectory.resolve(fileName);
 
-    Path filePath =
-            uploadDirectory.resolve(fileName);
+        // Save video file
+        Files.copy(
+                file.getInputStream(),
+                filePath,
+                StandardCopyOption.REPLACE_EXISTING
+        );
 
-    // Save video file
-    Files.copy(
-            file.getInputStream(),
-            filePath,
-            StandardCopyOption.REPLACE_EXISTING
-    );
+        boolean isUserVerified = (user.getIsApproved() != null && user.getIsApproved()) ||
+                "APPROVED".equalsIgnoreCase(user.getVerificationStatus());
+        String initialStatus = isUserVerified ? "APPROVED" : "PENDING";
 
-    // Create database entity
-    Video video = Video.builder()
-            .user(user)
-            .title(title)
-            .category(category)
-            .videoUrl("/uploads/videos/" + fileName)
-            .duration(duration != null && !duration.isBlank() ? duration : "2:00")
-            .year(year != null ? year : java.time.Year.now().getValue())
-            .views(0L)
-            .build();
+        // Create database entity
+        Video video = Video.builder()
+                .user(user)
+                .title(title)
+                .category(category)
+                .videoUrl("/uploads/videos/" + fileName)
+                .duration(duration != null && !duration.isBlank() ? duration : "2:00")
+                .year(year != null ? year : java.time.Year.now().getValue())
+                .views(0L)
+                .status(initialStatus)
+                .build();
 
-    Video savedVideo =
-            videoRepository.save(video);
-
-    return mapToResponse(savedVideo);
-}
+        Video savedVideo = videoRepository.save(video);
+        return mapToResponse(savedVideo);
+    }
 
     // =====================================
     // UPDATE VIDEO WITH OPTIONAL LOCAL FILE
@@ -147,20 +148,24 @@ public VideoResponse uploadVideo(
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
             video.setVideoUrl("/uploads/videos/" + fileName);
+
+            boolean isUserVerified = (user.getIsApproved() != null && user.getIsApproved()) ||
+                    "APPROVED".equalsIgnoreCase(user.getVerificationStatus());
+            video.setStatus(isUserVerified ? "APPROVED" : "PENDING");
+            video.setRejectionReason(null);
+            video.setReviewedBy(null);
+            video.setReviewedAt(null);
         }
 
         Video updatedVideo = videoRepository.save(video);
         return mapToResponse(updatedVideo);
     }
 
-
     // =========================
     // GET MY VIDEOS
     // =========================
 
-    public List<VideoResponse> getMyVideos(
-            String email) {
-
+    public List<VideoResponse> getMyVideos(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() ->
                         new RuntimeException("User not found"));
@@ -170,7 +175,6 @@ public VideoResponse uploadVideo(
                 .map(this::mapToResponse)
                 .toList();
     }
-
 
     // =========================
     // UPDATE VIDEO
@@ -187,16 +191,10 @@ public VideoResponse uploadVideo(
 
         Video video = videoRepository.findById(videoId)
                 .orElseThrow(() ->
-                        new RuntimeException(
-                                "Video not found"));
+                        new RuntimeException("Video not found"));
 
-        // Make sure the video belongs
-        // to the logged-in user
-        if (!video.getUser().getId()
-                .equals(user.getId())) {
-
-            throw new RuntimeException(
-                    "You are not allowed to update this video");
+        if (!video.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("You are not allowed to update this video");
         }
 
         video.setTitle(request.getTitle());
@@ -206,15 +204,9 @@ public VideoResponse uploadVideo(
         video.setDuration(request.getDuration());
         video.setYear(request.getYear());
 
-        // Views are NOT updated from request.
-        // They are controlled by the backend.
-
-        Video updatedVideo =
-                videoRepository.save(video);
-
+        Video updatedVideo = videoRepository.save(video);
         return mapToResponse(updatedVideo);
     }
-
 
     // =========================
     // DELETE VIDEO
@@ -230,29 +222,20 @@ public VideoResponse uploadVideo(
 
         Video video = videoRepository.findById(videoId)
                 .orElseThrow(() ->
-                        new RuntimeException(
-                                "Video not found"));
+                        new RuntimeException("Video not found"));
 
-        // Make sure the video belongs
-        // to the logged-in user
-        if (!video.getUser().getId()
-                .equals(user.getId())) {
-
-            throw new RuntimeException(
-                    "You are not allowed to delete this video");
+        if (!video.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("You are not allowed to delete this video");
         }
 
         videoRepository.delete(video);
     }
 
-
     // =========================
     // ENTITY -> RESPONSE DTO
     // =========================
 
-    private VideoResponse mapToResponse(
-            Video video) {
-
+    private VideoResponse mapToResponse(Video video) {
         return VideoResponse.builder()
                 .id(video.getId())
                 .title(video.getTitle())
@@ -262,6 +245,11 @@ public VideoResponse uploadVideo(
                 .duration(video.getDuration())
                 .year(video.getYear())
                 .views(video.getViews())
+                .status(video.getStatus() != null ? video.getStatus() : "APPROVED")
+                .rejectionReason(video.getRejectionReason())
+                .reviewedBy(video.getReviewedBy())
+                .reviewedAt(video.getReviewedAt())
+                .createdAt(video.getCreatedAt())
                 .build();
     }
 }

@@ -83,11 +83,25 @@ export const rejectAdminPartner = async (partnerId, reason) => {
   }
 };
 
+/**
+ * Super Admin: Permanently delete a partner academy account and all data
+ */
+export const deleteAdminPartner = async (partnerId) => {
+  try {
+    const res = await apiClient.delete(`/admin/partners/${partnerId}`);
+    return res.data;
+  } catch (err) {
+    const msg = err.response?.data?.message || err.message || "Failed to delete partner";
+    throw new Error(msg);
+  }
+};
+
 export const partnerVerificationApi = {
   getAdminPartners,
   getPendingPartnersCount,
   verifyAdminPartner,
   rejectAdminPartner,
+  deleteAdminPartner,
 };
 
 export default partnerVerificationApi;

@@ -5,16 +5,26 @@ import com.example.bookmystars.dto.PartnerProfileDto;
 import com.example.bookmystars.model.ClientPartnerProfile;
 import com.example.bookmystars.model.User;
 import com.example.bookmystars.repository.ClientPartnerProfileRepository;
+import com.example.bookmystars.repository.UserRepository;
+import com.example.bookmystars.util.FileValidationUtil;
+import com.example.bookmystars.util.UploadStorageUtil;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +32,7 @@ import java.util.List;
 public class ClientPartnerProfileService {
 
     private final ClientPartnerProfileRepository profileRepository;
+    private final UserRepository userRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Transactional
@@ -49,11 +60,19 @@ public class ClientPartnerProfileService {
         if (dto.getInstagram() != null) profile.setInstagram(dto.getInstagram());
         if (dto.getLinkedin() != null) profile.setLinkedin(dto.getLinkedin());
         if (dto.getYoutube() != null) profile.setYoutube(dto.getYoutube());
+        if (dto.getFacebook() != null) profile.setFacebook(dto.getFacebook());
+        if (dto.getTwitter() != null) profile.setTwitter(dto.getTwitter());
+        if (dto.getWhatsapp() != null) profile.setWhatsapp(dto.getWhatsapp());
+        if (dto.getSocialVisibility() != null) profile.setSocialVisibility(dto.getSocialVisibility());
+        if (dto.getMapCoordinates() != null) profile.setMapCoordinates(dto.getMapCoordinates());
         if (dto.getEstablishedYear() != null) profile.setEstablishedYear(dto.getEstablishedYear());
         if (dto.getAnnualShoots() != null) profile.setAnnualShoots(dto.getAnnualShoots());
         if (dto.getBudgetRange() != null) profile.setBudgetRange(dto.getBudgetRange());
         if (dto.getBio() != null) profile.setBio(dto.getBio());
-        if (dto.getLogoUrl() != null) profile.setLogoUrl(dto.getLogoUrl());
+        if (dto.getLogoUrl() != null) {
+            String processedLogo = processAndStoreLogoUrl(dto.getLogoUrl(), user.getId(), "logo_client");
+            profile.setLogoUrl(processedLogo);
+        }
 
         if (dto.getPreferredProfiles() != null) {
             try {
@@ -92,11 +111,19 @@ public class ClientPartnerProfileService {
         if (dto.getWebsite() != null) profile.setWebsite(dto.getWebsite());
         if (dto.getInstagram() != null) profile.setInstagram(dto.getInstagram());
         if (dto.getYoutube() != null) profile.setYoutube(dto.getYoutube());
+        if (dto.getFacebook() != null) profile.setFacebook(dto.getFacebook());
+        if (dto.getTwitter() != null) profile.setTwitter(dto.getTwitter());
+        if (dto.getWhatsapp() != null) profile.setWhatsapp(dto.getWhatsapp());
+        if (dto.getSocialVisibility() != null) profile.setSocialVisibility(dto.getSocialVisibility());
+        if (dto.getMapCoordinates() != null) profile.setMapCoordinates(dto.getMapCoordinates());
         if (dto.getEstablishedYear() != null) profile.setEstablishedYear(dto.getEstablishedYear());
         if (dto.getActiveStudents() != null) profile.setActiveStudents(dto.getActiveStudents());
         if (dto.getStudioFacilities() != null) profile.setStudioFacilities(dto.getStudioFacilities());
         if (dto.getBio() != null) profile.setBio(dto.getBio());
-        if (dto.getLogoUrl() != null) profile.setLogoUrl(dto.getLogoUrl());
+        if (dto.getLogoUrl() != null) {
+            String processedLogo = processAndStoreLogoUrl(dto.getLogoUrl(), user.getId(), "logo_partner");
+            profile.setLogoUrl(processedLogo);
+        }
 
         if (dto.getTrainingBatches() != null) {
             try {
@@ -109,6 +136,34 @@ public class ClientPartnerProfileService {
         ClientPartnerProfile saved = profileRepository.save(profile);
         log.info("[PROFILE] Updated partner academy profile for user ID: {} ({})", user.getId(), profile.getCompanyName());
         return toPartnerDto(saved);
+    }
+
+    @Transactional(readOnly = true)
+    public ClientProfileDto getClientProfileByUserId(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Client user not found with ID: " + userId));
+        return getOrCreateClientProfile(user);
+    }
+
+    @Transactional
+    public ClientProfileDto updateClientProfileByAdmin(Long userId, ClientProfileDto dto) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Client user not found with ID: " + userId));
+        return updateClientProfile(user, dto);
+    }
+
+    @Transactional(readOnly = true)
+    public PartnerProfileDto getPartnerProfileByUserId(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Partner user not found with ID: " + userId));
+        return getOrCreatePartnerProfile(user);
+    }
+
+    @Transactional
+    public PartnerProfileDto updatePartnerProfileByAdmin(Long userId, PartnerProfileDto dto) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Partner user not found with ID: " + userId));
+        return updatePartnerProfile(user, dto);
     }
 
     private ClientPartnerProfile createDefaultClientProfile(User user) {
@@ -153,6 +208,84 @@ public class ClientPartnerProfileService {
                 .build();
 
         return profileRepository.save(newProfile);
+    }
+
+    @Transactional
+    public PartnerProfileDto uploadPartnerLogo(User user, MultipartFile file) throws IOException {
+        String ext = FileValidationUtil.validateImage(file);
+        Path uploadDir = UploadStorageUtil.getCategoryUploadDir("profile");
+        String filename = "logo_partner_" + user.getId() + "_" + UUID.randomUUID().toString().substring(0, 8) + ext;
+        Path targetFile = uploadDir.resolve(filename);
+
+        Files.copy(file.getInputStream(), targetFile, StandardCopyOption.REPLACE_EXISTING);
+        String fileUrl = "/uploads/profile/" + filename;
+
+        ClientPartnerProfile profile = profileRepository.findByUser(user)
+                .orElseGet(() -> createDefaultPartnerProfile(user));
+        profile.setLogoUrl(fileUrl);
+        ClientPartnerProfile saved = profileRepository.save(profile);
+
+        log.info("[PROFILE] Uploaded partner academy logo for user ID {}: {}", user.getId(), fileUrl);
+        return toPartnerDto(saved);
+    }
+
+    @Transactional
+    public ClientProfileDto uploadClientLogo(User user, MultipartFile file) throws IOException {
+        String ext = FileValidationUtil.validateImage(file);
+        Path uploadDir = UploadStorageUtil.getCategoryUploadDir("profile");
+        String filename = "logo_client_" + user.getId() + "_" + UUID.randomUUID().toString().substring(0, 8) + ext;
+        Path targetFile = uploadDir.resolve(filename);
+
+        Files.copy(file.getInputStream(), targetFile, StandardCopyOption.REPLACE_EXISTING);
+        String fileUrl = "/uploads/profile/" + filename;
+
+        ClientPartnerProfile profile = profileRepository.findByUser(user)
+                .orElseGet(() -> createDefaultClientProfile(user));
+        profile.setLogoUrl(fileUrl);
+        ClientPartnerProfile saved = profileRepository.save(profile);
+
+        log.info("[PROFILE] Uploaded client corporate logo for user ID {}: {}", user.getId(), fileUrl);
+        return toClientDto(saved);
+    }
+
+    private String processAndStoreLogoUrl(String logoInput, Long userId, String prefix) {
+        if (logoInput == null || logoInput.isBlank()) {
+            return logoInput;
+        }
+
+        if (logoInput.startsWith("data:image/")) {
+            try {
+                int commaIdx = logoInput.indexOf(",");
+                if (commaIdx > 0) {
+                    String metadata = logoInput.substring(0, commaIdx);
+                    String base64Content = logoInput.substring(commaIdx + 1);
+
+                    String extension = ".png";
+                    if (metadata.contains("image/jpeg") || metadata.contains("image/jpg")) {
+                        extension = ".jpg";
+                    } else if (metadata.contains("image/webp")) {
+                        extension = ".webp";
+                    } else if (metadata.contains("image/gif")) {
+                        extension = ".gif";
+                    } else if (metadata.contains("image/svg+xml")) {
+                        extension = ".svg";
+                    }
+
+                    byte[] decodedBytes = Base64.getDecoder().decode(base64Content.trim());
+                    Path uploadDir = UploadStorageUtil.getCategoryUploadDir("profile");
+                    String filename = prefix + "_" + userId + "_" + UUID.randomUUID().toString().substring(0, 8) + extension;
+                    Path targetFile = uploadDir.resolve(filename);
+
+                    Files.write(targetFile, decodedBytes);
+                    log.info("[PROFILE] Saved base64 logo to disk: {}", targetFile);
+                    return "/uploads/profile/" + filename;
+                }
+            } catch (Exception e) {
+                log.warn("[PROFILE] Could not write base64 logo to disk, falling back to direct database string: {}", e.getMessage());
+            }
+        }
+
+        return logoInput;
     }
 
     private ClientPartnerProfile createDefaultPartnerProfile(User user) {
@@ -217,6 +350,11 @@ public class ClientPartnerProfileService {
                 .instagram(profile.getInstagram())
                 .linkedin(profile.getLinkedin())
                 .youtube(profile.getYoutube())
+                .facebook(profile.getFacebook())
+                .twitter(profile.getTwitter())
+                .whatsapp(profile.getWhatsapp())
+                .socialVisibility(profile.getSocialVisibility())
+                .mapCoordinates(profile.getMapCoordinates())
                 .establishedYear(profile.getEstablishedYear())
                 .annualShoots(profile.getAnnualShoots())
                 .budgetRange(profile.getBudgetRange())
@@ -244,6 +382,12 @@ public class ClientPartnerProfileService {
                 .website(profile.getWebsite())
                 .instagram(profile.getInstagram())
                 .youtube(profile.getYoutube())
+                .linkedin(profile.getLinkedin())
+                .facebook(profile.getFacebook())
+                .twitter(profile.getTwitter())
+                .whatsapp(profile.getWhatsapp())
+                .socialVisibility(profile.getSocialVisibility())
+                .mapCoordinates(profile.getMapCoordinates())
                 .establishedYear(profile.getEstablishedYear())
                 .activeStudents(profile.getActiveStudents())
                 .trainingBatches(batches)
@@ -266,3 +410,4 @@ public class ClientPartnerProfileService {
         }
     }
 }
+

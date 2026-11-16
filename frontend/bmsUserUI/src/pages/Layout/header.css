@@ -267,24 +267,27 @@
   overflow-y: auto !important;
   overflow-x: hidden !important;
   overscroll-behavior: contain !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
 }
 
-/* Modern visible scrollbar */
-.db-notif-list-container::-webkit-scrollbar {
-  width: 6px !important;
+/* Hide all scrollbars in notifications dropdown */
+.db-notif-list-container::-webkit-scrollbar,
+.db-notif-tabs::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
-.db-notif-list-container::-webkit-scrollbar-track {
-  background: #f8fafc !important;
+.db-notif-tabs {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
 }
 
-.db-notif-list-container::-webkit-scrollbar-thumb {
-  background: #cbd5e1 !important;
-  border-radius: 4px !important;
-}
-
-.db-notif-list-container::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8 !important;
+.db-notif-list-item:hover .db-notif-arrow-btn {
+  background: #fdf2f8 !important;
+  color: #ee008f !important;
+  transform: translateX(2px) !important;
 }
 
 .db-notif-req-card {

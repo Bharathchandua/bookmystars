@@ -952,34 +952,48 @@ export default function Profile() {
   const fileInputRef = useRef(null);
   const moreMenuRef = useRef(null);
 
-  const rawStoredTypes = storedUser?.profileTypes ? Array.from(storedUser.profileTypes) : [];
+  const getCachedProfile = () => {
+    try {
+      const raw = localStorage.getItem("bms_cached_profile");
+      if (raw) return JSON.parse(raw);
+    } catch (_) {}
+    return null;
+  };
+  const cachedProf = getCachedProfile();
+
+  const rawStoredTypes = cachedProf?.profileTypes || (storedUser?.profileTypes ? Array.from(storedUser.profileTypes) : []);
   const initialStoredType = rawStoredTypes.length > 0 ? String(rawStoredTypes[0]).toUpperCase() : "";
   const isInitialOther = initialStoredType === "OTHER";
-  const initialCustom = isInitialOther ? (storedUser?.customProfession || localStorage.getItem(`bms_custom_profession_${(storedUser?.email || "").toLowerCase()}`) || "") : "";
+  const initialCustom = isInitialOther ? (cachedProf?.customProfession || storedUser?.customProfession || localStorage.getItem(`bms_custom_profession_${(storedUser?.email || "").toLowerCase()}`) || "") : "";
   const initialRole = isInitialOther ? (initialCustom || "Other") : (initialStoredType ? (initialStoredType.charAt(0) + initialStoredType.slice(1).toLowerCase()) : "Actor");
 
-  // Profile data state
+  // Profile data state - hydrated immediately from local cache so refresh NEVER flashes placeholder data
   const [profile, setProfile] = useState({
-    fullName: storedUser?.fullName || "Your Name",
-    stageName: "",
-    role: initialRole,
-    customProfession: initialCustom,
-    location: "Location not set",
-    dob: "",
-    languages: "English, Hindi",
-    actingLanguages: "Hindi",
-    workType: "Freelance Talent",
-    rate: "Flexible / Negotiable",
-    rateNote: "Price range varies by project",
-    about: "Click 'Edit Profile' to add your bio and tell the industry about yourself.",
-    profilePhoto: localStorage.getItem("bms_profile_photo") ? getFullImageUrl(localStorage.getItem("bms_profile_photo")) : null,
+    fullName: cachedProf?.fullName || storedUser?.fullName || "",
+    stageName: cachedProf?.stageName || "",
+    role: cachedProf?.role || initialRole,
+    customProfession: cachedProf?.customProfession || initialCustom,
+    location: cachedProf?.location || "",
+    dob: cachedProf?.dateOfBirth || cachedProf?.dob || "",
+    languages: cachedProf?.languages || "",
+    actingLanguages: cachedProf?.actingLanguages || "",
+    workType: cachedProf?.workType || "Freelance Talent",
+    rate: cachedProf?.dayRate || cachedProf?.rate || "",
+    rateNote: cachedProf?.rateNote || "Price range varies by project",
+    about: cachedProf?.about || "",
+    profilePhoto: cachedProf?.profilePhoto ? getFullImageUrl(cachedProf.profilePhoto) : (localStorage.getItem("bms_profile_photo") ? getFullImageUrl(localStorage.getItem("bms_profile_photo")) : null),
     profileTypes: initialStoredType ? [initialStoredType] : [],
-    memberSince: new Date().getFullYear().toString(),
-    stats: [
-      { value: "0", label: "Projects Completed" },
-      { value: "0", label: "Brands Worked" },
-      { value: "0", label: "Years Experience" },
-      { value: "0", label: "Features" }
+    memberSince: cachedProf?.memberSince ? new Date(cachedProf.memberSince).getFullYear().toString() : new Date().getFullYear().toString(),
+    isApproved: typeof cachedProf?.isApproved !== "undefined" ? Boolean(cachedProf.isApproved) : false,
+    verificationStatus: cachedProf?.verificationStatus || "PENDING",
+    idVerified: Boolean(cachedProf?.idVerified),
+    phoneVerified: Boolean(cachedProf?.phoneVerified),
+    emailVerified: Boolean(cachedProf?.emailVerified),
+    stats: cachedProf?.stats || [
+      { value: String(cachedProf?.projectsCompleted ?? 0), label: "Projects Completed" },
+      { value: String(cachedProf?.brandsWorked ?? 0), label: "Brands Worked" },
+      { value: String(cachedProf?.yearsExperience ?? 0), label: "Years Experience" },
+      { value: String(cachedProf?.magazineFeatures ?? 0), label: "Features" }
     ]
   });
 
@@ -1094,6 +1108,12 @@ export default function Profile() {
             }
           }
           const mainRole = isOther ? (fetchedCustom || "Other") : (types.length > 0 ? types[0] : "Actor");
+          const resolvedStats = [
+            { value: (data.projectsCompleted || 0).toString(), label: "Projects Completed" },
+            { value: (data.brandsWorked || 0).toString(), label: "Brands Worked" },
+            { value: (data.yearsExperience || 0).toString(), label: "Years Experience" },
+            { value: (data.magazineFeatures || 0).toString(), label: "Features" }
+          ];
           setProfile(prev => ({
             ...prev,
             fullName: data.fullName || prev.fullName,
@@ -1115,13 +1135,17 @@ export default function Profile() {
             idVerified: Boolean(data.idVerified),
             phoneVerified: Boolean(data.phoneVerified),
             emailVerified: Boolean(data.emailVerified),
-            stats: [
-              { value: (data.projectsCompleted || 0).toString(), label: "Projects Completed" },
-              { value: (data.brandsWorked || 0).toString(), label: "Brands Worked" },
-              { value: (data.yearsExperience || 0).toString(), label: "Years Experience" },
-              { value: (data.magazineFeatures || 0).toString(), label: "Features" }
-            ]
+            stats: resolvedStats
           }));
+          try {
+            localStorage.setItem("bms_cached_profile", JSON.stringify({
+              ...data,
+              role: mainRole,
+              profilePhoto: photoUrl || data.profilePhoto,
+              profileTypes: types,
+              stats: resolvedStats
+            }));
+          } catch (_) {}
           if (typeof data.isPrivate !== "undefined") {
             setIsPrivate(Boolean(data.isPrivate));
           }
@@ -1178,7 +1202,16 @@ export default function Profile() {
 
   const [portfolioPhotos, setPortfolioPhotos] = useState([]);
   const [measurements, setMeasurements] = useState(null);
-  const [experiences, setExperiences] = useState([]);
+  const [experiences, setExperiences] = useState(() => {
+    try {
+      const raw = localStorage.getItem("bms_cached_experiences");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (_) {}
+    return [];
+  });
   const [videos, setVideos] = useState([]);
   const [viewingSkillWorks, setViewingSkillWorks] = useState(null);
   const [skillModalInitialAdd, setSkillModalInitialAdd] = useState(false);
@@ -1188,6 +1221,7 @@ export default function Profile() {
       const data = await getMyWorkExperiences();
       if (Array.isArray(data)) {
         setExperiences(data);
+        try { localStorage.setItem("bms_cached_experiences", JSON.stringify(data)); } catch (_) {}
         setWorkExpCount(data.length);
         const expYears = data.length > 0 ? data.length : 0;
         setYearsExperience(prev => Math.max(prev, expYears));

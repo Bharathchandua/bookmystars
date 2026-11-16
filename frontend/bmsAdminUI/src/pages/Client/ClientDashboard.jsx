@@ -176,7 +176,8 @@ export default function ClientDashboard() {
               positionsNeeded: item.age ? parseInt(item.age, 10) || 3 : 4,
               budget: item.budget ? `₹${Number(item.budget).toLocaleString("en-IN")}` : "₹45,000 / day",
               urgency: "Available in 3 Days",
-              status: item.status === "OPEN" ? "Active & Urgent" : item.status,
+              status: item.status === "OPEN" ? "Active Campaign" : (item.status === "IN_REVIEW" ? "Under Admin Review" : (item.status || "Under Admin Review")),
+              adminStatus: item.status || "IN_REVIEW",
               deadline: item.applicationDeadline
                 ? `Shoot Date: ${item.applicationDeadline}`
                 : "Shoot Date: In 3 Days",
@@ -1107,8 +1108,12 @@ export default function ClientDashboard() {
                             <span className="px-2.5 py-0.5 rounded-md bg-purple-50 text-purple-700 text-[10px] font-black uppercase">
                               {brief.industry}
                             </span>
-                            <span className="px-2.5 py-0.5 rounded-md bg-pink-50 text-pink-700 text-[10px] font-bold">
-                              {brief.urgency}
+                            <span className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold ${
+                              (brief.status || "").includes("Review") || brief.adminStatus === "IN_REVIEW"
+                                ? "bg-amber-50 text-amber-700 border border-amber-200"
+                                : "bg-emerald-50 text-emerald-700"
+                            }`}>
+                              {(brief.status || "").includes("Review") || brief.adminStatus === "IN_REVIEW" ? "Under Admin Review" : (brief.status || "Active Campaign")}
                             </span>
                           </div>
 

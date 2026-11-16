@@ -4,6 +4,7 @@ import com.example.bookmystars.dto.AdminRoleDto;
 import com.example.bookmystars.dto.AdminUserDto;
 import com.example.bookmystars.dto.CreateAdminStaffRequest;
 import com.example.bookmystars.dto.UpdateAdminPasswordRequest;
+import com.example.bookmystars.dto.UpdateAdminStaffRequest;
 import com.example.bookmystars.service.AdminManagementService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -47,6 +48,23 @@ public class AdminStaffController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("message", "Failed to create administrator account."));
+        }
+    }
+
+    @PutMapping("/staff/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @Operation(summary = "Super Admin updates staff member details (name, email, department, role, status)")
+    public ResponseEntity<?> updateStaff(@PathVariable Long id, @Valid @RequestBody UpdateAdminStaffRequest request) {
+        try {
+            AdminUserDto updated = adminManagementService.updateStaff(id, request);
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (org.springframework.security.access.AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", e.getMessage() != null ? e.getMessage() : "Failed to update administrator account."));
         }
     }
 

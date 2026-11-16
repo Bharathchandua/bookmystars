@@ -2,8 +2,9 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import AppLayout from "../Layout/AppLayout.jsx";
 import MiniCalendar from "../Dashboard/MiniCalendar.jsx";
-import BookingRequestModal from "../Professional/BookingRequestModal.jsx";
-import TalentWorkModal from "../Professional/TalentWorkModal.jsx";
+import BookingRequestModal from "./BookingRequestModal.jsx";
+import TalentWorkModal from "./TalentWorkModal.jsx";
+import ConnectRequestModal from "./ConnectRequestModal.jsx";
 import PagesButton from "../common/PagesButton";
 import {
   Search,
@@ -69,7 +70,9 @@ const parseCraftParam = (craft) => {
 export default function Talents() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const storedUser = getStoredUser();
+  const storedUser = useMemo(() => getStoredUser(), []);
+  const myUserId = storedUser?.userId || storedUser?.id;
+  const myEmail = storedUser?.email ? storedUser.email.toLowerCase().trim() : "";
 
   // Craft filter from URL or state
   const craftParam = searchParams.get("craft");
@@ -92,6 +95,7 @@ export default function Talents() {
   // Modals
   const [bookingTalent, setBookingTalent] = useState(null);
   const [workModalTalent, setWorkModalTalent] = useState(null);
+  const [connectTalent, setConnectTalent] = useState(null);
   const [showCalendarModal, setShowCalendarModal] = useState(false);
 
   // Sync craft from URL search param
@@ -107,14 +111,27 @@ export default function Talents() {
         type: selectedCraft,
         query: searchQuery
       });
-      setTalents(Array.isArray(data) ? data : []);
+      const list = Array.isArray(data) ? data : [];
+
+      // Exclude logged-in user from talent directory so users only see other talents/professionals
+      const filtered = list.filter((t) => {
+        if (myUserId && (String(t.userId) === String(myUserId) || String(t.id) === String(myUserId))) {
+          return false;
+        }
+        if (myEmail && t.email && t.email.toLowerCase().trim() === myEmail) {
+          return false;
+        }
+        return true;
+      });
+
+      setTalents(filtered);
     } catch (err) {
       console.warn("Error fetching talents directory:", err);
       setTalents([]);
     } finally {
       setLoading(false);
     }
-  }, [selectedCraft, searchQuery]);
+  }, [selectedCraft, searchQuery, myUserId, myEmail]);
 
   useEffect(() => {
     loadTalents();
@@ -140,6 +157,19 @@ export default function Talents() {
   // Filter & sort talents locally for instant responsive experience
   const filteredTalents = useMemo(() => {
     let list = [...talents];
+
+    // Ensure logged-in user is never shown in the list
+    if (myUserId || myEmail) {
+      list = list.filter((t) => {
+        if (myUserId && (String(t.userId) === String(myUserId) || String(t.id) === String(myUserId))) {
+          return false;
+        }
+        if (myEmail && t.email && t.email.toLowerCase().trim() === myEmail) {
+          return false;
+        }
+        return true;
+      });
+    }
 
     // City filter
     if (selectedCity !== "All Cities") {
@@ -188,7 +218,7 @@ export default function Talents() {
     }
 
     return list;
-  }, [talents, selectedCity, selectedLanguage, selectedExp, selectedAvailability, sortBy]);
+  }, [talents, selectedCity, selectedLanguage, selectedExp, selectedAvailability, sortBy, myUserId, myEmail]);
 
   // Stats calculation
   const totalTalentsCount = talents.length;
@@ -615,11 +645,33 @@ export default function Talents() {
                         </PagesButton>
 
                         <PagesButton
+                          onClick={() => setConnectTalent(talent)}
+                          className="btn-talent-connect"
+                          style={{
+                            background: "linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)",
+                            color: "#ffffff",
+                            border: "none",
+                            borderRadius: "8px",
+                            padding: "8px 12px",
+                            fontSize: "12px",
+                            fontWeight: "700",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            cursor: "pointer",
+                            boxShadow: "0 2px 8px rgba(236, 72, 153, 0.25)"
+                          }}
+                        >
+                          <MessageSquare size={13} />
+                          <span>Connect</span>
+                        </PagesButton>
+
+                        <PagesButton
                           onClick={() => setBookingTalent(talent)}
                           className="btn-talent-book"
                         >
                           <Calendar size={14} />
-                          <span>Book Talent</span>
+                          <span>Book</span>
                         </PagesButton>
                       </div>
                     </div>
@@ -760,6 +812,28 @@ export default function Talents() {
                           </PagesButton>
 
                           <PagesButton
+                            onClick={() => setConnectTalent(talent)}
+                            className="btn-talent-connect"
+                            style={{
+                              background: "linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)",
+                              color: "#ffffff",
+                              border: "none",
+                              borderRadius: "8px",
+                              padding: "8px 14px",
+                              fontSize: "12px",
+                              fontWeight: "700",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "6px",
+                              cursor: "pointer",
+                              boxShadow: "0 2px 8px rgba(236, 72, 153, 0.25)"
+                            }}
+                          >
+                            <MessageSquare size={13} />
+                            <span>Connect</span>
+                          </PagesButton>
+
+                          <PagesButton
                             onClick={() => setBookingTalent(talent)}
                             className="btn-talent-book"
                             style={{ padding: "8px 14px", fontSize: "12px" }}
@@ -893,6 +967,28 @@ export default function Talents() {
               const t = workModalTalent;
               setWorkModalTalent(null);
               setBookingTalent(t);
+            }}
+          />
+        )}
+
+        {/* ─── Modal 2b: Connect / Chat Request Modal ──────── */}
+        {connectTalent && (
+          <ConnectRequestModal
+            talent={connectTalent}
+            isOpen={Boolean(connectTalent)}
+            onClose={() => setConnectTalent(null)}
+            onSuccess={(req) => {
+              navigate("/messages", {
+                state: {
+                  targetChatId: "chatreq-" + req.id,
+                  targetUser: {
+                    id: connectTalent.userId || connectTalent.id,
+                    name: connectTalent.fullName || connectTalent.name,
+                    role: connectTalent.primaryProfession || connectTalent.customProfession || "Talent",
+                    avatar: connectTalent.profilePhoto
+                  }
+                }
+              });
             }}
           />
         )}

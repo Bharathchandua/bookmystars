@@ -1,90 +1,28 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { 
-  ArrowRight, Search, Upload, MapPin, Briefcase, Calendar, 
-  Target, Award, ListChecks, Globe, Sparkles, X, ChevronDown, 
-  CheckCircle, RefreshCw, Grid, Clapperboard, Users, GraduationCap, 
-  Heart, HandHeart, Trophy, Music, Star, User
+  ArrowRight, Search, Mail, X, CheckCircle, 
+  Grid, Clapperboard, Briefcase, Users, GraduationCap, 
+  HandHeart, Trophy, Star, User
 } from "lucide-react";
 import Navbar from "../../Navbar.jsx";
 import FooterAgency from "../../FooterAgency.jsx";
 import Button from "../../common/Button";
-import Card from "../../common/Card";
 import heroImg from "../../../assets/opp-hero-chair.png";
 import "./opportunities.css";
 
 export default function OpportunitiesService() {
-  // Master Opportunities Data
-  const initialOpportunities = [
-    {
-      title: "Lead Actor for Web Series",
-      company: "Nexus Studios",
-      category: "Casting Calls",
-      experience: "2-5 Years",
-      location: "Mumbai, India",
-      date: "May 25, 2025",
-      status: "FEATURED",
-      timeLeft: "2 Days Left",
-      desc: "Looking for a male actor (22-30 years) for a lead role in an upcoming psychological thriller web series.",
-      logoType: "nexus"
-    },
-    {
-      title: "Video Editor",
-      company: "Frame Works",
-      category: "Job Openings",
-      experience: "1-3 Years",
-      location: "Bengaluru, India",
-      date: "May 28, 2025",
-      status: "FEATURED",
-      timeLeft: "5 Days Left",
-      desc: "We are looking for a skilled video editor with experience in documentaries and storytelling content.",
-      logoType: "frameworks"
-    },
-    {
-      title: "Music Collaboration",
-      company: "Indie Beats",
-      category: "Collaboration",
-      experience: "Open to All",
-      location: "Remote",
-      date: "May 30, 2025",
-      status: "FEATURED",
-      timeLeft: "7 Days Left",
-      desc: "Independent music producer looking to collaborate with singers and lyricists for a new project.",
-      logoType: "music"
-    },
-    {
-      title: "Social Media Intern",
-      company: "Vista Media",
-      category: "Internships",
-      experience: "Students",
-      location: "Delhi, India",
-      date: "June 5, 2025",
-      status: "NEW",
-      timeLeft: "12 Days Left",
-      desc: "Join our dynamic team and gain hands-on experience in social media management and content creation.",
-      logoType: "vista"
-    }
-  ];
-
-  const [opportunities, setOpportunities] = useState(initialOpportunities);
-  const [displayedOpps, setDisplayedOpps] = useState(initialOpportunities);
-
-  // Filter States
+  // Filter Tabs State
   const [selectedCategoryTab, setSelectedCategoryTab] = useState("All Categories");
-  const [sidebarCategory, setSidebarCategory] = useState("All Categories");
-  const [sidebarLocation, setSidebarLocation] = useState("All Locations");
-  const [sidebarExperience, setSidebarExperience] = useState("All Experience Levels");
 
-  // Modal State
+  // Modal State for "Enquire About"
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [postSuccess, setPostSuccess] = useState(false);
   const [formData, setFormData] = useState({
-    title: "",
-    company: "",
+    name: "",
+    email: "",
+    phone: "",
     category: "Casting Calls",
-    experience: "Open to All",
-    location: "Mumbai, India",
-    date: "",
-    desc: ""
+    message: ""
   });
 
   // Categories Header Data
@@ -98,72 +36,6 @@ export default function OpportunitiesService() {
     { name: "Competitions", icon: <Trophy size={48} /> }
   ];
 
-  // Why List With Us Points
-  const benefits = [
-    {
-      title: "Reach the Right Talent",
-      desc: "Connect with verified professionals and emerging talent.",
-      icon: <Target size={20} />
-    },
-    {
-      title: "Trusted by the Industry",
-      desc: "Used by leading studios, creators and companies.",
-      icon: <Award size={20} />
-    },
-    {
-      title: "Easy & Effective",
-      desc: "Post opportunities in minutes and get quality responses.",
-      icon: <ListChecks size={20} />
-    },
-    {
-      title: "Wide Visibility",
-      desc: "Get discovered by thousands of active members.",
-      icon: <Globe size={20} />
-    }
-  ];
-
-  // Apply filters logic
-  const handleApplyFilters = () => {
-    let result = [...opportunities];
-
-    // Filter by Tab (if not "All Categories")
-    if (selectedCategoryTab !== "All Categories") {
-      result = result.filter(opp => opp.category === selectedCategoryTab);
-    }
-
-    // Filter by Sidebar Category
-    if (sidebarCategory !== "All Categories") {
-      result = result.filter(opp => opp.category === sidebarCategory);
-    }
-
-    // Filter by Sidebar Location
-    if (sidebarLocation !== "All Locations") {
-      const loc = sidebarLocation.split(",")[0].toLowerCase();
-      result = result.filter(opp => opp.location.toLowerCase().includes(loc));
-    }
-
-    // Filter by Sidebar Experience
-    if (sidebarExperience !== "All Experience Levels") {
-      result = result.filter(opp => opp.experience === sidebarExperience);
-    }
-
-    setDisplayedOpps(result);
-  };
-
-  // Synchronize top tabs with sidebar filter triggers
-  useEffect(() => {
-    handleApplyFilters();
-  }, [selectedCategoryTab, opportunities]);
-
-  // Reset all filters
-  const handleResetFilters = () => {
-    setSelectedCategoryTab("All Categories");
-    setSidebarCategory("All Categories");
-    setSidebarLocation("All Locations");
-    setSidebarExperience("All Experience Levels");
-    setDisplayedOpps(opportunities);
-  };
-
   // Form Submission
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -172,83 +44,20 @@ export default function OpportunitiesService() {
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
-    if (!formData.title || !formData.company || !formData.desc) return;
+    if (!formData.name || !formData.email || !formData.message) return;
 
-    // Create a new opportunity item
-    const newOpp = {
-      ...formData,
-      date: formData.date ? new Date(formData.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : "June 20, 2025",
-      status: "NEW",
-      timeLeft: "30 Days Left",
-      logoType: formData.company.toLowerCase().includes("nexus") ? "nexus" :
-                formData.company.toLowerCase().includes("frame") ? "frameworks" :
-                formData.company.toLowerCase().includes("vista") ? "vista" : "music"
-    };
-
-    const updatedOpps = [newOpp, ...opportunities];
-    setOpportunities(updatedOpps);
-    
     setPostSuccess(true);
     setTimeout(() => {
       setPostSuccess(false);
       setIsModalOpen(false);
-      // Reset form
       setFormData({
-        title: "",
-        company: "",
+        name: "",
+        email: "",
+        phone: "",
         category: "Casting Calls",
-        experience: "Open to All",
-        location: "Mumbai, India",
-        date: "",
-        desc: ""
+        message: ""
       });
-    }, 1800);
-  };
-
-  // Scroll to featured list
-  const scrollToFeatured = () => {
-    const element = document.getElementById("featured-opportunities-head");
-    if (element) {
-      const navbarHeight = 95;
-      const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
-      window.scrollTo({
-        top: elementPosition - navbarHeight,
-        behavior: "smooth"
-      });
-    }
-  };
-
-  // Custom Logo badge renderer
-  const renderLogo = (logoType, company) => {
-    switch (logoType) {
-      case "nexus":
-        return (
-          <div className="company-logo-box nexus-logo">
-            <span className="logo-letter">N</span>
-            <span className="logo-sub">NEXUS</span>
-          </div>
-        );
-      case "frameworks":
-        return (
-          <div className="company-logo-box frameworks-logo">
-            <span className="logo-word-top">FRAME</span>
-            <span className="logo-word-bot">WORKS</span>
-          </div>
-        );
-      case "vista":
-        return (
-          <div className="company-logo-box vista-logo">
-            <span className="logo-word-top">VISTA</span>
-            <span className="logo-word-bot">MEDIA</span>
-          </div>
-        );
-      default:
-        return (
-          <div className="company-logo-box music-logo">
-            <Music size={26} />
-          </div>
-        );
-    }
+    }, 2000);
   };
 
   return (
@@ -275,20 +84,14 @@ export default function OpportunitiesService() {
                 Explore casting calls, job openings, collaborations and more across the entertainment industry.
               </p>
 
+              {/* Single "Enquire About" Button */}
               <div className="opps-hero-buttons">
                 <Button 
-                  variant="btn-play-latest" 
-                  icon={<Search size={16} />}
-                  onClick={scrollToFeatured}
-                >
-                  Find Opportunities
-                </Button>
-                <Button 
-                  variant="btn-subscribe" 
-                  icon={<Upload size={16} />}
+                  className="btn-enquire" 
+                  icon={<Mail size={18} />}
                   onClick={() => setIsModalOpen(true)}
                 >
-                  Post an Opportunity
+                  Enquire About
                 </Button>
               </div>
             </div>
@@ -320,169 +123,7 @@ export default function OpportunitiesService() {
         </section>
 
         {/* =============================================
-           3. BODY CONTENT (Split Layout)
-           ============================================= */}
-        <section className="opps-body-section">
-          <div className="opps-body-container">
-            
-            {/* Left Column: Featured Opportunities List */}
-            <div className="opps-body-left">
-              <div className="opps-featured-container">
-                <div className="opps-featured-header" id="featured-opportunities-head">
-                  <h2 className="opps-section-heading">Featured Opportunities</h2>
-                  <Button className="btn-view-all-link" onClick={handleResetFilters}>
-                    View All <span className="opps-hide-mobile">Opportunities</span> <ArrowRight size={14} />
-                  </Button>
-                </div>
-
-                <div className="opps-list">
-                  {displayedOpps.length > 0 ? (
-                    displayedOpps.map((opp, idx) => (
-                      <Card className="opps-card-item" key={idx}>
-                        {/* Logo Wrapper */}
-                        <div className="opps-logo-wrapper">
-                          {renderLogo(opp.logoType, opp.company)}
-                        </div>
-
-                        {/* Info & Meta */}
-                        <div className="opps-details-wrapper">
-                          <div className="opps-badge-row">
-                            <span className="opps-type-badge">{opp.category}</span>
-                          </div>
-                          <h3 className="opps-title">{opp.title}</h3>
-                          <p className="opps-desc">{opp.desc}</p>
-                          
-                          <div className="opps-meta-row">
-                            <span className="meta-item">
-                              <MapPin size={13} /> {opp.location}
-                            </span>
-                            <span className="meta-item">
-                              <Briefcase size={13} /> {opp.experience}
-                            </span>
-                            <span className="meta-item">
-                              <Calendar size={13} /> {opp.date}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Right Status */}
-                        <div className="opps-status-wrapper">
-                          <span className={`status-badge-tag ${opp.status === "FEATURED" ? "status-featured" : "status-new"}`}>
-                            {opp.status}
-                          </span>
-                          <span className="status-time-left">{opp.timeLeft}</span>
-                        </div>
-                      </Card>
-                    ))
-                  ) : (
-                    <div className="no-opps-message">
-                      <p>No opportunities match your filter selections.</p>
-                      <Button className="btn-reset-light" onClick={handleResetFilters}>
-                        Clear Filters
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column: Sidebar Widgets */}
-            <div className="opps-body-right">
-              {/* Why List With Us Card */}
-              <div className="opps-sidebar-widget widget-benefits">
-                <h3>Why list with us?</h3>
-                <div className="benefits-list">
-                  {benefits.map((b, idx) => (
-                    <div className="benefit-item" key={idx}>
-                      <div className="benefit-icon-wrapper">{b.icon}</div>
-                      <div className="benefit-texts">
-                        <h4>{b.title}</h4>
-                        <p>{b.desc}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <Button 
-                  variant="btn-play-latest" 
-                  className="w-100 mt-4 sidebar-cta-btn" 
-                  icon={<ArrowRight size={14} />} 
-                  iconPosition="right"
-                  onClick={() => setIsModalOpen(true)}
-                >
-                  Post an Opportunity
-                </Button>
-              </div>
-
-              {/* Browse Opportunities Filter Card */}
-              <div className="opps-sidebar-widget widget-browse">
-                <h3>Browse Opportunities</h3>
-                
-                <div className="filter-form-group">
-                  <div className="select-input-wrapper">
-                    <select 
-                      value={sidebarCategory} 
-                      onChange={(e) => setSidebarCategory(e.target.value)}
-                    >
-                      <option value="All Categories">All Categories</option>
-                      <option value="Casting Calls">Casting Calls</option>
-                      <option value="Job Openings">Job Openings</option>
-                      <option value="Collaboration">Collaboration</option>
-                      <option value="Internships">Internships</option>
-                      <option value="Volunteer">Volunteer</option>
-                      <option value="Competitions">Competitions</option>
-                    </select>
-                    <ChevronDown size={14} className="select-arrow-icon" />
-                  </div>
-
-                  <div className="select-input-wrapper">
-                    <select 
-                      value={sidebarLocation} 
-                      onChange={(e) => setSidebarLocation(e.target.value)}
-                    >
-                      <option value="All Locations">All Locations</option>
-                      <option value="Mumbai">Mumbai</option>
-                      <option value="Bengaluru">Bengaluru</option>
-                      <option value="Delhi">Delhi</option>
-                      <option value="Remote">Remote</option>
-                    </select>
-                    <ChevronDown size={14} className="select-arrow-icon" />
-                  </div>
-
-                  <div className="select-input-wrapper">
-                    <select 
-                      value={sidebarExperience} 
-                      onChange={(e) => setSidebarExperience(e.target.value)}
-                    >
-                      <option value="All Experience Levels">All Experience Levels</option>
-                      <option value="Students">Students</option>
-                      <option value="1-3 Years">1-3 Years</option>
-                      <option value="2-5 Years">2-5 Years</option>
-                      <option value="Open to All">Open to All</option>
-                    </select>
-                    <ChevronDown size={14} className="select-arrow-icon" />
-                  </div>
-
-                  <Button 
-                    variant="btn-play-latest" 
-                    className="w-100 btn-apply-filters" 
-                    onClick={handleApplyFilters}
-                  >
-                    Apply Filters
-                  </Button>
-
-                  <Button className="btn-reset-filters-link" onClick={handleResetFilters}>
-                    <RefreshCw size={12} /> Reset Filters
-                  </Button>
-                </div>
-              </div>
-
-            </div>
-
-          </div>
-        </section>
-
-        {/* =============================================
-           4. HOW IT WORKS SECTION
+           3. HOW IT WORKS SECTION (Direct Flow)
            ============================================= */}
         <section className="opps-how-it-works-section">
           <div className="how-it-works-container">
@@ -554,13 +195,13 @@ export default function OpportunitiesService() {
       <FooterAgency />
 
       {/* =============================================
-         5. POST AN OPPORTUNITY MODAL
+         4. ENQUIRE ABOUT OPPORTUNITIES MODAL
          ============================================= */}
       {isModalOpen && (
         <div className="opps-modal-overlay">
           <div className="opps-modal-card animate-zoomIn">
             <div className="modal-header">
-              <h3>Post an Opportunity</h3>
+              <h3>Enquire About Opportunities</h3>
               <Button className="btn-close-modal" onClick={() => setIsModalOpen(false)}>
                 <X size={20} />
               </Button>
@@ -569,37 +210,48 @@ export default function OpportunitiesService() {
             {postSuccess ? (
               <div className="modal-success-screen">
                 <CheckCircle size={52} className="success-icon" />
-                <h4>Opportunity Shared!</h4>
-                <p>Your opportunity has been successfully listed.</p>
+                <h4>Enquiry Submitted!</h4>
+                <p>Thank you for reaching out. Our opportunities team will contact you shortly.</p>
               </div>
             ) : (
               <form onSubmit={handleFormSubmit} className="modal-form">
                 <div className="form-group-row">
                   <div className="form-item">
-                    <label>Opportunity Title *</label>
+                    <label>Your Name *</label>
                     <input 
                       type="text" 
-                      name="title" 
-                      value={formData.title} 
+                      name="name" 
+                      value={formData.name} 
                       onChange={handleInputChange} 
-                      placeholder="e.g. Lead Guitarist" 
+                      placeholder="e.g. Rahul Sharma" 
                       required 
                     />
                   </div>
                   <div className="form-item">
-                    <label>Company/Production *</label>
+                    <label>Email Address *</label>
                     <input 
-                      type="text" 
-                      name="company" 
-                      value={formData.company} 
+                      type="email" 
+                      name="email" 
+                      value={formData.email} 
                       onChange={handleInputChange} 
-                      placeholder="e.g. Nexus Studios" 
+                      placeholder="e.g. rahul@example.com" 
                       required 
                     />
                   </div>
                 </div>
 
                 <div className="form-group-row">
+                  <div className="form-item">
+                    <label>Phone Number *</label>
+                    <input 
+                      type="tel" 
+                      name="phone" 
+                      value={formData.phone} 
+                      onChange={handleInputChange} 
+                      placeholder="e.g. +91 98765 43210" 
+                      required 
+                    />
+                  </div>
                   <div className="form-item">
                     <label>Category *</label>
                     <select 
@@ -613,53 +265,18 @@ export default function OpportunitiesService() {
                       <option value="Internships">Internships</option>
                       <option value="Volunteer">Volunteer</option>
                       <option value="Competitions">Competitions</option>
+                      <option value="Production Talent Enquiry">Production Talent Enquiry</option>
                     </select>
-                  </div>
-                  <div className="form-item">
-                    <label>Experience Level *</label>
-                    <select 
-                      name="experience" 
-                      value={formData.experience} 
-                      onChange={handleInputChange}
-                    >
-                      <option value="Students">Students</option>
-                      <option value="1-3 Years">1-3 Years</option>
-                      <option value="2-5 Years">2-5 Years</option>
-                      <option value="Open to All">Open to All</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="form-group-row">
-                  <div className="form-item">
-                    <label>Location *</label>
-                    <input 
-                      type="text" 
-                      name="location" 
-                      value={formData.location} 
-                      onChange={handleInputChange} 
-                      placeholder="e.g. Mumbai, India" 
-                      required 
-                    />
-                  </div>
-                  <div className="form-item">
-                    <label>Application Deadline</label>
-                    <input 
-                      type="date" 
-                      name="date" 
-                      value={formData.date} 
-                      onChange={handleInputChange} 
-                    />
                   </div>
                 </div>
 
                 <div className="form-item">
-                  <label>Description *</label>
+                  <label>Enquiry Details / Message *</label>
                   <textarea 
-                    name="desc" 
-                    value={formData.desc} 
+                    name="message" 
+                    value={formData.message} 
                     onChange={handleInputChange} 
-                    placeholder="Provide details about role requirements, responsibilities, and benefits..." 
+                    placeholder="Provide details about role requirements, experience, or collaboration needs..." 
                     rows="4" 
                     required
                   ></textarea>
@@ -670,7 +287,7 @@ export default function OpportunitiesService() {
                     Cancel
                   </Button>
                   <Button type="submit" className="btn-submit-form">
-                    Submit Opportunity
+                    Submit Enquiry
                   </Button>
                 </div>
               </form>

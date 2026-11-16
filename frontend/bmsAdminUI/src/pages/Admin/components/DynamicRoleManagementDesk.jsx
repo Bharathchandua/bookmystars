@@ -39,6 +39,7 @@ import {
   fetchStaffMembers,
   assignStaffRole, 
   addStaffMember, 
+  updateStaffMember,
   removeStaffMember,
   updateStaffPassword,
   SYSTEM_MODULES,
@@ -89,6 +90,18 @@ export default function DynamicRoleManagementDesk() {
     password: "Staff@123",
     department: "Casting Operations",
     roleId: "ROLE_CASTING_DIRECTOR"
+  });
+
+  // Edit Staff Modal state
+  const [showEditStaffModal, setShowEditStaffModal] = useState(false);
+  const [editingStaff, setEditingStaff] = useState(null);
+  const [editStaffFormData, setEditStaffFormData] = useState({
+    id: null,
+    name: "",
+    email: "",
+    department: "Casting Operations",
+    roleId: "ROLE_CASTING_DIRECTOR",
+    status: "ACTIVE"
   });
 
   // Reset Password Modal state
@@ -304,12 +317,14 @@ export default function DynamicRoleManagementDesk() {
 
   // Delete Role
   const handleDeleteRole = async (roleId, roleName) => {
+    const ok = await confirmDelete(roleName, `Are you sure you want to delete custom role "${roleName}"?`);
+    if (!ok) return;
     try {
       await deleteDynamicRole(roleId);
       showSuccess("Role Deleted", `Custom role "${roleName}" has been removed from database.`);
       await refreshData();
     } catch (err) {
-      showError("Action Prohibited", err.message);
+      showError("Action Prohibited", err.message || "Failed to delete role.");
     }
   };
 
@@ -432,6 +447,41 @@ export default function DynamicRoleManagementDesk() {
       await refreshData();
     } catch (err) {
       showError("Deletion Failed", err.message || "Could not delete staff member.");
+    }
+  };
+
+  // Open Edit Staff Modal
+  const handleOpenEditStaff = (member) => {
+    setEditingStaff(member);
+    setEditStaffFormData({
+      id: member.id,
+      name: member.name || "",
+      email: member.email || "",
+      department: member.department || "Casting Operations",
+      roleId: member.roleId || roles[0]?.id || "ROLE_CASTING_DIRECTOR",
+      status: member.status || "ACTIVE"
+    });
+    setShowEditStaffModal(true);
+  };
+
+  // Save Edited Staff
+  const handleSaveEditStaff = async (e) => {
+    e.preventDefault();
+    if (!editStaffFormData.name || !editStaffFormData.email) {
+      showError("Validation Error", "Please provide a valid name and corporate email.");
+      return;
+    }
+    try {
+      await updateStaffMember(editStaffFormData.id, editStaffFormData);
+      showSuccess(
+        "Staff Officer Updated!",
+        `Details for ${editStaffFormData.name} (${editStaffFormData.email}) have been updated.`
+      );
+      setShowEditStaffModal(false);
+      setEditingStaff(null);
+      await refreshData();
+    } catch (err) {
+      showError("Update Failed", err.message || "Could not update staff member.");
     }
   };
 
@@ -761,15 +811,37 @@ export default function DynamicRoleManagementDesk() {
 
                       {/* Status */}
                       <td className="py-3 px-4 whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/90 text-[11px] font-extrabold tracking-wide shadow-xs">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                          <span>{member.status || "ACTIVE"}</span>
-                        </span>
+                        {member.status === "SUSPENDED" ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-[11px] font-extrabold tracking-wide shadow-xs">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                            <span>SUSPENDED</span>
+                          </span>
+                        ) : member.status === "INACTIVE" ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-extrabold tracking-wide shadow-xs">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                            <span>INACTIVE</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/90 text-[11px] font-extrabold tracking-wide shadow-xs">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <span>{member.status || "ACTIVE"}</span>
+                          </span>
+                        )}
                       </td>
 
                       {/* Actions */}
                       <td className="py-3 px-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditStaff(member)}
+                            className="px-2.5 py-1 text-[11px] font-bold text-slate-700 bg-white hover:bg-[#fff1f8] hover:text-[#ee008f] border border-slate-200 hover:border-pink-300 rounded-lg transition cursor-pointer flex items-center gap-1"
+                            title="Edit Staff Member Details"
+                          >
+                            <Edit3 size={12} />
+                            <span>Edit</span>
+                          </button>
+
                           <button
                             type="button"
                             onClick={() => handleOpenResetModal(member)}
@@ -784,9 +856,11 @@ export default function DynamicRoleManagementDesk() {
                             <button
                               type="button"
                               onClick={() => handleRemoveStaff(member)}
-                              className="px-2 py-1 text-[11px] font-bold text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer border border-transparent hover:border-rose-200"
+                              className="px-2.5 py-1 text-[11px] font-bold text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 rounded-lg transition cursor-pointer flex items-center gap-1"
+                              title="Delete Administrator"
                             >
-                              Remove
+                              <Trash2 size={12} />
+                              <span>Remove</span>
                             </button>
                           ) : (
                             <span className="text-[10.5px] font-bold text-slate-400 italic px-1">Master</span>
@@ -1426,6 +1500,170 @@ export default function DynamicRoleManagementDesk() {
                   className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#ee008f] to-[#7c3aed] text-white font-bold text-xs shadow-md shadow-pink-500/25 hover:opacity-95 transition cursor-pointer border-none"
                 >
                   Create & Authorize Admin
+                </button>
+              </div>
+
+            </form>
+
+          </div>
+        </div>
+      )}
+
+      {/* ─── EDIT STAFF MEMBER MODAL ─── */}
+      {showEditStaffModal && editingStaff && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-pink-50 text-[#ee008f] flex items-center justify-center font-bold">
+                  <Edit3 size={16} />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[#0f172a] m-0">
+                    Edit Administrator Profile
+                  </h3>
+                  <p className="text-[11px] text-slate-400 m-0">
+                    Update identity, role, department, and account status
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setShowEditStaffModal(false); setEditingStaff(null); }}
+                className="p-1.5 text-slate-400 hover:text-slate-700 transition cursor-pointer border-none bg-transparent"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditStaff} className="space-y-3.5">
+              
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editStaffFormData.name}
+                  onChange={(e) => setEditStaffFormData({ ...editStaffFormData, name: e.target.value })}
+                  placeholder="e.g. Shalini Roy"
+                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-[#ee008f]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">
+                  Login ID (Corporate Email)
+                </label>
+                <input
+                  type="email"
+                  required
+                  disabled={editingStaff.email === "admin@bookmystars.com" || editingStaff.id === 1 || editingStaff.id === "STF-001"}
+                  value={editStaffFormData.email}
+                  onChange={(e) => setEditStaffFormData({ ...editStaffFormData, email: e.target.value })}
+                  placeholder="shalini.roy@bookmystars.com"
+                  className={`w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-[#ee008f] ${
+                    (editingStaff.email === "admin@bookmystars.com" || editingStaff.id === 1 || editingStaff.id === "STF-001")
+                      ? "bg-slate-100 text-slate-500 cursor-not-allowed"
+                      : "bg-white text-slate-800"
+                  }`}
+                />
+                {(editingStaff.email === "admin@bookmystars.com" || editingStaff.id === 1 || editingStaff.id === "STF-001") && (
+                  <span className="text-[10px] text-amber-600 mt-0.5 block font-medium">
+                    Root Super Admin corporate email is locked for platform safety.
+                  </span>
+                )}
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">
+                  Department
+                </label>
+                <select
+                  value={editStaffFormData.department}
+                  onChange={(e) => setEditStaffFormData({ ...editStaffFormData, department: e.target.value })}
+                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-800"
+                >
+                  <option value="Casting Operations">Casting Operations</option>
+                  <option value="Trust & Safety">Trust & Safety</option>
+                  <option value="Finance & Accounts">Finance & Accounts</option>
+                  <option value="KYC Compliance">KYC Compliance</option>
+                  <option value="Executive Command">Executive Command</option>
+                  <option value="Executive Management">Executive Management</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">
+                  Assigned Dynamic Role
+                </label>
+                <select
+                  value={editStaffFormData.roleId}
+                  disabled={editingStaff.email === "admin@bookmystars.com" || editingStaff.id === 1 || editingStaff.id === "STF-001"}
+                  onChange={(e) => setEditStaffFormData({ ...editStaffFormData, roleId: e.target.value })}
+                  className={`w-full px-3 py-2 text-xs border border-slate-200 rounded-xl font-bold ${
+                    (editingStaff.email === "admin@bookmystars.com" || editingStaff.id === 1 || editingStaff.id === "STF-001")
+                      ? "bg-slate-100 text-slate-500 cursor-not-allowed"
+                      : "bg-white text-[#ee008f]"
+                  }`}
+                >
+                  {roles.map(r => (
+                    <option key={r.id} value={r.id} className="text-slate-800 font-medium">
+                      {r.name}
+                    </option>
+                  ))}
+                </select>
+                {(editingStaff.email === "admin@bookmystars.com" || editingStaff.id === 1 || editingStaff.id === "STF-001") && (
+                  <span className="text-[10px] text-amber-600 mt-0.5 block font-medium">
+                    Root Super Admin role cannot be demoted.
+                  </span>
+                )}
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">
+                  Account Status
+                </label>
+                <select
+                  value={editStaffFormData.status}
+                  disabled={editingStaff.email === "admin@bookmystars.com" || editingStaff.id === 1 || editingStaff.id === "STF-001"}
+                  onChange={(e) => setEditStaffFormData({ ...editStaffFormData, status: e.target.value })}
+                  className={`w-full px-3 py-2 text-xs border border-slate-200 rounded-xl font-bold ${
+                    (editingStaff.email === "admin@bookmystars.com" || editingStaff.id === 1 || editingStaff.id === "STF-001")
+                      ? "bg-slate-100 text-slate-500 cursor-not-allowed"
+                      : editStaffFormData.status === "ACTIVE"
+                      ? "bg-white text-emerald-700"
+                      : editStaffFormData.status === "INACTIVE"
+                      ? "bg-white text-amber-700"
+                      : "bg-white text-rose-700"
+                  }`}
+                >
+                  <option value="ACTIVE">ACTIVE (Authorized to login)</option>
+                  <option value="INACTIVE">INACTIVE (Temporarily disabled)</option>
+                  <option value="SUSPENDED">SUSPENDED (Access locked)</option>
+                </select>
+                {(editingStaff.email === "admin@bookmystars.com" || editingStaff.id === 1 || editingStaff.id === "STF-001") && (
+                  <span className="text-[10px] text-amber-600 mt-0.5 block font-medium">
+                    Root Super Admin account must remain ACTIVE.
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => { setShowEditStaffModal(false); setEditingStaff(null); }}
+                  className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-800 transition cursor-pointer border-none bg-transparent"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#ee008f] to-[#7c3aed] text-white font-bold text-xs shadow-md shadow-pink-500/25 hover:opacity-95 transition cursor-pointer border-none"
+                >
+                  Save Changes
                 </button>
               </div>
 

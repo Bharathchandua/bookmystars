@@ -1,9 +1,9 @@
 import PagesButton from "../common/PagesButton";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import "./header.css";
 import { Link, useNavigate } from "react-router-dom";
 import { 
-  Search, Bell, ChevronDown, Menu, LogOut, User, Settings, Shield, 
+  Search, Bell, ChevronDown, ChevronRight, ChevronLeft, ArrowRight, Menu, LogOut, User, Settings, Shield, 
   Check, MessageSquare, X, Clock, Calendar, Film, CheckCircle2, XCircle, 
   Lock, IndianRupee, MapPin, Loader2, Sparkles, LayoutDashboard, ExternalLink, Camera 
 } from "lucide-react";
@@ -16,8 +16,10 @@ import {
   updateBookingRequestStatus,
   getSentBookingRequests,
   getProfileAccessRequests,
-  respondToProfileAccessRequest 
+  respondToProfileAccessRequest,
+  getMyConversations
 } from "../../features/bms/api";
+import { getMyCastingApplications } from "../../features/bms/api/opportunities/castingApplicationsApi";
 import { showSuccess, showError } from "../../shared/utils/alert";
 
 export default function Header({ 
@@ -129,41 +131,118 @@ export default function Header({
   const [incomingBookings, setIncomingBookings] = useState([]);
   const [accessRequests, setAccessRequests] = useState([]);
   const [sentBookings, setSentBookings] = useState([]);
+  const [myApplications, setMyApplications] = useState([]);
+  const [conversations, setConversations] = useState([]);
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
+  const isFetchingConvsRef = useRef(false);
   const [actionLoadingId, setActionLoadingId] = useState(null);
   const [notifFilter, setNotifFilter] = useState("ALL");
 
   const isProfessional = (storedUser?.accountType || "").toUpperCase() === "PROFESSIONAL";
 
-  // Fetch real notifications based on user role
+  // Helper for safe relative timestamps and safe dates
+  const formatNotifTime = (dateStr) => {
+    if (!dateStr) return "Recent";
+    if (Array.isArray(dateStr)) {
+      const [y, m, d] = dateStr;
+      return `${d || 1}/${m || 1}/${y || 2026}`;
+    }
+    if (typeof dateStr === "object") return "Recent";
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return typeof dateStr === "string" ? dateStr : "Recent";
+    const diffMs = Date.now() - d.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return d.toLocaleDateString();
+  };
+
+  const formatSafeDate = (d) => {
+    if (!d) return "";
+    if (Array.isArray(d)) return `${d[2] || d[0]}/${d[1]}/${d[0] || d[2]}`;
+    if (typeof d === "object") return "";
+    return String(d);
+  };
+
+  // Fetch real notifications across all sidebar domains
   const fetchLiveNotifications = useCallback(async () => {
     try {
       if (isProfessional) {
-        const sent = await getSentBookingRequests();
+        const [sent, convs] = await Promise.all([
+          getSentBookingRequests().catch(() => []),
+          getMyConversations().catch(() => [])
+        ]);
         setSentBookings(Array.isArray(sent) ? sent : []);
+        setConversations(Array.isArray(convs) ? convs : []);
       } else {
-        const [bookings, reqs] = await Promise.all([
+        const [bookings, reqs, apps, convs] = await Promise.all([
           getIncomingBookingRequests().catch(() => []),
-          getProfileAccessRequests().catch(() => [])
+          getProfileAccessRequests().catch(() => []),
+          getMyCastingApplications().catch(() => []),
+          getMyConversations().catch(() => [])
         ]);
         setIncomingBookings(Array.isArray(bookings) ? bookings : []);
         setAccessRequests(Array.isArray(reqs) ? reqs : []);
+        setMyApplications(Array.isArray(apps) ? apps : []);
+        setConversations(Array.isArray(convs) ? convs : []);
       }
     } catch (e) {
       console.error("Failed to load header notifications:", e);
     }
   }, [isProfessional]);
 
+  // Fetch real-time unread messages count for navbar badge
+  const fetchLiveMessageCount = useCallback(async () => {
+    if (document.hidden) return;
+    if (isFetchingConvsRef.current) return;
+    isFetchingConvsRef.current = true;
+    try {
+      const convs = await getMyConversations();
+      if (Array.isArray(convs)) {
+        const total = convs.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+        setUnreadMessageCount(total);
+      }
+    } catch (e) {
+      // ignore
+    } finally {
+      isFetchingConvsRef.current = false;
+    }
+  }, []);
+
   useEffect(() => {
     fetchLiveNotifications();
-    // Auto-poll every 10 seconds to detect new requests or status changes
-    const interval = setInterval(fetchLiveNotifications, 10000);
-    const handleUpdate = () => fetchLiveNotifications();
-    window.addEventListener("booking_status_updated", handleUpdate);
+    fetchLiveMessageCount();
+
+    // Auto-poll notifications every 10s and unread messages every 12s
+    const interval = setInterval(() => {
+      fetchLiveNotifications();
+      fetchLiveMessageCount();
+    }, 12000);
+
+    const handleBookingUpdate = () => fetchLiveNotifications();
+    const handleUnreadUpdate = (e) => {
+      if (e?.detail !== undefined && typeof e.detail === "number") {
+        setUnreadMessageCount(e.detail);
+      } else {
+        fetchLiveMessageCount();
+      }
+    };
+
+    window.addEventListener("booking_status_updated", handleBookingUpdate);
+    window.addEventListener("messages_unread_count", handleUnreadUpdate);
+    window.addEventListener("messages_updated", handleUnreadUpdate);
+
     return () => {
       clearInterval(interval);
-      window.removeEventListener("booking_status_updated", handleUpdate);
+      window.removeEventListener("booking_status_updated", handleBookingUpdate);
+      window.removeEventListener("messages_unread_count", handleUnreadUpdate);
+      window.removeEventListener("messages_updated", handleUnreadUpdate);
     };
-  }, [fetchLiveNotifications]);
+  }, [fetchLiveNotifications, fetchLiveMessageCount]);
 
   // Handle Talent Accepting Director Booking Request
   const handleAcceptBooking = async (bookingId, e) => {
@@ -219,15 +298,150 @@ export default function Header({
     }
   };
 
+  // Normalized notification items across all sidebar modules
+  const allNotifications = useMemo(() => {
+    const list = [];
+
+    // 1. Shoots & Bookings (from Bookings tab)
+    if (isProfessional) {
+      (sentBookings || []).forEach((b) => {
+        list.push({
+          id: `sent-book-${b.id}`,
+          category: "SHOOTS",
+          targetPath: "/bookings",
+          tabName: "Bookings",
+          icon: Film,
+          iconBg: "#fce7f3",
+          iconColor: "#ee008f",
+          title: b.talentName ? `Shoot with ${b.talentName}` : (b.projectTitle || "Shoot Booking"),
+          subtitle: b.status === "ACCEPTED" 
+            ? `Accepted for "${b.projectTitle || "Project"}" on ${formatSafeDate(b.bookingDate) || "Scheduled Dates"}`
+            : b.status === "DECLINED"
+            ? `Declined for "${b.projectTitle || "Project"}"`
+            : `Awaiting response for "${b.projectTitle || "Project"}"`,
+          status: b.status || "PENDING",
+          statusBg: b.status === "ACCEPTED" ? "#dcfce7" : b.status === "DECLINED" ? "#fee2e2" : "#fef3c7",
+          statusColor: b.status === "ACCEPTED" ? "#15803d" : b.status === "DECLINED" ? "#b91c1c" : "#b45309",
+          createdAt: b.createdAt || b.bookingDate,
+          isUnread: b.status === "ACCEPTED" || b.status === "PENDING"
+        });
+      });
+    } else {
+      (incomingBookings || []).forEach((b) => {
+        list.push({
+          id: `in-book-${b.id}`,
+          rawId: b.id,
+          category: "SHOOTS",
+          targetPath: "/bookings",
+          tabName: "Bookings",
+          icon: Film,
+          iconBg: "#fce7f3",
+          iconColor: "#ee008f",
+          title: b.professionalName || b.professionalCompany || "Casting Director",
+          subtitle: `Shoot offer: "${b.projectTitle || "Project"}" • ${formatSafeDate(b.bookingDate) || "Upcoming Dates"}`,
+          status: b.status || "PENDING",
+          statusBg: b.status === "ACCEPTED" ? "#dcfce7" : b.status === "DECLINED" ? "#fee2e2" : "#fef3c7",
+          statusColor: b.status === "ACCEPTED" ? "#15803d" : b.status === "DECLINED" ? "#b91c1c" : "#b45309",
+          createdAt: b.createdAt || b.bookingDate,
+          isUnread: b.status === "PENDING",
+          canAction: b.status === "PENDING",
+          actionType: "BOOKING"
+        });
+      });
+    }
+
+    // 2. Unread Messages (from Messages tab)
+    (conversations || []).filter(c => (c.unreadCount || 0) > 0).forEach((c) => {
+      list.push({
+        id: `msg-${c.threadKey || c.conversationId}`,
+        category: "MESSAGES",
+        targetPath: "/messages",
+        tabName: "Messages",
+        icon: MessageSquare,
+        iconBg: "#e0f2fe",
+        iconColor: "#0284c7",
+        title: c.otherUserName || "New Message",
+        subtitle: c.lastMessage || `${c.unreadCount} unread message(s) in inbox`,
+        status: `${c.unreadCount} new`,
+        statusBg: "#e0f2fe",
+        statusColor: "#0369a1",
+        createdAt: c.lastMessageAt || c.updatedAt,
+        isUnread: true
+      });
+    });
+
+    // 3. Casting Applications / Auditions (from Auditions tab)
+    (myApplications || []).forEach((a) => {
+      list.push({
+        id: `app-${a.id}`,
+        category: "AUDITIONS",
+        targetPath: "/auditions",
+        tabName: "Auditions",
+        icon: Sparkles,
+        iconBg: "#f3e8ff",
+        iconColor: "#9333ea",
+        title: a.castingCallTitle || "Casting Call",
+        subtitle: `Application for "${a.characterRoleName || "Role"}" is ${a.status || "In Review"}`,
+        status: a.status || "APPLIED",
+        statusBg: (a.status === "SHORTLISTED" || a.status === "SELECTED" || a.status === "HIRED") ? "#dcfce7" : "#f3e8ff",
+        statusColor: (a.status === "SHORTLISTED" || a.status === "SELECTED" || a.status === "HIRED") ? "#15803d" : "#7e22ce",
+        createdAt: a.appliedAt || a.createdAt,
+        isUnread: a.status === "SHORTLISTED" || a.status === "SELECTED"
+      });
+    });
+
+    // 4. Profile Access Requests (from Profile tab)
+    (accessRequests || []).forEach((r) => {
+      list.push({
+        id: `access-${r.id}`,
+        rawId: r.id,
+        category: "ACCESS",
+        targetPath: "/profile",
+        tabName: "Profile",
+        icon: Lock,
+        iconBg: "#fef3c7",
+        iconColor: "#d97706",
+        title: r.requesterName || "Casting Agency",
+        subtitle: "Requested access to view private portfolio",
+        status: r.status || "PENDING",
+        statusBg: r.status === "APPROVED" ? "#dcfce7" : r.status === "REJECTED" ? "#fee2e2" : "#fef3c7",
+        statusColor: r.status === "APPROVED" ? "#15803d" : r.status === "REJECTED" ? "#b91c1c" : "#b45309",
+        createdAt: r.requestedAt || r.createdAt,
+        isUnread: r.status === "PENDING",
+        canAction: r.status === "PENDING",
+        actionType: "ACCESS"
+      });
+    });
+
+    return list.sort((a, b) => {
+      const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return db - da;
+    });
+  }, [isProfessional, sentBookings, incomingBookings, conversations, myApplications, accessRequests]);
+
+  const filteredNotifications = useMemo(() => {
+    if (notifFilter === "ALL") return allNotifications;
+    return allNotifications.filter(n => n.category === notifFilter);
+  }, [allNotifications, notifFilter]);
+
   // Unread badge count
-  const unreadCount = isProfessional
-    ? sentBookings.filter(b => b.status === "ACCEPTED" || b.status === "DECLINED").length
-    : (incomingBookings.filter(b => b.status === "PENDING").length + accessRequests.filter(r => r.status === "PENDING").length);
+  const unreadCount = allNotifications.filter(n => n.isUnread).length;
 
   const roles = ["Actor", "Model", "Performer", "Singer", "Dancer"];
 
   const notifRef = useRef(null);
   const profileRef = useRef(null);
+  const tabsScrollRef = useRef(null);
+
+  const scrollTabs = (direction) => {
+    if (tabsScrollRef.current) {
+      tabsScrollRef.current.scrollBy({
+        left: direction === "left" ? -120 : 120,
+        behavior: "smooth"
+      });
+    }
+  };
 
   // Close menus when clicking outside
   useEffect(() => {
@@ -328,390 +542,385 @@ export default function Header({
                 </PagesButton>
               </div>
 
-              {/* Notification Filter Bar Tabs */}
-              <div className="db-notif-tabs" style={{ display: "flex", gap: "6px", padding: "8px 12px", borderBottom: "1px solid #f1f5f9", background: "#f8fafc" }}>
-                {!isProfessional ? (
-                  <>
+              {/* Notification Filter Bar Tabs with Arrow Buttons and No Scrollbar */}
+              <div style={{ display: "flex", alignItems: "center", borderBottom: "1px solid #f1f5f9", background: "#f8fafc", padding: "4px 6px" }}>
+                <button
+                  type="button"
+                  onClick={() => scrollTabs("left")}
+                  style={{
+                    border: "none",
+                    background: "transparent",
+                    color: "#94a3b8",
+                    padding: "4px",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: "50%",
+                    flexShrink: 0
+                  }}
+                  title="Scroll categories left"
+                  aria-label="Scroll left"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+
+                <div
+                  ref={tabsScrollRef}
+                  className="db-notif-tabs"
+                  style={{
+                    display: "flex",
+                    gap: "6px",
+                    padding: "6px 2px",
+                    overflowX: "auto",
+                    scrollbarWidth: "none",
+                    msOverflowStyle: "none",
+                    flex: 1
+                  }}
+                >
+                  {[
+                    { id: "ALL", label: `All (${allNotifications.length})` },
+                    { id: "SHOOTS", label: `🎬 Shoots (${allNotifications.filter(n => n.category === "SHOOTS").length})` },
+                    { id: "MESSAGES", label: `💬 Messages (${allNotifications.filter(n => n.category === "MESSAGES").length})` },
+                    { id: "AUDITIONS", label: `✨ Auditions (${allNotifications.filter(n => n.category === "AUDITIONS").length})` },
+                    { id: "ACCESS", label: `🔒 Access (${allNotifications.filter(n => n.category === "ACCESS").length})` }
+                  ].map((tab) => (
                     <button
+                      key={tab.id}
                       type="button"
-                      onClick={() => setNotifFilter("ALL")}
+                      onClick={() => setNotifFilter(tab.id)}
                       style={{
                         padding: "4px 10px",
                         borderRadius: "20px",
                         fontSize: "11px",
-                        fontWeight: notifFilter === "ALL" ? 700 : 500,
-                        border: notifFilter === "ALL" ? "1px solid #ee008f" : "1px solid #e2e8f0",
-                        background: notifFilter === "ALL" ? "#ee008f" : "#ffffff",
-                        color: notifFilter === "ALL" ? "#ffffff" : "#64748b",
-                        cursor: "pointer"
+                        fontWeight: notifFilter === tab.id ? 700 : 500,
+                        border: notifFilter === tab.id ? "1px solid #ee008f" : "1px solid #e2e8f0",
+                        background: notifFilter === tab.id ? "#ee008f" : "#ffffff",
+                        color: notifFilter === tab.id ? "#ffffff" : "#64748b",
+                        cursor: "pointer",
+                        whiteSpace: "nowrap"
                       }}
                     >
-                      All ({incomingBookings.length + accessRequests.length})
+                      {tab.label}
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setNotifFilter("BOOKINGS")}
-                      style={{
-                        padding: "4px 10px",
-                        borderRadius: "20px",
-                        fontSize: "11px",
-                        fontWeight: notifFilter === "BOOKINGS" ? 700 : 500,
-                        border: notifFilter === "BOOKINGS" ? "1px solid #ee008f" : "1px solid #e2e8f0",
-                        background: notifFilter === "BOOKINGS" ? "#ee008f" : "#ffffff",
-                        color: notifFilter === "BOOKINGS" ? "#ffffff" : "#64748b",
-                        cursor: "pointer"
-                      }}
-                    >
-                      🎬 Shoots ({incomingBookings.length})
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setNotifFilter("ACCESS")}
-                      style={{
-                        padding: "4px 10px",
-                        borderRadius: "20px",
-                        fontSize: "11px",
-                        fontWeight: notifFilter === "ACCESS" ? 700 : 500,
-                        border: notifFilter === "ACCESS" ? "1px solid #ee008f" : "1px solid #e2e8f0",
-                        background: notifFilter === "ACCESS" ? "#ee008f" : "#ffffff",
-                        color: notifFilter === "ACCESS" ? "#ffffff" : "#64748b",
-                        cursor: "pointer"
-                      }}
-                    >
-                      🔒 Access ({accessRequests.length})
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => setNotifFilter("ALL")}
-                      style={{
-                        padding: "4px 10px",
-                        borderRadius: "20px",
-                        fontSize: "11px",
-                        fontWeight: notifFilter === "ALL" ? 700 : 500,
-                        border: notifFilter === "ALL" ? "1px solid #ee008f" : "1px solid #e2e8f0",
-                        background: notifFilter === "ALL" ? "#ee008f" : "#ffffff",
-                        color: notifFilter === "ALL" ? "#ffffff" : "#64748b",
-                        cursor: "pointer"
-                      }}
-                    >
-                      All ({sentBookings.length})
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setNotifFilter("PENDING")}
-                      style={{
-                        padding: "4px 10px",
-                        borderRadius: "20px",
-                        fontSize: "11px",
-                        fontWeight: notifFilter === "PENDING" ? 700 : 500,
-                        border: notifFilter === "PENDING" ? "1px solid #f59e0b" : "1px solid #e2e8f0",
-                        background: notifFilter === "PENDING" ? "#f59e0b" : "#ffffff",
-                        color: notifFilter === "PENDING" ? "#ffffff" : "#64748b",
-                        cursor: "pointer"
-                      }}
-                    >
-                      ⏳ Pending ({sentBookings.filter(b => b.status === "PENDING").length})
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setNotifFilter("ACCEPTED")}
-                      style={{
-                        padding: "4px 10px",
-                        borderRadius: "20px",
-                        fontSize: "11px",
-                        fontWeight: notifFilter === "ACCEPTED" ? 700 : 500,
-                        border: notifFilter === "ACCEPTED" ? "1px solid #10b981" : "1px solid #e2e8f0",
-                        background: notifFilter === "ACCEPTED" ? "#10b981" : "#ffffff",
-                        color: notifFilter === "ACCEPTED" ? "#ffffff" : "#64748b",
-                        cursor: "pointer"
-                      }}
-                    >
-                      ✅ Accepted ({sentBookings.filter(b => b.status === "ACCEPTED").length})
-                    </button>
-                  </>
-                )}
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => scrollTabs("right")}
+                  style={{
+                    border: "none",
+                    background: "transparent",
+                    color: "#94a3b8",
+                    padding: "4px",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: "50%",
+                    flexShrink: 0
+                  }}
+                  title="Scroll categories right"
+                  aria-label="Scroll right"
+                >
+                  <ChevronRight size={16} />
+                </button>
               </div>
 
-              <div className="db-notif-list-container" style={{ maxHeight: "440px", overflowY: "auto", overflowX: "hidden" }}>
-                {/* 1. TALENT VIEW: Incoming Director Booking Requests */}
-                {!isProfessional && (notifFilter === "ALL" || notifFilter === "BOOKINGS") && incomingBookings.map((b) => (
-                  <div
-                    key={`book-${b.id}`}
-                    className={`db-notif-req-card ${b.status === "PENDING" ? "pending" : (b.status === "ACCEPTED" ? "accepted" : "declined")}`}
-                  >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <Film size={14} style={{ color: "#ee008f" }} />
-                        <span style={{ fontSize: "12px", fontWeight: 700, color: "#0f172a" }}>
-                          🎬 Shoot Booking Request
-                        </span>
-                      </div>
-                      <span style={{ fontSize: "10px", color: "#94a3b8" }}>
-                        {b.createdAt ? new Date(b.createdAt).toLocaleDateString() : "Recent"}
-                      </span>
-                    </div>
-
-                    <div style={{ fontSize: "11.5px", color: "#334155", lineHeight: 1.4 }}>
-                      From <strong>{b.professionalName || "Casting Director"}</strong>
-                      {b.professionalCompany && ` (${b.professionalCompany})`}
-                    </div>
-
-                    <div style={{
-                      background: "rgba(0,0,0,0.03)",
-                      padding: "8px 10px",
-                      borderRadius: 8,
-                      fontSize: "11px",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 4,
-                      marginTop: 2
-                    }}>
-                      <div style={{ fontWeight: 700, color: "#1e293b", fontSize: "12px" }}>
-                        Project: {b.projectTitle} <span style={{ fontWeight: 500, color: "#64748b" }}>({b.projectType || "Shoot"})</span>
-                      </div>
-                      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10, color: "#475569" }}>
-                        <span>📅 Date: <strong>{b.bookingDate}</strong></span>
-                        {b.offeredRate && <span>💰 Rate: <strong>₹{b.offeredRate}</strong></span>}
-                        {b.location && <span>📍 Location: <strong>{b.location}</strong></span>}
-                      </div>
-                      {b.message && (
-                        <div style={{ fontStyle: "italic", color: "#64748b", marginTop: 2 }}>
-                          &ldquo;{b.message}&rdquo;
-                        </div>
-                      )}
-                      {(b.professionalEmail || b.professionalMobile) && (
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, fontSize: "10.5px", color: "#64748b", borderTop: "1px dashed #e2e8f0", paddingTop: 4, marginTop: 2 }}>
-                          {b.professionalEmail && <span>✉️ {b.professionalEmail}</span>}
-                          {b.professionalMobile && <span>📞 {b.professionalMobile}</span>}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Status / Action Buttons */}
-                    {b.status === "PENDING" ? (
-                      <div className="db-notif-actions">
-                        <button
-                          type="button"
-                          disabled={actionLoadingId === b.id}
-                          onClick={(e) => handleAcceptBooking(b.id, e)}
-                          className="db-notif-btn-accept"
-                        >
-                          {actionLoadingId === b.id ? <Loader2 size={12} className="animate-spin" /> : <Check size={13} />}
-                          Accept Request
-                        </button>
-                        <button
-                          type="button"
-                          disabled={actionLoadingId === b.id}
-                          onClick={(e) => handleRejectBooking(b.id, e)}
-                          className="db-notif-btn-reject"
-                        >
-                          <X size={13} /> Reject
-                        </button>
-                      </div>
-                    ) : b.status === "ACCEPTED" ? (
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 4 }}>
-                        <div style={{ fontSize: "11px", fontWeight: 700, color: "#15803d", display: "flex", alignItems: "center", gap: 4 }}>
-                          <CheckCircle2 size={14} /> Shoot accepted & scheduled!
-                        </div>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setShowNotifications(false);
-                              navigate("/messages", { state: { targetChatId: `book-${b.id}`, bookingId: b.id } });
-                            }}
-                            className="db-notif-btn-chat"
-                          >
-                          <MessageSquare size={12} /> Go to Chat
-                        </button>
-                      </div>
-                    ) : (
-                      <div style={{ fontSize: "11px", fontWeight: 700, color: "#b91c1c", display: "flex", alignItems: "center", gap: 4, marginTop: 4 }}>
-                        <XCircle size={13} /> You declined this shoot offer.
-                      </div>
-                    )}
-                  </div>
-                ))}
-
-                {/* 2. TALENT VIEW: Incoming Profile View Requests */}
-                {!isProfessional && (notifFilter === "ALL" || notifFilter === "ACCESS") && accessRequests.map((req) => (
-                  <div
-                    key={`req-${req.id}`}
-                    className={`db-notif-req-card ${req.status === "PENDING" ? "pending" : (req.status === "APPROVED" ? "accepted" : "declined")}`}
-                  >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <Lock size={13} style={{ color: "#d97706" }} />
-                        <span style={{ fontSize: "12px", fontWeight: 700, color: "#0f172a" }}>
-                          🔒 Private Portfolio Access
-                        </span>
-                      </div>
-                      <span style={{ fontSize: "10px", color: "#94a3b8" }}>
-                        {req.createdAt ? new Date(req.createdAt).toLocaleDateString() : "Recent"}
-                      </span>
-                    </div>
-
-                    <div style={{ fontSize: "11.5px", color: "#334155" }}>
-                      <strong>{req.requesterName}</strong> requested access to view your portfolio.
-                    </div>
-
-                    {req.status === "PENDING" ? (
-                      <div className="db-notif-actions">
-                        <button
-                          type="button"
-                          disabled={actionLoadingId === req.id}
-                          onClick={(e) => handleRespondAccess(req.id, true, e)}
-                          className="db-notif-btn-accept"
-                        >
-                          <Check size={13} /> Approve
-                        </button>
-                        <button
-                          type="button"
-                          disabled={actionLoadingId === req.id}
-                          onClick={(e) => handleRespondAccess(req.id, false, e)}
-                          className="db-notif-btn-reject"
-                        >
-                          <X size={13} /> Decline
-                        </button>
-                      </div>
-                    ) : req.status === "APPROVED" ? (
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 4 }}>
-                        <div style={{ fontSize: "11px", fontWeight: 700, color: "#15803d", display: "flex", alignItems: "center", gap: 4 }}>
-                          <CheckCircle2 size={13} /> Portfolio access granted
-                        </div>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setShowNotifications(false);
-                            navigate("/messages", { state: { targetChatId: `req-${req.id}`, requestId: req.id } });
+              {/* Clean, Essential Notifications List without scrollbar */}
+              <div
+                className="db-notif-list-container"
+                style={{
+                  maxHeight: "420px",
+                  overflowY: "auto",
+                  overflowX: "hidden",
+                  scrollbarWidth: "none",
+                  msOverflowStyle: "none"
+                }}
+              >
+                {filteredNotifications.length > 0 ? (
+                  filteredNotifications.map((item) => {
+                    const ItemIcon = item.icon || Bell;
+                    return (
+                      <div
+                        key={item.id}
+                        onClick={() => {
+                          setShowNotifications(false);
+                          navigate(item.targetPath);
+                        }}
+                        style={{
+                          display: "flex",
+                          alignItems: "flex-start",
+                          gap: "12px",
+                          padding: "12px 14px",
+                          borderBottom: "1px solid #f1f5f9",
+                          cursor: "pointer",
+                          background: item.isUnread ? "#faf5ff" : "#ffffff",
+                          transition: "background 0.15s ease",
+                          position: "relative"
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = "#f8fafc"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = item.isUnread ? "#faf5ff" : "#ffffff"; }}
+                      >
+                        {/* Icon Circle */}
+                        <div
+                          style={{
+                            width: "36px",
+                            height: "36px",
+                            borderRadius: "50%",
+                            background: item.iconBg || "#f1f5f9",
+                            color: item.iconColor || "#ee008f",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexShrink: 0,
+                            marginTop: "2px"
                           }}
-                          className="db-notif-btn-chat"
                         >
-                          <MessageSquare size={12} /> Go to Chat
-                        </button>
-                      </div>
-                    ) : (
-                      <div style={{ fontSize: "11px", fontWeight: 700, color: "#b91c1c", display: "flex", alignItems: "center", gap: 4, marginTop: 4 }}>
-                        <XCircle size={13} /> Request declined
-                      </div>
-                    )}
-                  </div>
-                ))}
-
-                {/* 3. DIRECTOR VIEW: Sent Booking Requests with Live Acceptance / Rejection */}
-                {isProfessional && sentBookings
-                  .filter((b) => notifFilter === "ALL" || b.status === notifFilter)
-                  .map((b) => (
-                    <div
-                      key={`sent-${b.id}`}
-                      className={`db-notif-req-card ${b.status === "ACCEPTED" ? "accepted" : (b.status === "DECLINED" ? "declined" : "pending")}`}
-                    >
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                          {b.status === "ACCEPTED" ? (
-                            <CheckCircle2 size={15} style={{ color: "#10b981" }} />
-                          ) : b.status === "DECLINED" ? (
-                            <XCircle size={15} style={{ color: "#ef4444" }} />
-                          ) : (
-                            <Clock size={14} style={{ color: "#f59e0b" }} />
-                          )}
-                          <span style={{ fontSize: "12px", fontWeight: 700, color: b.status === "ACCEPTED" ? "#15803d" : (b.status === "DECLINED" ? "#b91c1c" : "#0f172a") }}>
-                            {b.status === "ACCEPTED" ? "✅ Offer Accepted!" : (b.status === "DECLINED" ? "❌ Offer Declined" : "⏳ Request Pending")}
-                          </span>
+                          <ItemIcon size={17} />
                         </div>
-                        <span style={{ fontSize: "10px", color: "#94a3b8" }}>
-                          {b.createdAt ? new Date(b.createdAt).toLocaleDateString() : "Recent"}
-                        </span>
-                      </div>
 
-                      <div style={{ fontSize: "11.5px", color: "#334155", lineHeight: 1.4 }}>
-                        {b.status === "ACCEPTED" ? (
-                          <span>
-                            <strong>{b.talentName}</strong> has <strong>ACCEPTED</strong> your shoot booking for <strong>&ldquo;{b.projectTitle}&rdquo;</strong>!
-                          </span>
-                        ) : b.status === "DECLINED" ? (
-                          <span>
-                            <strong>{b.talentName}</strong> has <strong>declined</strong> your shoot offer for <strong>&ldquo;{b.projectTitle}&rdquo;</strong>.
-                          </span>
-                        ) : (
-                          <span>
-                            Shoot request sent to <strong>{b.talentName}</strong> for <strong>&ldquo;{b.projectTitle}&rdquo;</strong> is awaiting decision.
-                          </span>
-                        )}
-                      </div>
+                        {/* Essential Content */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", marginBottom: "3px" }}>
+                            <span
+                              style={{
+                                fontSize: "12.5px",
+                                fontWeight: item.isUnread ? 700 : 600,
+                                color: "#0f172a",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis"
+                              }}
+                            >
+                              {String(item.title || "")}
+                            </span>
+                            <span style={{ fontSize: "10.5px", color: "#94a3b8", whiteSpace: "nowrap", flexShrink: 0 }}>
+                              {formatNotifTime(item.createdAt)}
+                            </span>
+                          </div>
 
-                      <div style={{
-                        background: "rgba(0,0,0,0.03)",
-                        padding: "8px 10px",
-                        borderRadius: 8,
-                        fontSize: "11px",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 4,
-                        marginTop: 2
-                      }}>
-                        <div style={{ fontWeight: 700, color: "#1e293b", fontSize: "12px" }}>
-                          Project: {b.projectTitle} <span style={{ fontWeight: 500, color: "#64748b" }}>({b.projectType || "Shoot"})</span>
-                        </div>
-                        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10, color: "#475569" }}>
-                          <span>📅 Date: <strong>{b.bookingDate}</strong></span>
-                          {b.offeredRate && <span>💰 Rate: <strong>₹{b.offeredRate}</strong></span>}
-                          {b.location && <span>📍 Location: <strong>{b.location}</strong></span>}
-                        </div>
-                        {b.message && (
-                          <div style={{ fontStyle: "italic", color: "#64748b", marginTop: 2 }}>
-                            &ldquo;{b.message}&rdquo;
-                          </div>
-                        )}
-                        {b.talentEmail && (
-                          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "10.5px", color: "#64748b", borderTop: "1px dashed #e2e8f0", paddingTop: 4, marginTop: 2 }}>
-                            <span>✉️ Talent: {b.talentEmail}</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* If ACCEPTED -> Action button: Go to Chat */}
-                      {b.status === "ACCEPTED" && (
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 4 }}>
-                          <div style={{ fontSize: "11px", fontWeight: 700, color: "#15803d" }}>
-                            Ready to chat & coordinate details
-                          </div>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setShowNotifications(false);
-                              navigate("/messages", { state: { targetChatId: `book-${b.id}`, bookingId: b.id } });
+                          <div
+                            style={{
+                              fontSize: "11.5px",
+                              color: "#475569",
+                              lineHeight: "1.35",
+                              marginBottom: "6px",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              display: "-webkit-box",
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: "vertical"
                             }}
-                            className="db-notif-btn-chat"
                           >
-                            <MessageSquare size={12} /> Go to Chat
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                            {String(item.subtitle || "")}
+                          </div>
 
-                {/* Empty state if no notifications match filter */}
-                {((!isProfessional && 
-                    ((notifFilter === "ALL" && incomingBookings.length === 0 && accessRequests.length === 0) ||
-                     (notifFilter === "BOOKINGS" && incomingBookings.length === 0) ||
-                     (notifFilter === "ACCESS" && accessRequests.length === 0))) ||
-                  (isProfessional && 
-                    ((notifFilter === "ALL" && sentBookings.length === 0) ||
-                     (notifFilter !== "ALL" && sentBookings.filter(b => b.status === notifFilter).length === 0)))) && (
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "6px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                              <span
+                                style={{
+                                  fontSize: "10px",
+                                  fontWeight: 600,
+                                  padding: "2px 6px",
+                                  borderRadius: "4px",
+                                  background: "#f1f5f9",
+                                  color: "#64748b"
+                                }}
+                              >
+                                {String(item.tabName || "")}
+                              </span>
+                              <span
+                                style={{
+                                  fontSize: "10px",
+                                  fontWeight: 700,
+                                  padding: "2px 7px",
+                                  borderRadius: "10px",
+                                  background: item.statusBg,
+                                  color: item.statusColor,
+                                  textTransform: "capitalize"
+                                }}
+                              >
+                                {String(item.status || "").toLowerCase()}
+                              </span>
+                            </div>
+
+                            {/* Minimal Inline Action Buttons */}
+                            {item.canAction && (
+                              <div style={{ display: "flex", alignItems: "center", gap: "6px" }} onClick={(e) => e.stopPropagation()}>
+                                {item.actionType === "BOOKING" ? (
+                                  <>
+                                    <button
+                                      type="button"
+                                      disabled={actionLoadingId === item.rawId}
+                                      onClick={(e) => handleAcceptBooking(item.rawId, e)}
+                                      style={{
+                                        padding: "3px 8px",
+                                        fontSize: "11px",
+                                        fontWeight: 600,
+                                        background: "#10b981",
+                                        color: "#fff",
+                                        border: "none",
+                                        borderRadius: "4px",
+                                        cursor: "pointer",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "3px"
+                                      }}
+                                    >
+                                      {actionLoadingId === item.rawId ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />}
+                                      Accept
+                                    </button>
+                                    <button
+                                      type="button"
+                                      disabled={actionLoadingId === item.rawId}
+                                      onClick={(e) => handleRejectBooking(item.rawId, e)}
+                                      style={{
+                                        padding: "3px 8px",
+                                        fontSize: "11px",
+                                        fontWeight: 600,
+                                        background: "#ef4444",
+                                        color: "#fff",
+                                        border: "none",
+                                        borderRadius: "4px",
+                                        cursor: "pointer",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "3px"
+                                      }}
+                                    >
+                                      <X size={11} /> Decline
+                                    </button>
+                                  </>
+                                ) : item.actionType === "ACCESS" ? (
+                                  <>
+                                    <button
+                                      type="button"
+                                      disabled={actionLoadingId === item.rawId}
+                                      onClick={(e) => handleRespondAccess(item.rawId, true, e)}
+                                      style={{
+                                        padding: "3px 8px",
+                                        fontSize: "11px",
+                                        fontWeight: 600,
+                                        background: "#10b981",
+                                        color: "#fff",
+                                        border: "none",
+                                        borderRadius: "4px",
+                                        cursor: "pointer",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "3px"
+                                      }}
+                                    >
+                                      <Check size={11} /> Approve
+                                    </button>
+                                    <button
+                                      type="button"
+                                      disabled={actionLoadingId === item.rawId}
+                                      onClick={(e) => handleRespondAccess(item.rawId, false, e)}
+                                      style={{
+                                        padding: "3px 8px",
+                                        fontSize: "11px",
+                                        fontWeight: 600,
+                                        background: "#ef4444",
+                                        color: "#fff",
+                                        border: "none",
+                                        borderRadius: "4px",
+                                        cursor: "pointer",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "3px"
+                                      }}
+                                    >
+                                      <X size={11} /> Decline
+                                    </button>
+                                  </>
+                                ) : null}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Arrow Button in Notification Item */}
+                        <div
+                          className="db-notif-arrow-btn"
+                          style={{
+                            width: "28px",
+                            height: "28px",
+                            borderRadius: "50%",
+                            background: "#f1f5f9",
+                            color: "#64748b",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexShrink: 0,
+                            alignSelf: "center",
+                            transition: "all 0.15s ease",
+                            marginLeft: "4px"
+                          }}
+                          title={`Go to ${item.tabName}`}
+                        >
+                          <ChevronRight size={15} />
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
                   <div style={{ padding: "32px 16px", textAlign: "center", color: "#94a3b8" }}>
                     <Bell size={28} style={{ margin: "0 auto 8px auto", opacity: 0.5 }} />
                     <div style={{ fontSize: "13px", fontWeight: 600, color: "#64748b" }}>No notifications found</div>
                     <div style={{ fontSize: "11.5px", marginTop: 2 }}>
-                      {isProfessional ? "Requests sent to talents will appear here." : "Booking requests and offers will appear here."}
+                      Updates across shoots, auditions, messages, and access will appear here.
                     </div>
                   </div>
                 )}
+              </div>
+
+              {/* Notification Footer Bar with Arrow Link */}
+              <div
+                style={{
+                  padding: "10px 14px",
+                  background: "#f8fafc",
+                  borderTop: "1px solid #f1f5f9",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between"
+                }}
+              >
+                <span style={{ fontSize: "11px", color: "#64748b", fontWeight: 600 }}>
+                  {filteredNotifications.length} update{filteredNotifications.length !== 1 ? "s" : ""}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowNotifications(false);
+                    const target = notifFilter === "SHOOTS"
+                      ? "/bookings"
+                      : notifFilter === "MESSAGES"
+                      ? "/messages"
+                      : notifFilter === "AUDITIONS"
+                      ? "/auditions"
+                      : notifFilter === "ACCESS"
+                      ? "/profile"
+                      : "/bookings";
+                    navigate(target);
+                  }}
+                  style={{
+                    border: "none",
+                    background: "transparent",
+                    color: "#ee008f",
+                    fontWeight: 700,
+                    fontSize: "12px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    cursor: "pointer"
+                  }}
+                >
+                  <span>Open {notifFilter === "SHOOTS" ? "Bookings" : notifFilter === "MESSAGES" ? "Messages" : notifFilter === "AUDITIONS" ? "Auditions" : notifFilter === "ACCESS" ? "Profile" : "Bookings"}</span>
+                  <ArrowRight size={13} />
+                </button>
               </div>
             </div>
           )}
@@ -726,7 +935,9 @@ export default function Header({
               aria-label="Messages"
             >
               <MessageSquare size={22} />
-              <span className="db-notif-badge">5</span>
+              {unreadMessageCount > 0 && (
+                <span className="db-notif-badge">{unreadMessageCount}</span>
+              )}
             </Link>
           </div>
         )}

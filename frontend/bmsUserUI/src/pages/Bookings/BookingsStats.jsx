@@ -1,40 +1,40 @@
 import { Calendar, CheckCircle2, Clock, CheckSquare, XCircle } from "lucide-react";
 import PagesCard from "../common/PagesCard";
 
-export default function BookingsStats() {
-  const stats = [
+export default function BookingsStats({ stats }) {
+  const defaultStats = [
     {
       label: "Total Bookings",
-      value: "38",
+      value: stats?.total != null ? String(stats.total) : "0",
       sub: "All time",
       icon: Calendar,
       themeClass: "stat-theme-total",
     },
     {
       label: "Confirmed",
-      value: "12",
-      sub: "₹ 27,85,000",
+      value: stats?.confirmed != null ? String(stats.confirmed) : "0",
+      sub: stats?.confirmedAmount || "₹ 0",
       icon: CheckCircle2,
       themeClass: "stat-theme-confirmed",
     },
     {
       label: "Pending",
-      value: "4",
-      sub: "₹ 6,40,000",
+      value: stats?.pending != null ? String(stats.pending) : "0",
+      sub: stats?.pendingAmount || "₹ 0",
       icon: Clock,
       themeClass: "stat-theme-pending",
     },
     {
       label: "Completed",
-      value: "20",
-      sub: "₹ 38,20,000",
+      value: stats?.completed != null ? String(stats.completed) : "0",
+      sub: stats?.completedAmount || "₹ 0",
       icon: CheckSquare,
       themeClass: "stat-theme-completed",
     },
     {
       label: "Cancelled",
-      value: "2",
-      sub: "₹ 1,20,000",
+      value: stats?.cancelled != null ? String(stats.cancelled) : "0",
+      sub: stats?.cancelledAmount || "₹ 0",
       icon: XCircle,
       themeClass: "stat-theme-cancelled",
     },
@@ -42,7 +42,7 @@ export default function BookingsStats() {
 
   return (
     <div className="bookings-stats-grid">
-      {stats.map((stat, i) => {
+      {defaultStats.map((stat, i) => {
         const Icon = stat.icon;
         return (
           <PagesCard key={i} className={`booking-stat-card ${stat.themeClass}`}>

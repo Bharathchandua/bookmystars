@@ -61,6 +61,7 @@ public class TalentDirectoryService {
 
                 List<String> realPhotos = portfolioRepository.findByUser(user)
                         .stream()
+                        .filter(p -> p.getStatus() == null || "APPROVED".equalsIgnoreCase(p.getStatus()))
                         .map(Portfolio::getImageUrl)
                         .filter(url -> url != null && !url.isBlank())
                         .toList();

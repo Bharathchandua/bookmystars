@@ -12,12 +12,15 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -30,6 +33,7 @@ public class PartnerController {
     private final PartnerService partnerService;
     private final ClientPartnerProfileService clientPartnerProfileService;
     private final UserRepository userRepository;
+    private final com.example.bookmystars.service.AdminOperationsService adminOperationsService;
 
     // --- PUBLIC REGISTRATION ENDPOINT (BECOME A PARTNER PAGE) ---
     // Accessible via /api/partners/register or /api/auth/partners/register to guarantee 100% public access
@@ -55,6 +59,15 @@ public class PartnerController {
             @RequestBody PartnerProfileDto dto) {
         User user = getCurrentUser(authentication);
         return ResponseEntity.ok(clientPartnerProfileService.updatePartnerProfile(user, dto));
+    }
+
+    @PostMapping(value = "/partners/profile/logo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Upload and update partner academy logo")
+    public ResponseEntity<PartnerProfileDto> uploadPartnerLogo(
+            Authentication authentication,
+            @RequestParam("file") MultipartFile file) throws IOException {
+        User user = getCurrentUser(authentication);
+        return ResponseEntity.ok(clientPartnerProfileService.uploadPartnerLogo(user, file));
     }
 
     // --- SUPER ADMIN VERIFICATION & DESK ENDPOINTS ---
@@ -95,6 +108,32 @@ public class PartnerController {
         return ResponseEntity.ok(rejected);
     }
 
+    @GetMapping("/admin/partners/{id}/profile")
+    @PreAuthorize("@rbac.hasPermission(authentication, 'kyc', 'view')")
+    @Operation(summary = "Super Admin: Get detailed partner academy profile by user ID")
+    public ResponseEntity<PartnerProfileDto> getPartnerProfileByAdmin(@PathVariable Long id) {
+        return ResponseEntity.ok(clientPartnerProfileService.getPartnerProfileByUserId(id));
+    }
+
+    @PutMapping("/admin/partners/{id}/profile")
+    @PreAuthorize("@rbac.hasPermission(authentication, 'kyc', 'edit')")
+    @Operation(summary = "Super Admin: Update partner academy profile and social media visibility controls")
+    public ResponseEntity<PartnerProfileDto> updatePartnerProfileByAdmin(
+            @PathVariable Long id,
+            @RequestBody PartnerProfileDto dto) {
+        return ResponseEntity.ok(clientPartnerProfileService.updatePartnerProfileByAdmin(id, dto));
+    }
+
+    @DeleteMapping("/admin/partners/{id}")
+    @PreAuthorize("@rbac.hasPermission(authentication, 'kyc', 'delete') or @rbac.hasPermission(authentication, 'talents', 'delete')")
+    @Operation(summary = "Super Admin: Delete partner academy account and all associated data")
+    public ResponseEntity<Map<String, String>> deletePartner(
+            Authentication authentication,
+            @PathVariable Long id) {
+        adminOperationsService.deleteUserAccount(authentication, id);
+        return ResponseEntity.ok(Map.of("message", "Partner account successfully deleted."));
+    }
+
     private User getCurrentUser(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User must be authenticated");
@@ -103,3 +142,4 @@ public class PartnerController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
     }
 }
+

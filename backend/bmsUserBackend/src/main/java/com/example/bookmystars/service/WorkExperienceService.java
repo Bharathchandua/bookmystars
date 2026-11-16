@@ -28,6 +28,7 @@ public class WorkExperienceService {
     private final WorkExperienceRepository workExperienceRepository;
     private final UserRepository userRepository;
     private final com.example.bookmystars.repository.ProfileRepository profileRepository;
+    private final com.example.bookmystars.repository.ProfessionalProfileRepository professionalProfileRepository;
     private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     private Path getWorkUploadDirectory() {
@@ -69,7 +70,22 @@ public class WorkExperienceService {
             throw new RuntimeException("Project or role title is required");
         }
 
-        WorkExperience workExperience = WorkExperience.builder()
+        // Ensure a valid non-null professionalsProfileId is always present to satisfy PostgreSQL constraint
+        Long proProfileId = professionalProfileRepository.findByUser(user)
+                .map(com.example.bookmystars.model.ProfessionalProfile::getId)
+                .orElseGet(() -> {
+                    try {
+                        com.example.bookmystars.model.ProfessionalProfile pro = com.example.bookmystars.model.ProfessionalProfile.builder()
+                                .user(user)
+                                .companyName(user.getFullName() != null && !user.getFullName().trim().isEmpty() ? user.getFullName() : "Independent Artist")
+                                .build();
+                        return professionalProfileRepository.save(pro).getId();
+                    } catch (Exception e) {
+                        return user.getId();
+                    }
+                });
+
+ WorkExperience workExperience = WorkExperience.builder()
                 .user(user)
                 .company(request.getCompany())
                 .title(request.getTitle())
@@ -79,6 +95,7 @@ public class WorkExperienceService {
                 .endDate(parseDate(request.getEndDate()))
                 .fileUrl(request.getFileUrl())
                 .fileName(request.getFileName())
+ .professionalsProfileId(proProfileId)
                 .build();
 
         WorkExperience saved;

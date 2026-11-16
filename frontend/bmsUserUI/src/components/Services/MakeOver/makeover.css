@@ -200,6 +200,41 @@
   flex-wrap: wrap;
 }
 
+button.btn-mo-enquire,
+.btn-mo-enquire {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--mo-gradient);
+  color: #fff;
+  border: none;
+  border-radius: 12px !important;
+  padding: 16px 36px;
+  font-size: 16.5px;
+  font-weight: 800;
+  cursor: pointer;
+  letter-spacing: 0.3px;
+  box-shadow: 0 6px 20px rgba(219, 0, 149, 0.3);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  text-decoration: none;
+}
+
+button.btn-mo-enquire:hover,
+.btn-mo-enquire:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(219, 0, 149, 0.45);
+}
+
+button.btn-mo-enquire:active,
+.btn-mo-enquire:active {
+  transform: translateY(0);
+}
+
+.mo-hero-buttons .btn-mo-enquire svg {
+  width: 18px !important;
+  height: 18px !important;
+}
+
 button.btn-mo-find,
 .btn-mo-find {
   display: inline-flex;
@@ -2312,5 +2347,181 @@ button.btn-mo-works:hover,
     width: 36px;
     height: 36px;
   }
+}
+
+/* =============================================
+   MAKEOVER ENQUIRY MODAL OVERLAY & CARD
+   ============================================= */
+.mo-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(5, 7, 45, 0.55);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.mo-modal-card {
+  background-color: #ffffff;
+  border-radius: 24px;
+  width: calc(100% - 32px);
+  max-width: 640px;
+  padding: 36px;
+  box-shadow: 0 12px 36px rgba(5, 7, 45, 0.15);
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.mo-modal-card .modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--mo-border);
+  padding-bottom: 16px;
+}
+
+.mo-modal-card .modal-header h3 {
+  font-size: 22px;
+  font-weight: 850;
+  color: var(--mo-dark);
+  margin: 0;
+}
+
+.mo-modal-card .btn-close-modal {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--mo-grey);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.mo-modal-card .btn-close-modal:hover {
+  background-color: var(--mo-light);
+  color: var(--mo-pink);
+}
+
+.mo-modal-card .modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mo-modal-card .form-group-row {
+  display: flex;
+  gap: 16px;
+}
+
+.mo-modal-card .form-group-row .form-item {
+  flex: 1;
+}
+
+.mo-modal-card .form-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mo-modal-card .form-item label {
+  font-size: 13px;
+  font-weight: 750;
+  color: var(--mo-dark);
+}
+
+.mo-modal-card .form-item input,
+.mo-modal-card .form-item select,
+.mo-modal-card .form-item textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--mo-border);
+  background-color: #ffffff;
+  font-size: 13.5px;
+  color: var(--mo-dark);
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.mo-modal-card .form-item input:focus,
+.mo-modal-card .form-item select:focus,
+.mo-modal-card .form-item textarea:focus {
+  border-color: var(--mo-pink);
+}
+
+.mo-modal-card .form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.mo-modal-card .btn-cancel {
+  background: var(--mo-light);
+  border: 1px solid var(--mo-border);
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--mo-grey);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mo-modal-card .btn-cancel:hover {
+  background: #f1f0f5;
+  color: var(--mo-dark);
+}
+
+.mo-modal-card .btn-submit-form {
+  background: var(--mo-gradient);
+  border: none;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(236, 0, 140, 0.25);
+  transition: all 0.2s;
+}
+
+.mo-modal-card .btn-submit-form:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(236, 0, 140, 0.35);
+}
+
+.mo-modal-card .modal-success-screen {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.mo-modal-card .modal-success-screen .success-icon {
+  color: #10b981;
+  margin: 0 auto 16px auto;
+}
+
+.mo-modal-card .modal-success-screen h4 {
+  font-size: 22px;
+  font-weight: 850;
+  color: var(--mo-dark);
+  margin-bottom: 8px;
+}
+
+.mo-modal-card .modal-success-screen p {
+  font-size: 14px;
+  color: var(--mo-grey);
+  margin: 0;
 }
 

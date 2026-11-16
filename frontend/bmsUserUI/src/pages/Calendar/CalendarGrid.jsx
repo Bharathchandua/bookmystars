@@ -1,5 +1,4 @@
 import CalendarEvent from "./CalendarEvent.jsx";
-import { CALENDAR_EVENTS } from "./calendarData.js";
 
 const DAY_HEADERS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
@@ -45,7 +44,7 @@ function isSameDay(cellYear, cellMonth, cellDay, today) {
   );
 }
 
-export default function CalendarGrid({ currentDate, onDayClick, selectedCategory }) {
+export default function CalendarGrid({ currentDate, onDayClick, selectedCategory = "all", events = [] }) {
   const year  = currentDate.getFullYear();
   const month = currentDate.getMonth();
   const today = new Date();
@@ -53,7 +52,7 @@ export default function CalendarGrid({ currentDate, onDayClick, selectedCategory
 
   // Build a lookup: "YYYY-MM-DD" -> [events]
   const eventMap = {};
-  CALENDAR_EVENTS.forEach(evt => {
+  (events || []).forEach(evt => {
     if (selectedCategory !== "all" && evt.category !== selectedCategory) return;
     if (!eventMap[evt.date]) eventMap[evt.date] = [];
     eventMap[evt.date].push(evt);
@@ -85,8 +84,8 @@ export default function CalendarGrid({ currentDate, onDayClick, selectedCategory
           <div key={wi} className="cal-week-row">
             {week.map((cell, ci) => {
               const dateKey = getDateKey(cell.year, cell.month, cell.day);
-              const events  = eventMap[dateKey] || [];
-              const isToday = isSameDay(cell.year, cell.month, cell.day, today);
+              const dayEvents = eventMap[dateKey] || [];
+              const isToday   = isSameDay(cell.year, cell.month, cell.day, today);
 
               return (
                 <div
@@ -98,12 +97,12 @@ export default function CalendarGrid({ currentDate, onDayClick, selectedCategory
                     {cell.day}
                   </span>
                   <div className="cal-day-events">
-                    {events.slice(0, 3).map(evt => (
+                    {dayEvents.slice(0, 3).map(evt => (
                       <CalendarEvent key={evt.id} event={evt} />
                     ))}
-                    {events.length > 3 && (
+                    {dayEvents.length > 3 && (
                       <span className="cal-more-indicator">
-                        +{events.length - 3}<span className="cal-more-text"> more</span>
+                        +{dayEvents.length - 3}<span className="cal-more-text"> more</span>
                       </span>
                     )}
                   </div>

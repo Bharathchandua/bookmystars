@@ -15,9 +15,19 @@ export async function updateClientProfile(profileData) {
   return response.data;
 }
 
+export async function uploadClientLogo(file) {
+  const formData = new FormData();
+  formData.append("file", file);
+  const response = await apiClient.post("/clients/profile/logo", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return response.data;
+}
+
 export const clientProfileApi = {
   getClientProfile,
   updateClientProfile,
+  uploadClientLogo,
 };
 
 export default clientProfileApi;

@@ -36,7 +36,12 @@ public class DocumentService {
     private final AdminUserRepository adminUserRepository;
     private final UserDocumentRepository userDocumentRepository;
     private final com.example.bookmystars.security.AdminSecurityService adminSecurityService;
+    private Path uploadDirectory;
+
     private Path getUploadDirectory() {
+        if (uploadDirectory != null) {
+            return uploadDirectory;
+        }
         return com.example.bookmystars.util.UploadStorageUtil.getCategoryUploadDir("documents");
     }
 

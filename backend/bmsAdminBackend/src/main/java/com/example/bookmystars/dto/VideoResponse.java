@@ -2,6 +2,8 @@ package com.example.bookmystars.dto;
 
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -24,4 +26,14 @@ public class VideoResponse {
     private Integer year;
 
     private Long views;
+
+    private String status;
+
+    private String rejectionReason;
+
+    private String reviewedBy;
+
+    private LocalDateTime reviewedAt;
+
+    private LocalDateTime createdAt;
 }

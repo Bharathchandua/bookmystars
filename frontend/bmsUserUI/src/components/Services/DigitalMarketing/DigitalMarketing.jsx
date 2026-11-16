@@ -1,17 +1,12 @@
-import React from "react";
-import { Play, Trophy, ArrowRight, ShieldCheck, Users, LayoutGrid, TrendingUp } from "lucide-react";
+import React, { useState } from "react";
+import { ArrowRight, Mail, X, CheckCircle } from "lucide-react";
 import Navbar from "../../Navbar.jsx";
 import FooterAgency from "../../FooterAgency.jsx";
-import Button from '../../common/Button.jsx';
 import Card from '../../common/Card.jsx';
 
-// Import Hero Image and Posters
+// Import Hero Image and Graphics
 import digitalMarketingHero from "../../../assets/Digitalmarketing_Hero.png";
 import digitalChart from "../../../assets/Digital_chart.png";
-import echoesPoster from "../../../assets/broken_silence_poster.png";
-import fitfuelPoster from "../../../assets/legends_rise_poster.png";
-import urbanPoster from "../../../assets/dreams_live_poster.png";
-import diaryPoster from "../../../assets/the_journey_poster.png";
 import graphicsSymbol from "../../../assets/Graphics-symbol.png";
 
 import "./digitalmarketing.css";
@@ -388,128 +383,31 @@ export default function DigitalMarketing() {
     }
   ];
 
-  const platforms = [
-    { name: "Facebook", logo: <PlatformFbLogo size={22} /> },
-    { name: "Instagram", logo: <PlatformIgLogo size={22} /> },
-    { name: "YouTube", logo: <PlatformYtLogo size={22} /> },
-    { name: "Google Ads", logo: <GoogleAdsLogo size={22} /> },
-    { name: "LinkedIn", logo: <PlatformLiLogo size={22} /> },
-    { name: "X (Twitter)", logo: <PlatformXLogo size={22} /> },
-    { name: "TikTok", logo: <PlatformTtLogo size={22} /> },
-    { name: "Pinterest", logo: <PlatformPinLogo size={22} /> },
-    { name: "Snapchat", logo: <PlatformScLogo size={22} /> }
-  ];
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    service: "Social Media Marketing",
+    message: ""
+  });
 
-  const successStories = [
-    {
-      title: "ECHOES (The Short Film)",
-      category: "Film Promotion Campaign",
-      img: echoesPoster,
-      stats: [
-        { val: "8.6M+", lbl: "Reach" },
-        { val: "1.2M+", lbl: "Engagement" },
-        { val: "240K+", lbl: "Video Views" }
-      ]
-    },
-    {
-      title: "FITFUEL (Nutrition Brand)",
-      category: "Performance Ad Campaign",
-      img: fitfuelPoster,
-      stats: [
-        { val: "5.3X", lbl: "ROAS" },
-        { val: "120K+", lbl: "Leads" },
-        { val: "35%", lbl: "CPA Reduced" }
-      ]
-    },
-    {
-      title: "URBAN STYLE (Fashion Brand)",
-      category: "Influencer + Social Campaign",
-      img: urbanPoster,
-      stats: [
-        { val: "6.2M+", lbl: "Reach" },
-        { val: "980K+", lbl: "Engagement" },
-        { val: "3X", lbl: "Sales Growth" }
-      ]
-    },
-    {
-      title: "TRAVELLER'S DIARY (Travel Channel)",
-      category: "YouTube Growth Campaign",
-      img: diaryPoster,
-      stats: [
-        { val: "250K+", lbl: "Subscribers" },
-        { val: "12M+", lbl: "Views" },
-        { val: "4.8%", lbl: "Engagement" }
-      ]
-    }
-  ];
-
-  const [startIndex, setStartIndex] = React.useState(0);
-  const [mobileIndex, setMobileIndex] = React.useState(0);
-
-  const handlePrev = () => {
-    let visibleCards = 4;
-    if (typeof window !== "undefined") {
-      if (window.innerWidth <= 768) {
-        visibleCards = 3;
-      } else if (window.innerWidth <= 850) {
-        visibleCards = 2;
-      } else if (window.innerWidth <= 1024) {
-        visibleCards = 3;
-      }
-    }
-    setStartIndex((prev) => (prev > 0 ? prev - 1 : successStories.length - visibleCards));
+  const handleChange = (e) => {
+    setFormData((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value
+    }));
   };
 
-  const handleNext = () => {
-    let visibleCards = 4;
-    if (typeof window !== "undefined") {
-      if (window.innerWidth <= 768) {
-        visibleCards = 3;
-      } else if (window.innerWidth <= 850) {
-        visibleCards = 2;
-      } else if (window.innerWidth <= 1024) {
-        visibleCards = 3;
-      }
-    }
-    setStartIndex((prev) => (prev < successStories.length - visibleCards ? prev + 1 : 0));
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setIsSubmitted(true);
   };
 
-  const handleMobilePrev = () => {
-    setMobileIndex((prev) => (prev > 0 ? prev - 1 : successStories.length - 1));
-  };
-
-  const handleMobileNext = () => {
-    setMobileIndex((prev) => (prev < successStories.length - 1 ? prev + 1 : 0));
-  };
-
-  // Touch handlers for swipe gestures on mobile
-  const touchStartX = React.useRef(0);
-  const touchStartY = React.useRef(0);
-  const touchEndX = React.useRef(0);
-  const touchEndY = React.useRef(0);
-
-  const handleTouchStart = (e) => {
-    touchStartX.current = e.targetTouches[0].clientX;
-    touchStartY.current = e.targetTouches[0].clientY;
-    touchEndX.current = e.targetTouches[0].clientX;
-    touchEndY.current = e.targetTouches[0].clientY;
-  };
-
-  const handleTouchMove = (e) => {
-    touchEndX.current = e.targetTouches[0].clientX;
-    touchEndY.current = e.targetTouches[0].clientY;
-  };
-
-  const handleTouchEnd = () => {
-    const diffX = touchStartX.current - touchEndX.current;
-    const diffY = touchStartY.current - touchEndY.current;
-    if (Math.abs(diffX) > Math.abs(diffY)) {
-      const swipeThreshold = 50;
-      if (diffX > swipeThreshold) {
-        handleMobileNext();
-      } else if (diffX < -swipeThreshold) {
-        handleMobilePrev();
-      }
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget) {
+      setIsContactModalOpen(false);
     }
   };
 
@@ -542,17 +440,14 @@ export default function DigitalMarketing() {
 
               {/* Action Buttons */}
               <div className="dm-hero-buttons">
-                <a href="#connect" className="btn-dm-connect">
-                  <span>Start Your Campaign</span>
-                  <ArrowRight size={16} />
-                </a>
-                <a href="#stories" className="btn-dm-work">
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--dm-purple)" }}>
-                    <circle cx="12" cy="12" r="10" />
-                    <polygon points="10 8 16 12 10 16 10 8" fill="none" />
-                  </svg>
-                  <span>View Success Stories</span>
-                </a>
+                <button
+                  type="button"
+                  className="btn-dm-contact-gradient"
+                  onClick={() => setIsContactModalOpen(true)}
+                >
+                  <Mail size={18} />
+                  <span>Contact Us</span>
+                </button>
               </div>
 
               {/* Benefits strip inside Hero content columns */}
@@ -683,237 +578,7 @@ export default function DigitalMarketing() {
         </section>
 
         {/* =============================================
-           4. PLATFORMS & CHANNELS SECTION
-           ============================================= */}
-        <section className="dm-platforms-section">
-          <div className="dm-section-header" style={{ marginBottom: "24px" }}>
-            <h2 className="dm-section-title">Platforms & Channels We Specialize In</h2>
-          </div>
-
-          <div className="dm-platforms-grid">
-            {platforms.map((p, idx) => (
-              <div className="dm-platform-badge" key={idx}>
-                {p.logo}
-                <span>{p.name}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* =============================================
-           5. WHY CHOOSE SECTION
-           ============================================= */}
-        <section className="dm-choose-section">
-          <div className="dm-choose-container">
-            {/* Left Column Checklist */}
-            <div className="dm-choose-left">
-              <h2 className="dm-choose-title">Why Choose BookMyStars for Digital Marketing?</h2>
-              <div className="dm-choose-list">
-                <div className="dm-choose-list-item">
-                  <div className="dm-choose-check-wrap">
-                    <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="#ffffff" strokeWidth="4">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  </div>
-                  <span>Experienced digital marketers & strategists</span>
-                </div>
-                <div className="dm-choose-list-item">
-                  <div className="dm-choose-check-wrap">
-                    <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="#ffffff" strokeWidth="4">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  </div>
-                  <span>Customized strategies for your goals</span>
-                </div>
-                <div className="dm-choose-list-item">
-                  <div className="dm-choose-check-wrap">
-                    <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="#ffffff" strokeWidth="4">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  </div>
-                  <span>Advanced tools and data-driven insights</span>
-                </div>
-                <div className="dm-choose-list-item">
-                  <div className="dm-choose-check-wrap">
-                    <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="#ffffff" strokeWidth="4">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  </div>
-                  <span>Transparent communication & reporting</span>
-                </div>
-                <div className="dm-choose-list-item">
-                  <div className="dm-choose-check-wrap">
-                    <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="#ffffff" strokeWidth="4">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  </div>
-                  <span>Proven track record of delivering results</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column Stats */}
-            <div className="dm-choose-right">
-              <div className="dm-stat-column">
-                <div className="dm-stat-icon-wrap">
-                  <Trophy size={30} />
-                </div>
-                <span className="dm-stat-number">500+</span>
-                <span className="dm-stat-label">Campaigns<br />Executed</span>
-              </div>
-              <div className="dm-stat-column">
-                <div className="dm-stat-icon-wrap">
-                  <Users size={30} />
-                </div>
-                <span className="dm-stat-number">200+</span>
-                <span className="dm-stat-label">Happy<br />Clients</span>
-              </div>
-              <div className="dm-stat-column">
-                <div className="dm-stat-icon-wrap">
-                  <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="2" y1="12" x2="22" y2="12" />
-                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-                  </svg>
-                </div>
-                <span className="dm-stat-number">50M+</span>
-                <span className="dm-stat-label">People<br />Reached</span>
-              </div>
-              <div className="dm-stat-column">
-                <div className="dm-stat-icon-wrap">
-                  <LayoutGrid size={30} />
-                </div>
-                <span className="dm-stat-number">15+</span>
-                <span className="dm-stat-label">Platforms<br />Managed</span>
-              </div>
-              <div className="dm-stat-column">
-                <div className="dm-stat-icon-wrap">
-                  <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-                    <polyline points="17 6 23 6 23 12" />
-                  </svg>
-                </div>
-                <span className="dm-stat-number">3X</span>
-                <span className="dm-stat-label">Average ROI<br />Growth</span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* =============================================
-           6. SUCCESS STORIES SECTION (Grid / Slider)
-           ============================================= */}
-        <section className="dm-stories-section" id="stories">
-          <div className="dm-section-header">
-            <h2 className="dm-section-title" style={{ marginBottom: "12px" }}>Success Stories</h2>
-            <p className="dm-section-subtitle">Real results from real brands.</p>
-          </div>
-
-          {/* ── DESKTOP CAROUSEL ── */}
-          <div className="dm-carousel-container dm-carousel-desktop">
-            <Button className="dm-carousel-btn prev-btn" onClick={handlePrev}>
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
-            </Button>
-
-            <div className="dm-stories-grid-wrapper">
-              <div className="dm-stories-grid" style={{ "--dm-slide-index": String(startIndex) }}>
-                {successStories.map((story, idx) => (
-                  <Card className="dm-story-card" key={idx}>
-                    <div className="dm-story-img-wrap">
-                      <img src={story.img} alt={story.title} />
-                    </div>
-                    <div className="dm-story-body">
-                      <span className="dm-story-category">{story.category}</span>
-                      <h3 className="dm-story-title">{story.title}</h3>
-                      <div className="dm-story-stats">
-                        {story.stats.map((stat, sIdx) => (
-                          <div className="dm-story-stat-item" key={sIdx}>
-                            <span className="dm-story-stat-val">{stat.val}</span>
-                            <span className="dm-story-stat-lbl">{stat.lbl}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </div>
-
-            <Button className="dm-carousel-btn next-btn" onClick={handleNext}>
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
-            </Button>
-          </div>
-
-          {/* ── MOBILE CAROUSEL ── */}
-          <div className="dm-carousel-mobile-container">
-            <Button className="dm-mobile-side-btn prev-btn" onClick={handleMobilePrev}>
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
-            </Button>
-            
-            <div 
-              className="dm-mobile-card-wrap"
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
-            >
-              {(() => {
-                const story = successStories[mobileIndex];
-                return (
-                  <Card className="dm-story-card dm-mobile-card">
-                    <div className="dm-story-img-wrap">
-                      <img src={story.img} alt={story.title} />
-                    </div>
-                    <div className="dm-story-body">
-                      <span className="dm-story-category">{story.category}</span>
-                      <h3 className="dm-story-title">{story.title}</h3>
-                      <div className="dm-story-stats">
-                        {story.stats.map((stat, sIdx) => (
-                          <div className="dm-story-stat-item" key={sIdx}>
-                            <span className="dm-story-stat-val">{stat.val}</span>
-                            <span className="dm-story-stat-lbl">{stat.lbl}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </Card>
-                );
-              })()}
-            </div>
-
-            <Button className="dm-mobile-side-btn next-btn" onClick={handleMobileNext}>
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
-            </Button>
-
-            <div className="dm-mobile-dots">
-              {successStories.map((_, idx) => (
-                <Button
-                  key={idx}
-                  className={`dm-mobile-dot ${idx === mobileIndex ? 'active' : ''}`}
-                  onClick={() => setMobileIndex(idx)}
-                  aria-label={`Go to slide ${idx + 1}`}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="dm-more-btn-wrap">
-            <a href="#more" className="btn-dm-work" style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
-              <span>View More Success Stories</span>
-              <ArrowRight size={16} />
-            </a>
-          </div>
-        </section>
-
-        {/* =============================================
-           7. BOTTOM CTA SECTION
+           4. BOTTOM CTA SECTION
            ============================================= */}
         <section className="dm-cta-section" id="connect">
           <div className="dm-cta-container">
@@ -928,16 +593,142 @@ export default function DigitalMarketing() {
                 </div>
               </div>
               <div className="dm-cta-right">
-                <a href="#connect-now" className="btn-dm-cta-white">
+                <button
+                  type="button"
+                  className="btn-dm-cta-white"
+                  onClick={() => setIsContactModalOpen(true)}
+                >
                   <span>Start Your Campaign</span>
                   <ArrowRight size={16} />
-                </a>
+                </button>
               </div>
             </div>
           </div>
         </section>
 
       </main>
+
+      {/* Contact Inquiry Modal */}
+      {isContactModalOpen && (
+        <div className="dm-modal-overlay" onClick={handleBackdropClick}>
+          <div className="dm-modal-card">
+            <button
+              type="button"
+              className="dm-modal-close-btn"
+              onClick={() => setIsContactModalOpen(false)}
+              aria-label="Close modal"
+            >
+              <X size={20} />
+            </button>
+
+            {!isSubmitted ? (
+              <>
+                <div className="dm-modal-header">
+                  <span className="dm-modal-badge">Direct Inquiry</span>
+                  <h2 className="dm-modal-title">Get in Touch with Our Marketing Team</h2>
+                  <p className="dm-modal-subtitle">
+                    Share your requirements and we'll craft a customized digital strategy.
+                  </p>
+                </div>
+
+                <form className="dm-modal-form" onSubmit={handleSubmit}>
+                  <div className="dm-form-group">
+                    <label htmlFor="dm-name">Full Name *</label>
+                    <input
+                      id="dm-name"
+                      type="text"
+                      name="name"
+                      required
+                      placeholder="e.g. Rahul Sharma"
+                      value={formData.name}
+                      onChange={handleChange}
+                    />
+                  </div>
+
+                  <div className="dm-form-row">
+                    <div className="dm-form-group">
+                      <label htmlFor="dm-email">Email Address *</label>
+                      <input
+                        id="dm-email"
+                        type="email"
+                        name="email"
+                        required
+                        placeholder="you@company.com"
+                        value={formData.email}
+                        onChange={handleChange}
+                      />
+                    </div>
+                    <div className="dm-form-group">
+                      <label htmlFor="dm-phone">Phone Number *</label>
+                      <input
+                        id="dm-phone"
+                        type="tel"
+                        name="phone"
+                        required
+                        placeholder="+91 98765 43210"
+                        value={formData.phone}
+                        onChange={handleChange}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="dm-form-group">
+                    <label htmlFor="dm-service">Service Interested In *</label>
+                    <select
+                      id="dm-service"
+                      name="service"
+                      value={formData.service}
+                      onChange={handleChange}
+                    >
+                      <option value="Social Media Marketing">Social Media Marketing</option>
+                      <option value="Performance Advertising">Performance Advertising</option>
+                      <option value="Influencer Marketing">Influencer Marketing</option>
+                      <option value="Search Engine Optimization">Search Engine Optimization</option>
+                      <option value="Content Marketing">Content Marketing</option>
+                      <option value="Email Marketing">Email Marketing</option>
+                    </select>
+                  </div>
+
+                  <div className="dm-form-group">
+                    <label htmlFor="dm-message">Project Details</label>
+                    <textarea
+                      id="dm-message"
+                      name="message"
+                      rows={3}
+                      placeholder="Tell us about your brand, goals, target audience, budget, or timeline..."
+                      value={formData.message}
+                      onChange={handleChange}
+                    />
+                  </div>
+
+                  <button type="submit" className="dm-modal-submit-btn">
+                    <span>Submit Inquiry</span>
+                    <Mail size={16} />
+                  </button>
+                </form>
+              </>
+            ) : (
+              <div className="dm-modal-success">
+                <CheckCircle size={56} className="dm-success-icon" />
+                <h3>Inquiry Submitted!</h3>
+                <p>
+                  Thank you, <strong>{formData.name}</strong>. Our digital marketing team has received your inquiry and will contact you promptly.
+                </p>
+                <button
+                  type="button"
+                  className="dm-modal-close-action"
+                  onClick={() => {
+                    setIsContactModalOpen(false);
+                    setIsSubmitted(false);
+                  }}
+                >
+                  Done
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <FooterAgency />
     </div>

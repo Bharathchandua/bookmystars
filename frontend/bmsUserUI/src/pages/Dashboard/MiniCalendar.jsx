@@ -6,30 +6,7 @@ import { ChevronLeft, ChevronRight, X, CalendarRange, Clock, MapPin, Sparkles, C
 const weekdays = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
 export default function MiniCalendar({ isOpen, onClose, renderOnlyModal = false }) {
-  const [events, setEvents] = useState({
-    "2026-06-07": [
-      { id: 1, type: "audition", time: "11:00 AM", title: "Web Series Lead Audition", production: "DreamWorks", location: "Studio 4, Andheri" }
-    ],
-    "2026-06-17": [
-      { id: 2, type: "audition", time: "01:30 PM", title: "Commercial Casting Shoot", agency: "Bright Ads", location: "Famous Studios, Mahalaxmi" },
-      { id: 3, type: "booking", time: "05:00 PM", title: "Brand Promo Photoshoot", client: "Zara India", location: "Studio Vista, Bandra" }
-    ],
-    "2026-06-20": [
-      { id: 4, type: "audition", time: "02:00 PM", title: "Feature Film Supporting Audition", production: "Silver Screen", location: "Casting Bay, Juhu" }
-    ],
-    "2026-06-22": [
-      { id: 5, type: "booking", time: "10:00 AM", title: "TV Commercial Shoot - Day 1", client: "Pepsi India", location: "Film City, Goregaon" }
-    ],
-    "2026-06-23": [
-      { id: 6, type: "meeting", time: "04:00 PM", title: "Director's Briefing & Costume Fitting", production: "Dharma Productions", location: "Dharma Office, Khar" }
-    ],
-    "2026-06-25": [
-      { id: 7, type: "audition", time: "11:30 AM", title: "Netflix Film Character Audition", production: "Excel Ent.", location: "Casting Bay, Juhu" }
-    ],
-    "2026-06-26": [
-      { id: 8, type: "shoot", time: "09:00 AM", title: "Short Film Shoot", production: "Indie Films", location: "Versova Beach" }
-    ]
-  });
+  const [events, setEvents] = useState({});
 
   const [selectedDay, setSelectedDay] = useState(24);
   const [currentYear, setCurrentYear] = useState(2026);

@@ -58,7 +58,7 @@ export default function BookingDetailModal({ booking, onClose }) {
 
           {/* Schedule & Requirements */}
           <div className="booking-modal-section">
-            <h4 className="booking-modal-section-title">Shoot Schedule & Guidelines</h4>
+            <h4 className="booking-modal-section-title">Shoot Schedule & Details</h4>
             <div className="booking-modal-schedule-list">
               <div className="booking-modal-schedule-row">
                 <span className="booking-modal-schedule-dot" />
@@ -66,20 +66,20 @@ export default function BookingDetailModal({ booking, onClose }) {
               </div>
               <div className="booking-modal-schedule-row">
                 <span className="booking-modal-schedule-dot" />
-                <span><strong>Contract Finalized:</strong> Booked on {booking.bookedOn}</span>
+                <span><strong>Contract Date:</strong> Booked on {booking.bookedOn}</span>
               </div>
-              <div className="booking-modal-schedule-row">
-                <span className="booking-modal-schedule-dot" />
-                <span><strong>Travel & Stay:</strong> Local travel expenses and accommodation are covered by the production team.</span>
-              </div>
-              <div className="booking-modal-schedule-row">
-                <span className="booking-modal-schedule-dot" />
-                <span><strong>Wardrobe details:</strong> Coordinates will contact you for wardrobe trials and fittings 3 days prior.</span>
-              </div>
-              <div className="booking-modal-schedule-row">
-                <span className="booking-modal-schedule-dot" />
-                <span><strong>Payment Milestones:</strong> 40% advance processed, 60% on completion of the final shoot schedule.</span>
-              </div>
+              {booking.fullRequest?.message && (
+                <div className="booking-modal-schedule-row">
+                  <span className="booking-modal-schedule-dot" />
+                  <span><strong>Project Details:</strong> {booking.fullRequest.message}</span>
+                </div>
+              )}
+              {booking.location && (
+                <div className="booking-modal-schedule-row">
+                  <span className="booking-modal-schedule-dot" />
+                  <span><strong>Location:</strong> {booking.location}</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -87,11 +87,18 @@ export default function BookingDetailModal({ booking, onClose }) {
           <div className="booking-modal-section" style={{ marginBottom: "0" }}>
             <h4 className="booking-modal-section-title">Point of Contact</h4>
             <p className="booking-card-meta" style={{ fontSize: "12.5px" }}>
-              Coordinator: <strong>Ananya Sen (Casting Associate)</strong>
+              Coordinator: <strong>{booking.contactName || booking.company || "Production Coordinator"}</strong>
             </p>
-            <p className="booking-card-meta" style={{ fontSize: "12.5px", marginTop: "2px" }}>
-              Email: listings@productionhouse.com
-            </p>
+            {booking.contactEmail && (
+              <p className="booking-card-meta" style={{ fontSize: "12.5px", marginTop: "2px" }}>
+                Email: {booking.contactEmail}
+              </p>
+            )}
+            {booking.contactMobile && (
+              <p className="booking-card-meta" style={{ fontSize: "12.5px", marginTop: "2px" }}>
+                Phone: {booking.contactMobile}
+              </p>
+            )}
           </div>
         </div>
       </div>

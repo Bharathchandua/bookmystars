@@ -45,6 +45,18 @@ public class ChatMessage {
     @Column(name = "message_text", columnDefinition = "TEXT", nullable = false)
     private String messageText;
 
+    @Column(name = "media_url", length = 1000)
+    private String mediaUrl;
+
+    @Column(name = "media_type", length = 50)
+    private String mediaType; // "IMAGE", "VIDEO", "AUDIO", "DOCUMENT", "LINK"
+
+    @Column(name = "file_name")
+    private String fileName;
+
+    @Column(name = "file_size")
+    private Long fileSize;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 }

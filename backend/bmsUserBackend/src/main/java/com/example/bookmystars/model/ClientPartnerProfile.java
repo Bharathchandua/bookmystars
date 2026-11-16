@@ -52,6 +52,17 @@ public class ClientPartnerProfile {
 
     private String youtube;
 
+    private String facebook;
+
+    private String twitter;
+
+    private String whatsapp;
+
+    @Column(columnDefinition = "TEXT")
+    private String socialVisibility;
+
+    private String mapCoordinates;
+
     private String establishedYear;
 
     private String annualShoots;
@@ -72,6 +83,7 @@ public class ClientPartnerProfile {
     @Column(columnDefinition = "TEXT")
     private String trainingBatches;
 
+    @Column(columnDefinition = "TEXT")
     private String logoUrl;
 
     @Builder.Default

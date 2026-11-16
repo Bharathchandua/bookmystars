@@ -36,18 +36,23 @@ import {
   Lock,
   Pause,
   Play,
-  Video
+  Video,
+  Globe,
+  Trash2
 } from "lucide-react";
 import {
   getAdminClients,
   verifyAdminClient,
   rejectAdminClient,
+  deleteAdminClient,
   getPendingClientsCount
 } from "../../features/bms/api/clients/clientApi";
 import { opportunitiesApi } from "../../features/bms/api/opportunities/opportunitiesApi";
-import { showSuccess, showError } from "../../shared/utils/alert";
+import { showSuccess, showError, confirmDelete } from "../../shared/utils/alert";
 import RequirementFormBuilderDesk from "./components/RequirementFormBuilderDesk";
 import EntityContextSelectorBar from "./components/EntityContextSelectorBar";
+import AdminSocialControlModal from "./components/AdminSocialControlModal";
+import AdminShowcaseModerationView from "./components/AdminShowcaseModerationView";
 import { FilterPills, SearchBar, ConfirmDialog, Button, Badge, TextArea } from "../../shared/common";
 import { getClientCustomFields } from "../../shared/utils/customFieldsConfig";
 
@@ -93,6 +98,7 @@ export default function ClientVerificationDesk({ initialSuiteTab = "VERIFICATION
   const [actionLoadingId, setActionLoadingId] = useState(null);
   const [rejectModalClient, setRejectModalClient] = useState(null);
   const [rejectionReason, setRejectionReason] = useState("");
+  const [socialModalClient, setSocialModalClient] = useState(null);
 
   // Top-level suite tabs: VERIFICATIONS | FORM_BUILDER | CAMPAIGNS | FINANCIALS
   const [suiteTab, setSuiteTab] = useState(initialSuiteTab);
@@ -275,6 +281,26 @@ export default function ClientVerificationDesk({ initialSuiteTab = "VERIFICATION
     }
   };
 
+  const handleDeleteClient = async (client) => {
+    try {
+      const confirmed = await confirmDelete(
+        client.companyName || "this client brand",
+        `Are you sure you want to permanently delete "${client.companyName}"? All profile data, requirements, and settings will be permanently removed from database.`
+      );
+      if (confirmed) {
+        setActionLoadingId(client.id);
+        await deleteAdminClient(client.id);
+        showSuccess("Client Deleted", `"${client.companyName}" has been permanently removed from database.`);
+        window.dispatchEvent(new Event("bms_client_updated"));
+        await fetchClients();
+      }
+    } catch (err) {
+      showError("Delete Failed", err.message || "Failed to delete client brand.");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* 1. Header Banner */}
@@ -323,6 +349,7 @@ export default function ClientVerificationDesk({ initialSuiteTab = "VERIFICATION
       <div className="flex flex-wrap items-center gap-2 p-1.5 bg-white rounded-2xl border border-slate-200/80 shadow-xs">
         {[
           { id: "VERIFICATIONS", label: "Registration & KYC Approvals", icon: ShieldCheck, badge: stats.pending > 0 ? stats.pending : null, badgeColor: "bg-amber-100 text-amber-800" },
+          { id: "SHOWCASE", label: "Showcase Works Moderation", icon: Sparkles, badge: null, badgeColor: "bg-pink-100 text-pink-800" },
           { id: "FORM_BUILDER", label: "'Post a Requirement' Form Builder", icon: Sliders, badge: `${customFieldsCount} Fields`, badgeColor: "bg-pink-100 text-pink-800" },
           { id: "CAMPAIGNS", label: "Live Shoot Briefs Moderation", icon: Megaphone, badge: liveBriefs.length, badgeColor: "bg-purple-100 text-purple-800" },
           { id: "FINANCIALS", label: "Commercial Analytics & Escrow", icon: DollarSign, badge: "Active", badgeColor: "bg-emerald-100 text-emerald-800" }
@@ -355,6 +382,10 @@ export default function ClientVerificationDesk({ initialSuiteTab = "VERIFICATION
       </div>
 
       {/* 4. SUITE TAB CONTENT SWITCHER */}
+      {suiteTab === "SHOWCASE" && (
+        <AdminShowcaseModerationView entityType="CLIENT" />
+      )}
+
       {suiteTab === "FORM_BUILDER" && (
         <RequirementFormBuilderDesk
           moduleType="CLIENT"
@@ -512,9 +543,10 @@ export default function ClientVerificationDesk({ initialSuiteTab = "VERIFICATION
                           <button
                             type="button"
                             onClick={() => handleToggleBriefStatus(brief, "OPEN")}
-                            className="px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold transition cursor-pointer"
+                            className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs"
                           >
-                            Mark Open
+                            <CheckCircle2 size={13} />
+                            <span>Approve & Go Live</span>
                           </button>
                         )}
                         {brief.status !== "PAUSED" && (
@@ -892,6 +924,17 @@ export default function ClientVerificationDesk({ initialSuiteTab = "VERIFICATION
                   </div>
 
                   <div className="flex items-center gap-2">
+                    {/* Social Handles & Visibility Controls */}
+                    <button
+                      type="button"
+                      onClick={() => setSocialModalClient(client)}
+                      className="px-3 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                      title="Manage brand social handles and public visibility"
+                    >
+                      <Globe size={13} />
+                      <span>Socials & Visibility</span>
+                    </button>
+
                     {/* Approve button */}
                     {!isApproved && (
                       <button
@@ -925,6 +968,17 @@ export default function ClientVerificationDesk({ initialSuiteTab = "VERIFICATION
                         <ShieldCheck size={16} /> Verified Active Account
                       </span>
                     )}
+
+                    {/* Delete client button */}
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteClient(client)}
+                      disabled={actionLoadingId === client.id}
+                      className="p-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl transition cursor-pointer disabled:opacity-50"
+                      title="Permanently delete client account"
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   </div>
                 </div>
               </div>
@@ -957,6 +1011,19 @@ export default function ClientVerificationDesk({ initialSuiteTab = "VERIFICATION
             theme="purple"
           />
         </ConfirmDialog>
+      )}
+
+      {/* Admin Social Media & Visibility Control Modal */}
+      {socialModalClient && (
+        <AdminSocialControlModal
+          isOpen={Boolean(socialModalClient)}
+          onClose={() => setSocialModalClient(null)}
+          entityType="CLIENT"
+          entity={socialModalClient}
+          onUpdated={(updated) => {
+            setClients(prev => prev.map(c => c.id === socialModalClient.id ? { ...c, ...updated } : c));
+          }}
+        />
       )}
     </div>
   );

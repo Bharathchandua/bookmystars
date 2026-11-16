@@ -15,9 +15,19 @@ export async function updatePartnerProfile(profileData) {
   return response.data;
 }
 
+export async function uploadPartnerLogo(file) {
+  const formData = new FormData();
+  formData.append("file", file);
+  const response = await apiClient.post("/partners/profile/logo", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return response.data;
+}
+
 export const partnerProfileApi = {
   getPartnerProfile,
   updatePartnerProfile,
+  uploadPartnerLogo,
 };
 
 export default partnerProfileApi;

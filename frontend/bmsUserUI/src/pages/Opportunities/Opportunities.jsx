@@ -15,6 +15,7 @@ import ApplicationStatsWidget from "./ApplicationStatsWidget.jsx";
 import AlertsWidget from "./AlertsWidget.jsx";
 import BoostProfileCard from "./BoostProfileCard.jsx";
 import PostOpportunityModal from "./PostOpportunityModal.jsx";
+import PublicCompanyShowcaseModal from "../../components/PublicCompanyShowcaseModal.jsx";
 import { ChevronDown, SlidersHorizontal, Plus, List, LayoutGrid } from "lucide-react";
 import {
   getPublicCastingCalls,
@@ -28,12 +29,36 @@ import { getPublicLanguages } from "../../features/bms/api/languages/languagesAp
 import { showSuccess, showError } from "../../shared/utils/alert";
 import { onLiveSync } from "../../shared/utils/liveSync";
 
+// Helper to check if an opportunity is past its deadline or audition date
+export const isOpportunityExpired = (opp) => {
+  if (!opp) return false;
+  const statusUpper = String(opp.status || "").toUpperCase();
+  if (statusUpper === "CLOSED" || statusUpper === "EXPIRED" || statusUpper === "DEAD") {
+    return true;
+  }
+  const dateStr = opp.applicationDeadline || opp.auditionDate || opp.shootStartDate;
+  if (!dateStr || dateStr === "Open" || dateStr === "Confirmed Dates") {
+    return false;
+  }
+  if (Array.isArray(dateStr)) {
+    const [y, m, d] = dateStr;
+    const targetDate = new Date(y, (m || 1) - 1, d || 1, 23, 59, 59, 999);
+    return !isNaN(targetDate.getTime()) && targetDate.getTime() < Date.now();
+  }
+  const targetDate = new Date(dateStr);
+  if (isNaN(targetDate.getTime())) return false;
+  // End of the day (23:59:59)
+  targetDate.setHours(23, 59, 59, 999);
+  return targetDate.getTime() < Date.now();
+};
+
 export default function Opportunities() {
   const [activeTab, setActiveTab] = useState("All Opportunities");
   const [selectedOpp, setSelectedOpp] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [showPostModal, setShowPostModal] = useState(false);
   const [viewMode, setViewMode] = useState("list"); // "list" | "grid"
+  const [showFilterBar, setShowFilterBar] = useState(true);
 
   // User filters for discipline, language, location
   const [disciplineFilter, setDisciplineFilter] = useState("ALL");
@@ -47,6 +72,7 @@ export default function Opportunities() {
   const [myApplications, setMyApplications] = useState([]);
   const [directBookings, setDirectBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [dossierCompany, setDossierCompany] = useState(null);
 
   const storedUser = getStoredUser();
 
@@ -144,38 +170,89 @@ export default function Opportunities() {
       return formattedDirectOpps;
     }
 
-    // 2. My Posted Tab
+    // 2. Applied Tab (User's Submitted Audition Applications)
+    if (activeTab === "Applied") {
+      return (myApplications || []).filter(Boolean).map((app) => {
+        const matchedCasting = (dbPublicOpps || []).find(c => c && c.id === app?.castingCallId) || (myOpps || []).find(c => c && c.id === app?.castingCallId);
+        return {
+          id: `app-${app.id}`,
+          rawApplicationId: app.id,
+          isApplication: true,
+          title: app.castingCallTitle || matchedCasting?.title || "Audition Application",
+          type: matchedCasting?.projectType || matchedCasting?.type || "Audition Application",
+          projectType: matchedCasting?.projectType || "Audition Application",
+          postType: matchedCasting?.postType || "ACTING",
+          badgeClass: "badge-feature-film",
+          description: app.coverNote || matchedCasting?.description || "Audition application submitted.",
+          location: matchedCasting?.location || "Production Studio",
+          budget: app.proposedRate ? `₹ ${app.proposedRate}` : (matchedCasting?.budget ? (typeof matchedCasting.budget === "number" ? `₹ ${matchedCasting.budget.toLocaleString("en-IN")}` : matchedCasting.budget) : "Standard"),
+          auditionDate: matchedCasting?.auditionDate || matchedCasting?.applicationDeadline || "Applied",
+          applicationDeadline: matchedCasting?.applicationDeadline || "Open",
+          banner: matchedCasting?.posterUrl || matchedCasting?.banner || "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=800&auto=format&fit=crop&q=80",
+          posterUrl: matchedCasting?.posterUrl,
+          directorName: matchedCasting?.directorName || matchedCasting?.companyName || "Casting Director",
+          companyName: matchedCasting?.companyName,
+          applicationStatus: app.status || "APPLIED",
+          appliedAt: app.appliedAt,
+          createdAt: app.appliedAt,
+          status: app.status || "APPLIED",
+          isMyPost: false,
+          isExpired: false
+        };
+      });
+    }
+
+    const myUserId = storedUser?.userId || storedUser?.id;
+
+    // 3. My Posted Tab
     if (activeTab === "My Posted Opportunities") {
-      return myOpps.map((opp) => ({
+      return (myOpps || []).filter(Boolean).map((opp) => ({
         ...opp,
         isMyPost: true,
+        isExpired: isOpportunityExpired(opp),
         banner: opp.posterUrl || opp.banner,
         type: opp.projectType || opp.type || "Casting Call",
         auditionDate: opp.applicationDeadline || opp.shootStartDate || "Open",
       }));
     }
 
-    // 3. Combine DB public posts + user's own posts
-    const formattedMyPosts = myOpps.map((opp) => ({
+    // 4. Combine DB public posts + user's own posts
+    // Note: Other accounts' expired / dead opportunities are automatically filtered out for this account!
+    const formattedMyPosts = (myOpps || []).filter(Boolean).map((opp) => ({
       ...opp,
       isMyPost: true,
+      isExpired: isOpportunityExpired(opp),
       banner: opp.posterUrl || opp.banner,
       type: opp.projectType || opp.type || "Casting Call",
       auditionDate: opp.applicationDeadline || opp.shootStartDate || "Open",
     }));
 
-    const formattedPublicPosts = dbPublicOpps.map((opp) => ({
-      ...opp,
-      isMyPost: opp.postedByUserId === storedUser?.userId,
-      banner: opp.posterUrl || opp.banner,
-      type: opp.projectType || opp.type || "Casting Call",
-      auditionDate: opp.applicationDeadline || opp.shootStartDate || "Open",
-    }));
+    const formattedPublicPosts = (dbPublicOpps || [])
+      .filter(Boolean)
+      .filter((opp) => {
+        const isMine = (opp.postedByUserId === myUserId) || (opp.postedBy?.id === myUserId);
+        // Other account's expired opportunities are automatically filtered out
+        if (!isMine && isOpportunityExpired(opp)) {
+          return false;
+        }
+        return true;
+      })
+      .map((opp) => {
+        const isMine = (opp.postedByUserId === myUserId) || (opp.postedBy?.id === myUserId);
+        return {
+          ...opp,
+          isMyPost: isMine,
+          isExpired: isOpportunityExpired(opp),
+          banner: opp.posterUrl || opp.banner,
+          type: opp.projectType || opp.type || "Casting Call",
+          auditionDate: opp.applicationDeadline || opp.shootStartDate || "Open",
+        };
+      });
 
     // Filter out duplicates if my posts are already in public
     const allLiveItems = [...formattedMyPosts];
     formattedPublicPosts.forEach((p) => {
-      if (!allLiveItems.some((item) => item.id === p.id)) {
+      if (p && !allLiveItems.some((item) => item && item.id === p.id)) {
         allLiveItems.push(p);
       }
     });
@@ -185,23 +262,20 @@ export default function Opportunities() {
     let result = combined;
 
     // Filter by specific subtabs
-    if (activeTab === "Auditions") {
+    if (activeTab === "Projects") {
       result = combined.filter(
         (o) =>
-          (o.type || "").toLowerCase().includes("audition") ||
-          (o.projectType || "").toLowerCase().includes("film")
-      );
-    } else if (activeTab === "Casting Calls") {
-      result = combined.filter(
-        (o) =>
-          (o.type || "").toLowerCase().includes("web series") ||
+          (o.type || "").toLowerCase().includes("project") ||
+          (o.projectType || "").toLowerCase().includes("project") ||
+          (o.projectType || "").toLowerCase().includes("film") ||
           (o.projectType || "").toLowerCase().includes("series")
       );
     } else if (activeTab === "Brand Collaborations") {
       result = combined.filter(
         (o) =>
           (o.type || "").toLowerCase().includes("commercial") ||
-          (o.projectType || "").toLowerCase().includes("brand")
+          (o.projectType || "").toLowerCase().includes("brand") ||
+          (o.type || "").toLowerCase().includes("ad")
       );
     } else if (activeTab === "All Opportunities") {
       // For "All Opportunities": show pending direct targeted invitations prominently at the top!
@@ -232,6 +306,8 @@ export default function Opportunities() {
 
   const displayedList = getFilteredOpportunities();
 
+  const activeFilterCount = (disciplineFilter !== "ALL" ? 1 : 0) + (languageFilter !== "ALL" ? 1 : 0) + (locationFilter !== "ALL" ? 1 : 0);
+
   const headerExtras = (
     <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
       {/* '+ Post Opportunity' Button in header */}
@@ -259,10 +335,29 @@ export default function Opportunities() {
         <span>Post Opportunity</span>
       </button>
 
-      <PagesButton className="db-header-filter-btn">
+      {/* Dynamic Filters Toggle Button with Live Count */}
+      <PagesButton
+        className="db-header-filter-btn"
+        onClick={() => {
+          setShowFilterBar(prev => !prev);
+          const filterElem = document.getElementById("opp-filters-section");
+          if (filterElem) {
+            filterElem.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+        }}
+        style={{
+          background: showFilterBar ? "#fdf2f8" : "#ffffff",
+          borderColor: showFilterBar ? "#ee008f" : "#e2e8f0",
+          color: showFilterBar ? "#ee008f" : "#475569",
+          cursor: "pointer"
+        }}
+        title="Toggle opportunity filters"
+      >
         <SlidersHorizontal size={16} />
         <span>Filters</span>
-        <span className="db-header-filter-badge">2</span>
+        {activeFilterCount > 0 && (
+          <span className="db-header-filter-badge">{activeFilterCount}</span>
+        )}
       </PagesButton>
     </div>
   );
@@ -282,29 +377,34 @@ export default function Opportunities() {
               {/* ─── Hero ────────────────────────── */}
               <OpportunityHero />
 
-              {/* ─── Tabs (With dynamic My Posted count) ────────── */}
+              {/* ─── Tabs (With dynamic My Posted and Applied counts) ────────── */}
               <OpportunityTabs
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
                 myPostsCount={myOpps.length}
                 directCount={directBookings.length}
+                appliedCount={myApplications.length}
               />
 
               {/* ─── Filters (Discipline, Languages, Locations) ─────────────────────── */}
-              <OpportunityFilters
-                disciplineFilter={disciplineFilter}
-                onDisciplineChange={setDisciplineFilter}
-                languageFilter={languageFilter}
-                onLanguageChange={setLanguageFilter}
-                availableLanguages={availableLanguages}
-                locationFilter={locationFilter}
-                onLocationChange={setLocationFilter}
-                onClearFilters={() => {
-                  setDisciplineFilter("ALL");
-                  setLanguageFilter("ALL");
-                  setLocationFilter("ALL");
-                }}
-              />
+              {showFilterBar && (
+                <div id="opp-filters-section">
+                  <OpportunityFilters
+                    disciplineFilter={disciplineFilter}
+                    onDisciplineChange={setDisciplineFilter}
+                    languageFilter={languageFilter}
+                    onLanguageChange={setLanguageFilter}
+                    availableLanguages={availableLanguages}
+                    locationFilter={locationFilter}
+                    onLocationChange={setLocationFilter}
+                    onClearFilters={() => {
+                      setDisciplineFilter("ALL");
+                      setLanguageFilter("ALL");
+                      setLocationFilter("ALL");
+                    }}
+                  />
+                </div>
+              )}
 
               {/* Results bar */}
               <div className="opp-results-bar">
@@ -314,6 +414,8 @@ export default function Opportunities() {
                     ? "Created by You"
                     : activeTab === "Specifically For You"
                     ? "Directly For You"
+                    : activeTab === "Applied"
+                    ? "Applied by You"
                     : "Found in Database"}
                 </span>
 
@@ -380,6 +482,7 @@ export default function Opportunities() {
                 items={displayedList}
                 onOpenDetail={setSelectedOpp}
                 onUpdateBookingStatus={handleUpdateBookingStatus}
+                onOpenCompanyDossier={(userId, name) => setDossierCompany({ userId, companyName: name })}
                 viewMode={viewMode}
               />
 
@@ -397,7 +500,7 @@ export default function Opportunities() {
                 opportunities={dbPublicOpps}
                 onOpenDetail={setSelectedOpp}
               />
-              <ApplicationStatsWidget applications={myApplications} />
+              <ApplicationStatsWidget applications={myApplications} onSelectTab={setActiveTab} />
               <AlertsWidget
                 opportunities={dbPublicOpps}
                 applications={myApplications}
@@ -414,8 +517,17 @@ export default function Opportunities() {
           opp={selectedOpp}
           onClose={() => setSelectedOpp(null)}
           onUpdateBookingStatus={handleUpdateBookingStatus}
+          onOpenCompanyDossier={(userId, name) => setDossierCompany({ userId, companyName: name })}
         />
       )}
+
+      {/* ─── Public Company / Academy Dossier Modal (Approved Showcase Works & Briefs) ─── */}
+      <PublicCompanyShowcaseModal
+        isOpen={Boolean(dossierCompany)}
+        onClose={() => setDossierCompany(null)}
+        companyUserId={dossierCompany?.userId}
+        fallbackCompanyName={dossierCompany?.companyName || "Production Enterprise"}
+      />
 
       {/* ─── Post Opportunity Modal (With Video Upload) ────── */}
       {showPostModal && (

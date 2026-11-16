@@ -3,16 +3,24 @@ import { useState } from "react";
 
 const TABS = [
   "All Opportunities",
-  "Auditions",
-  "Casting Calls",
   "Projects",
   "Brand Collaborations",
-  "Creative Jobs",
 ];
 
-export default function OpportunityTabs({ activeTab, setActiveTab, myPostsCount = 0, directCount = 0 }) {
+export default function OpportunityTabs({ activeTab, setActiveTab, myPostsCount = 0, directCount = 0, appliedCount = 0 }) {
   return (
-    <div className="opp-tabs-row" style={{ display: "flex", alignItems: "center", gap: "8px", overflowX: "auto" }}>
+    <div
+      className="opp-tabs-row"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "10px",
+        overflowX: "auto",
+        borderBottom: "1.5px solid #f1f5f9",
+        paddingBottom: "8px",
+        marginBottom: "12px",
+      }}
+    >
       {TABS.map((tab) => (
         <PagesButton
           key={tab}
@@ -41,6 +49,26 @@ export default function OpportunityTabs({ activeTab, setActiveTab, myPostsCount 
         }}
       >
         <span>🎯 Specifically For You ({directCount})</span>
+      </PagesButton>
+
+      {/* Dedicated Tab for Applied Opportunities */}
+      <PagesButton
+        className={`opp-tab-btn ${activeTab === "Applied" ? "active" : ""}`}
+        onClick={() => setActiveTab("Applied")}
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "6px",
+          fontWeight: activeTab === "Applied" ? "800" : "700",
+          color: activeTab === "Applied" ? "#ee008f" : "#0284c7",
+          backgroundColor: activeTab === "Applied" ? "#fdf2f8" : "#f0f9ff",
+          borderColor: activeTab === "Applied" ? "#f472b6" : "#bae6fd",
+          borderRadius: "8px",
+          padding: "6px 14px",
+          whiteSpace: "nowrap"
+        }}
+      >
+        <span>📋 My Applied ({appliedCount})</span>
       </PagesButton>
 
       {/* Dedicated Tab for Logged-In User's Created Opportunities */}

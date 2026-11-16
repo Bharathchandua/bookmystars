@@ -1,16 +1,18 @@
 package com.example.bookmystars.service;
 
-import com.example.bookmystars.dto.BookingRequestResponse;
-import com.example.bookmystars.dto.ChatMessageDTO;
-import com.example.bookmystars.dto.ConversationSummaryDTO;
-import com.example.bookmystars.dto.ProfileAccessRequestDto;
+import com.example.bookmystars.dto.*;
 import com.example.bookmystars.model.*;
 import com.example.bookmystars.repository.*;
+import com.example.bookmystars.util.UploadStorageUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -21,6 +23,7 @@ import java.util.stream.Collectors;
 public class ChatService {
 
     private final ChatMessageRepository chatMessageRepository;
+    private final ChatConnectionRequestRepository chatConnectionRequestRepository;
     private final UserRepository userRepository;
     private final ProfileRepository profileRepository;
     private final BookingRequestRepository bookingRequestRepository;
@@ -46,10 +49,65 @@ public class ChatService {
                 bookingId = Long.parseLong(threadKey.substring(5));
             } catch (NumberFormatException ignored) {}
         }
-        return chatMessageRepository.findMessagesForThread(threadKey, bookingId)
-                .stream()
-                .map(this::toDTO)
-                .collect(Collectors.toList());
+
+        List<ChatMessage> messages = new ArrayList<>(chatMessageRepository.findMessagesForThread(threadKey, bookingId));
+
+        // If threadKey is chatreq-X, fetch all direct messages between the two users
+        if (threadKey.startsWith("chatreq-")) {
+            try {
+                Long reqId = Long.parseLong(threadKey.substring(8));
+                Optional<ChatConnectionRequest> reqOpt = chatConnectionRequestRepository.findById(reqId);
+                if (reqOpt.isPresent()) {
+                    ChatConnectionRequest req = reqOpt.get();
+                    if (req.getSender() != null && req.getRecipient() != null) {
+                        Long u1Id = req.getSender().getId();
+                        Long u2Id = req.getRecipient().getId();
+                        List<ChatMessage> directMsgs = chatMessageRepository.findDirectMessagesBetweenUsers(u1Id, u2Id);
+                        for (ChatMessage dm : directMsgs) {
+                            if (messages.stream().noneMatch(m -> m.getId().equals(dm.getId()))) {
+                                messages.add(dm);
+                            }
+                        }
+                    }
+                }
+            } catch (Exception ignored) {}
+        } else if (threadKey.startsWith("user-")) {
+            // Also check if any direct messages exist between these two users (including legacy chatreq keys)
+            String[] parts = threadKey.split("-");
+            if (parts.length == 3) {
+                try {
+                    Long u1Id = Long.parseLong(parts[1]);
+                    Long u2Id = Long.parseLong(parts[2]);
+                    List<ChatMessage> directMsgs = chatMessageRepository.findDirectMessagesBetweenUsers(u1Id, u2Id);
+                    for (ChatMessage dm : directMsgs) {
+                        if (messages.stream().noneMatch(m -> m.getId().equals(dm.getId()))) {
+                            messages.add(dm);
+                        }
+                    }
+                } catch (Exception ignored) {}
+            }
+        }
+
+        messages.sort(Comparator.comparing(ChatMessage::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())));
+
+        return messages.stream().map(this::toDTO).collect(Collectors.toList());
+    }
+
+    @Transactional
+    public Map<String, Object> deleteMessage(Long messageId, String userEmail) {
+        User currentUser = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userEmail));
+        Optional<ChatMessage> msgOpt = chatMessageRepository.findById(messageId);
+        if (msgOpt.isPresent()) {
+            ChatMessage msg = msgOpt.get();
+            if (msg.getSenderId().equals(currentUser.getId()) || (msg.getRecipientId() != null && msg.getRecipientId().equals(currentUser.getId()))) {
+                chatMessageRepository.delete(msg);
+            }
+        }
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("message", "Message deleted successfully");
+        return response;
     }
 
     @Transactional
@@ -59,6 +117,22 @@ public class ChatService {
 
     @Transactional
     public ChatMessageDTO sendMessageForThread(String conversationKey, Long bookingId, Long recipientId, Long opportunityId, String userEmail, String text) {
+        return sendMessageForThread(conversationKey, bookingId, recipientId, opportunityId, userEmail, text, null, null, null, null);
+    }
+
+    @Transactional
+    public ChatMessageDTO sendMessageForThread(
+            String conversationKey,
+            Long bookingId,
+            Long recipientId,
+            Long opportunityId,
+            String userEmail,
+            String text,
+            String mediaUrl,
+            String mediaType,
+            String fileName,
+            Long fileSize
+    ) {
         User sender = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found: " + userEmail));
 
@@ -85,6 +159,27 @@ public class ChatService {
             }
         }
 
+        // Auto-resolve from chatreq-XX
+        if (recipient == null && conversationKey != null && conversationKey.startsWith("chatreq-")) {
+            try {
+                Long reqId = Long.parseLong(conversationKey.substring(8));
+                Optional<ChatConnectionRequest> reqOpt = chatConnectionRequestRepository.findById(reqId);
+                if (reqOpt.isPresent()) {
+                    ChatConnectionRequest req = reqOpt.get();
+                    if (req.getSender().getId().equals(sender.getId())) {
+                        recipient = req.getRecipient();
+                    } else {
+                        recipient = req.getSender();
+                    }
+                    if (req.getStatus() == ChatRequestStatus.ACCEPTED) {
+                        long minId = Math.min(req.getSender().getId(), req.getRecipient().getId());
+                        long maxId = Math.max(req.getSender().getId(), req.getRecipient().getId());
+                        conversationKey = "user-" + minId + "-" + maxId;
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
+
         if (recipient == null && recipientId != null) {
             recipient = userRepository.findById(recipientId).orElse(null);
         }
@@ -100,6 +195,21 @@ public class ChatService {
             }
         }
 
+        // Verify not blocked
+        if (recipient != null) {
+            List<ChatConnectionRequest> reqs = chatConnectionRequestRepository.findBetweenUsers(sender, recipient);
+            for (ChatConnectionRequest r : reqs) {
+                if (r.getStatus() == ChatRequestStatus.BLOCKED) {
+                    throw new IllegalStateException("Messaging is blocked with this user.");
+                }
+            }
+        }
+
+        String finalText = (text != null && !text.trim().isEmpty()) ? text.trim() : "";
+        if (finalText.isEmpty() && mediaUrl != null && !mediaUrl.trim().isEmpty()) {
+            finalText = (fileName != null && !fileName.trim().isEmpty()) ? fileName.trim() : "Shared " + (mediaType != null ? mediaType.toLowerCase() : "media");
+        }
+
         ChatMessage msg = ChatMessage.builder()
                 .bookingId(bookingId)
                 .conversationKey(conversationKey)
@@ -109,13 +219,465 @@ public class ChatService {
                 .senderRole(sender.getAccountType() != null ? sender.getAccountType().name() : "USER")
                 .recipientId(recipient != null ? recipient.getId() : recipientId)
                 .recipientName(recipient != null ? recipient.getFullName() : null)
-                .messageText(text)
+                .messageText(finalText)
+                .mediaUrl(mediaUrl)
+                .mediaType(mediaType)
+                .fileName(fileName)
+                .fileSize(fileSize)
                 .createdAt(LocalDateTime.now())
                 .build();
 
         ChatMessage saved = chatMessageRepository.save(msg);
         return toDTO(saved);
     }
+
+    @Transactional
+    public ChatMessageDTO uploadChatMedia(
+            String conversationKey,
+            Long bookingId,
+            Long recipientId,
+            Long opportunityId,
+            String userEmail,
+            MultipartFile file,
+            String caption
+    ) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Cannot upload empty file");
+        }
+
+        try {
+            Path chatUploadDir = UploadStorageUtil.getCategoryUploadDir("chat");
+            String origName = file.getOriginalFilename();
+            String ext = "";
+            if (origName != null && origName.contains(".")) {
+                ext = origName.substring(origName.lastIndexOf(".")).toLowerCase();
+            }
+
+            String uniqueName = UUID.randomUUID().toString() + ext;
+            Path targetPath = chatUploadDir.resolve(uniqueName);
+            Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+
+            String mediaUrl = "/uploads/chat/" + uniqueName;
+
+            String contentType = file.getContentType();
+            String mediaType = "DOCUMENT";
+            if (contentType != null) {
+                if (contentType.startsWith("image/")) {
+                    mediaType = "IMAGE";
+                } else if (contentType.startsWith("video/")) {
+                    mediaType = "VIDEO";
+                } else if (contentType.startsWith("audio/")) {
+                    mediaType = "AUDIO";
+                }
+            } else {
+                if (ext.matches("\\.(jpg|jpeg|png|gif|webp|bmp)")) {
+                    mediaType = "IMAGE";
+                } else if (ext.matches("\\.(mp4|webm|mov|mkv|avi)")) {
+                    mediaType = "VIDEO";
+                } else if (ext.matches("\\.(mp3|wav|ogg|m4a|aac)")) {
+                    mediaType = "AUDIO";
+                }
+            }
+
+            return sendMessageForThread(
+                    conversationKey,
+                    bookingId,
+                    recipientId,
+                    opportunityId,
+                    userEmail,
+                    caption,
+                    mediaUrl,
+                    mediaType,
+                    origName,
+                    file.getSize()
+            );
+        } catch (Exception e) {
+            log.error("Failed to upload chat file: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to upload file: " + e.getMessage());
+        }
+    }
+
+    // =========================================================================
+    // CHAT CONNECTION REQUESTS
+    // =========================================================================
+
+    @Transactional
+    public ChatRequestDto sendChatRequest(String userEmail, Long recipientId, String message) {
+        User sender = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("Sender not found: " + userEmail));
+
+        if (recipientId == null) {
+            throw new IllegalArgumentException("Recipient ID must be provided");
+        }
+
+        if (sender.getId().equals(recipientId)) {
+            throw new IllegalArgumentException("You cannot send a chat request to yourself");
+        }
+
+        User recipient = userRepository.findById(recipientId)
+                .orElseThrow(() -> new RuntimeException("Recipient not found with id: " + recipientId));
+
+        // Check for existing request between these two users
+        List<ChatConnectionRequest> existingList = chatConnectionRequestRepository.findBetweenUsers(sender, recipient);
+        ChatConnectionRequest targetReq;
+
+        long minId = Math.min(sender.getId(), recipient.getId());
+        long maxId = Math.max(sender.getId(), recipient.getId());
+        String canonicalUserKey = "user-" + minId + "-" + maxId;
+
+        // If communication is blocked, neither party can send another request until unblocked
+        for (ChatConnectionRequest req : existingList) {
+            if (req.getStatus() == ChatRequestStatus.BLOCKED) {
+                boolean isBlocker = req.getSender().getId().equals(sender.getId());
+                if (isBlocker) {
+                    throw new IllegalStateException("You have blocked this user. Unblock them first before sending a request.");
+                } else {
+                    throw new IllegalStateException("Cannot send request: You cannot send requests to this user.");
+                }
+            }
+        }
+
+        if (!existingList.isEmpty()) {
+            targetReq = existingList.get(0);
+            if (targetReq.getStatus() == ChatRequestStatus.ACCEPTED) {
+                targetReq.setConversationKey(canonicalUserKey);
+                targetReq = chatConnectionRequestRepository.save(targetReq);
+                return toChatRequestDto(targetReq);
+            }
+            if (targetReq.getStatus() == ChatRequestStatus.PENDING) {
+                // If the other user already sent a pending request to me, auto-accept it!
+                if (targetReq.getSender().getId().equals(recipient.getId())) {
+                    targetReq.setStatus(ChatRequestStatus.ACCEPTED);
+                    targetReq.setConversationKey(canonicalUserKey);
+                    targetReq = chatConnectionRequestRepository.save(targetReq);
+                    return toChatRequestDto(targetReq);
+                }
+                // If I already sent it, update message and return
+                if (message != null && !message.trim().isEmpty()) {
+                    targetReq.setMessage(message.trim());
+                    targetReq.setConversationKey(canonicalUserKey);
+                    targetReq = chatConnectionRequestRepository.save(targetReq);
+                }
+                return toChatRequestDto(targetReq);
+            }
+            // If DECLINED or CANCELLED, check attempt limit (max 3 requests)
+            int currentAttempts = targetReq.getAttemptCount() != null ? targetReq.getAttemptCount() : 1;
+            if (currentAttempts >= 3) {
+                throw new IllegalStateException("Maximum limit of 3 connection requests to this user has been reached.");
+            }
+
+            targetReq.setSender(sender);
+            targetReq.setRecipient(recipient);
+            targetReq.setStatus(ChatRequestStatus.PENDING);
+            targetReq.setConversationKey(canonicalUserKey);
+            targetReq.setMessage(message != null ? message.trim() : "");
+            targetReq.setAttemptCount(currentAttempts + 1);
+            targetReq = chatConnectionRequestRepository.save(targetReq);
+        } else {
+            targetReq = ChatConnectionRequest.builder()
+                    .sender(sender)
+                    .recipient(recipient)
+                    .status(ChatRequestStatus.PENDING)
+                    .conversationKey(canonicalUserKey)
+                    .message(message != null ? message.trim() : "")
+                    .attemptCount(1)
+                    .build();
+            targetReq = chatConnectionRequestRepository.save(targetReq);
+        }
+
+        // Save introductory message in chat history
+        if (message != null && !message.trim().isEmpty()) {
+            ChatMessage introMsg = ChatMessage.builder()
+                    .conversationKey(canonicalUserKey)
+                    .senderId(sender.getId())
+                    .senderName(sender.getFullName())
+                    .senderRole(sender.getAccountType() != null ? sender.getAccountType().name() : "USER")
+                    .recipientId(recipient.getId())
+                    .recipientName(recipient.getFullName())
+                    .messageText(message.trim())
+                    .createdAt(LocalDateTime.now())
+                    .build();
+            chatMessageRepository.save(introMsg);
+        }
+
+        return toChatRequestDto(targetReq);
+    }
+
+    @Transactional
+    public ChatRequestDto respondToChatRequest(String userEmail, Long requestId, boolean accept) {
+        User currentUser = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userEmail));
+
+        ChatConnectionRequest req = chatConnectionRequestRepository.findById(requestId)
+                .orElseThrow(() -> new RuntimeException("Chat request not found: " + requestId));
+
+        if (!req.getRecipient().getId().equals(currentUser.getId())) {
+            throw new IllegalStateException("Only the recipient can respond to this chat request");
+        }
+
+        if (accept) {
+            req.setStatus(ChatRequestStatus.ACCEPTED);
+            long minId = Math.min(req.getSender().getId(), req.getRecipient().getId());
+            long maxId = Math.max(req.getSender().getId(), req.getRecipient().getId());
+            String unifiedKey = "user-" + minId + "-" + maxId;
+            req.setConversationKey(unifiedKey);
+
+            // Add confirmation message in chat
+            ChatMessage acceptMsg = ChatMessage.builder()
+                    .conversationKey(unifiedKey)
+                    .senderId(currentUser.getId())
+                    .senderName(currentUser.getFullName())
+                    .senderRole(currentUser.getAccountType() != null ? currentUser.getAccountType().name() : "USER")
+                    .recipientId(req.getSender().getId())
+                    .recipientName(req.getSender().getFullName())
+                    .messageText("🤝 Chat request accepted! You can now freely message each other.")
+                    .createdAt(LocalDateTime.now())
+                    .build();
+            chatMessageRepository.save(acceptMsg);
+        } else {
+            req.setStatus(ChatRequestStatus.DECLINED);
+        }
+
+        ChatConnectionRequest updated = chatConnectionRequestRepository.save(req);
+        return toChatRequestDto(updated);
+    }
+
+    @Transactional(readOnly = true)
+    public ChatRequestStatusResponse getChatRequestStatus(String userEmail, Long targetUserId) {
+        User currentUser = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userEmail));
+
+        if (targetUserId == null || currentUser.getId().equals(targetUserId)) {
+            return ChatRequestStatusResponse.builder()
+                    .status("SELF")
+                    .build();
+        }
+
+        User targetUser = userRepository.findById(targetUserId).orElse(null);
+        if (targetUser == null) {
+            return ChatRequestStatusResponse.builder()
+                    .status("NONE")
+                    .build();
+        }
+
+        List<ChatConnectionRequest> list = chatConnectionRequestRepository.findBetweenUsers(currentUser, targetUser);
+        if (list.isEmpty()) {
+            return ChatRequestStatusResponse.builder()
+                    .status("NONE")
+                    .build();
+        }
+
+        for (ChatConnectionRequest req : list) {
+            if (req.getStatus() == ChatRequestStatus.BLOCKED) {
+                boolean isBlocker = req.getSender().getId().equals(currentUser.getId());
+                return ChatRequestStatusResponse.builder()
+                        .status(isBlocker ? "BLOCKED_BY_ME" : "BLOCKED")
+                        .requestId(req.getId())
+                        .conversationKey(req.getConversationKey())
+                        .message(isBlocker ? "You have blocked this user" : "You cannot message this user")
+                        .build();
+            }
+        }
+
+        ChatConnectionRequest latest = list.get(0);
+
+        if (latest.getStatus() == ChatRequestStatus.CANCELLED) {
+            return ChatRequestStatusResponse.builder()
+                    .status("NONE")
+                    .attemptCount(latest.getAttemptCount() != null ? latest.getAttemptCount() : 1)
+                    .build();
+        }
+
+        if (latest.getStatus() == ChatRequestStatus.ACCEPTED) {
+            long minId = Math.min(currentUser.getId(), targetUser.getId());
+            long maxId = Math.max(currentUser.getId(), targetUser.getId());
+            return ChatRequestStatusResponse.builder()
+                    .status("ACCEPTED")
+                    .requestId(latest.getId())
+                    .conversationKey("user-" + minId + "-" + maxId)
+                    .message(latest.getMessage())
+                    .attemptCount(latest.getAttemptCount() != null ? latest.getAttemptCount() : 1)
+                    .build();
+        }
+
+        if (latest.getStatus() == ChatRequestStatus.PENDING) {
+            if (latest.getSender().getId().equals(currentUser.getId())) {
+                return ChatRequestStatusResponse.builder()
+                        .status("OUTGOING_PENDING")
+                        .requestId(latest.getId())
+                        .conversationKey("chatreq-" + latest.getId())
+                        .message(latest.getMessage())
+                        .attemptCount(latest.getAttemptCount() != null ? latest.getAttemptCount() : 1)
+                        .build();
+            } else {
+                return ChatRequestStatusResponse.builder()
+                        .status("INCOMING_PENDING")
+                        .requestId(latest.getId())
+                        .conversationKey("chatreq-" + latest.getId())
+                        .message(latest.getMessage())
+                        .attemptCount(latest.getAttemptCount() != null ? latest.getAttemptCount() : 1)
+                        .build();
+            }
+        }
+
+        return ChatRequestStatusResponse.builder()
+                .status(latest.getStatus().name())
+                .requestId(latest.getId())
+                .conversationKey(latest.getConversationKey())
+                .message(latest.getMessage())
+                .attemptCount(latest.getAttemptCount() != null ? latest.getAttemptCount() : 1)
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ChatRequestDto> getIncomingChatRequests(String userEmail) {
+        User currentUser = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userEmail));
+        return chatConnectionRequestRepository.findByRecipientAndStatusOrderByCreatedAtDesc(currentUser, ChatRequestStatus.PENDING)
+                .stream()
+                .map(this::toChatRequestDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ChatRequestDto> getOutgoingChatRequests(String userEmail) {
+        User currentUser = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userEmail));
+        return chatConnectionRequestRepository.findBySenderOrderByCreatedAtDesc(currentUser)
+                .stream()
+                .map(this::toChatRequestDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public Map<String, Object> cancelChatRequest(String userEmail, Long requestId) {
+        User currentUser = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userEmail));
+
+        ChatConnectionRequest req = chatConnectionRequestRepository.findById(requestId)
+                .orElseThrow(() -> new RuntimeException("Chat request not found: " + requestId));
+
+        if (!req.getSender().getId().equals(currentUser.getId()) && !req.getRecipient().getId().equals(currentUser.getId())) {
+            throw new IllegalStateException("You are not authorized to cancel this chat request");
+        }
+
+        req.setStatus(ChatRequestStatus.CANCELLED);
+        chatConnectionRequestRepository.save(req);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("message", "Chat request cancelled successfully");
+        return response;
+    }
+
+    @Transactional
+    public Map<String, Object> disconnectChat(String userEmail, Long targetUserId) {
+        User currentUser = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userEmail));
+
+        User targetUser = userRepository.findById(targetUserId)
+                .orElseThrow(() -> new RuntimeException("Target user not found: " + targetUserId));
+
+        List<ChatConnectionRequest> existing = chatConnectionRequestRepository.findBetweenUsers(currentUser, targetUser);
+        for (ChatConnectionRequest req : existing) {
+            req.setStatus(ChatRequestStatus.CANCELLED);
+        chatConnectionRequestRepository.save(req);
+        }
+
+        long minId = Math.min(currentUser.getId(), targetUser.getId());
+        long maxId = Math.max(currentUser.getId(), targetUser.getId());
+        String convKey = "user-" + minId + "-" + maxId;
+
+        // Add system message
+        ChatMessage sysMsg = ChatMessage.builder()
+                .conversationKey(convKey)
+                .senderId(currentUser.getId())
+                .senderName(currentUser.getFullName())
+                .senderRole(currentUser.getAccountType() != null ? currentUser.getAccountType().name() : "USER")
+                .recipientId(targetUser.getId())
+                .recipientName(targetUser.getFullName())
+                .messageText("⚠️ Chat connection was disconnected. A new request must be sent and approved to chat again.")
+                .createdAt(LocalDateTime.now())
+                .build();
+        chatMessageRepository.save(sysMsg);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("message", "Connection disconnected. To chat again, send a new request.");
+        return response;
+    }
+
+    @Transactional
+    public Map<String, Object> blockUser(String userEmail, Long targetUserId) {
+        User currentUser = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userEmail));
+
+        User targetUser = userRepository.findById(targetUserId)
+                .orElseThrow(() -> new RuntimeException("Target user not found: " + targetUserId));
+
+        List<ChatConnectionRequest> existing = chatConnectionRequestRepository.findBetweenUsers(currentUser, targetUser);
+        ChatConnectionRequest blockReq;
+        if (!existing.isEmpty()) {
+            blockReq = existing.get(0);
+            blockReq.setSender(currentUser);
+            blockReq.setRecipient(targetUser);
+            blockReq.setStatus(ChatRequestStatus.BLOCKED);
+        } else {
+            blockReq = ChatConnectionRequest.builder()
+                    .sender(currentUser)
+                    .recipient(targetUser)
+                    .status(ChatRequestStatus.BLOCKED)
+                    .build();
+        }
+        chatConnectionRequestRepository.save(blockReq);
+
+        long minId = Math.min(currentUser.getId(), targetUser.getId());
+        long maxId = Math.max(currentUser.getId(), targetUser.getId());
+        String convKey = "user-" + minId + "-" + maxId;
+
+        ChatMessage blockMsg = ChatMessage.builder()
+                .conversationKey(convKey)
+                .senderId(currentUser.getId())
+                .senderName(currentUser.getFullName())
+                .senderRole(currentUser.getAccountType() != null ? currentUser.getAccountType().name() : "USER")
+                .recipientId(targetUser.getId())
+                .recipientName(targetUser.getFullName())
+                .messageText("🚫 User was blocked.")
+                .createdAt(LocalDateTime.now())
+                .build();
+        chatMessageRepository.save(blockMsg);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("message", "User blocked successfully");
+        return response;
+    }
+
+    @Transactional
+    public Map<String, Object> unblockUser(String userEmail, Long targetUserId) {
+        User currentUser = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userEmail));
+
+        User targetUser = userRepository.findById(targetUserId)
+                .orElseThrow(() -> new RuntimeException("Target user not found: " + targetUserId));
+
+        List<ChatConnectionRequest> existing = chatConnectionRequestRepository.findBetweenUsers(currentUser, targetUser);
+        for (ChatConnectionRequest req : existing) {
+            if (req.getStatus() == ChatRequestStatus.BLOCKED && req.getSender().getId().equals(currentUser.getId())) {
+                req.setStatus(ChatRequestStatus.CANCELLED);
+        chatConnectionRequestRepository.save(req);
+            }
+        }
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("message", "User unblocked successfully");
+        return response;
+    }
+
+    // =========================================================================
+    // GET MY CONVERSATIONS
+    // =========================================================================
 
     @Transactional(readOnly = true)
     public List<ConversationSummaryDTO> getMyConversations(String userEmail) {
@@ -222,54 +784,186 @@ public class ChatService {
                     .build());
         }
 
-        // 3. Direct chats and opportunity chats
+        // 3. Chat Connection Requests (New Peer-to-Peer Craft Requests)
+        List<ChatConnectionRequest> chatReqs = chatConnectionRequestRepository.findAllByUser(currentUser);
+        for (ChatConnectionRequest cr : chatReqs) {
+            boolean isSender = cr.getSender().getId().equals(currentUser.getId());
+            User otherUser = isSender ? cr.getRecipient() : cr.getSender();
+            if (otherUser == null) continue;
+
+            long minId = Math.min(currentUser.getId(), otherUser.getId());
+            long maxId = Math.max(currentUser.getId(), otherUser.getId());
+            String key = "user-" + minId + "-" + maxId;
+
+            Optional<ChatMessage> latestMsg = chatMessageRepository.findFirstByConversationKeyOrderByCreatedAtDesc(key);
+            if (!latestMsg.isPresent()) {
+                String altKey = "chatreq-" + cr.getId();
+                latestMsg = chatMessageRepository.findFirstByConversationKeyOrderByCreatedAtDesc(altKey);
+            }
+
+            String lastText;
+            if (latestMsg.isPresent()) {
+                lastText = latestMsg.get().getMessageText();
+            } else if (cr.getStatus() == ChatRequestStatus.PENDING) {
+                lastText = isSender
+                        ? "⏳ Request Pending: Waiting for " + otherUser.getFullName() + " to accept"
+                        : "📩 New Chat Request: " + (cr.getMessage() != null && !cr.getMessage().isEmpty() ? cr.getMessage() : "Wants to connect with you");
+            } else if (cr.getStatus() == ChatRequestStatus.ACCEPTED) {
+                lastText = "🤝 Connection accepted! Say hi to " + otherUser.getFullName();
+            } else {
+                lastText = "❌ Connection request declined";
+            }
+
+            LocalDateTime lastTime = latestMsg.map(ChatMessage::getCreatedAt)
+                    .orElse(cr.getUpdatedAt() != null ? cr.getUpdatedAt() : cr.getCreatedAt());
+            String otherCraft = getUserCraft(otherUser);
+            String avatarUrl = getUserPhotoUrl(otherUser);
+
+            int unread = (!isSender && cr.getStatus() == ChatRequestStatus.PENDING) ? 1 : 0;
+
+            convMap.put(key, ConversationSummaryDTO.builder()
+                    .id(key)
+                    .conversationKey(key)
+                    .targetUserId(otherUser.getId())
+                    .name(otherUser.getFullName())
+                    .role(otherCraft)
+                    .company("Direct Connection")
+                    .avatar(avatarUrl)
+                    .email(otherUser.getEmail())
+                    .phone(otherUser.getMobileNumber())
+                    .lastMsg(lastText)
+                    .lastMsgTime(lastTime)
+                    .unreadCount(unread)
+                    .chatRequest(toChatRequestDto(cr))
+                    .build());
+        }
+
+        // 4. Direct chats and opportunity chats
         List<ChatMessage> userMessages = chatMessageRepository.findAllByUserId(currentUser.getId());
         for (ChatMessage m : userMessages) {
             if (m.getBookingId() != null) {
                 continue; // Already handled by booking request above
             }
-            String key = m.getConversationKey();
-            if (key == null || key.trim().isEmpty()) {
-                Long otherId = m.getSenderId().equals(currentUser.getId()) ? m.getRecipientId() : m.getSenderId();
-                if (otherId == null) continue;
-                key = "user-" + Math.min(currentUser.getId(), otherId) + "-" + Math.max(currentUser.getId(), otherId);
-            }
-
-            if (!convMap.containsKey(key)) {
-                Long otherUserId = m.getSenderId().equals(currentUser.getId()) ? m.getRecipientId() : m.getSenderId();
-                User otherUser = (otherUserId != null) ? userRepository.findById(otherUserId).orElse(null) : null;
-
-                String otherName = otherUser != null ? otherUser.getFullName() : (m.getSenderId().equals(currentUser.getId()) ? m.getRecipientName() : m.getSenderName());
-                String otherRole = otherUser != null && otherUser.getAccountType() != null ? otherUser.getAccountType().name() : "User";
-                String avatarUrl = getUserPhotoUrl(otherUser);
-
-                String company = "Direct Conversation";
-                if (m.getOpportunityId() != null) {
+            if (m.getOpportunityId() != null) {
+                String oppKey = m.getConversationKey();
+                if (oppKey == null || oppKey.trim().isEmpty()) {
+                    Long otherId = m.getSenderId().equals(currentUser.getId()) ? m.getRecipientId() : m.getSenderId();
+                    if (otherId == null) continue;
+                    oppKey = "opp-" + m.getOpportunityId() + "-" + otherId;
+                }
+                if (!convMap.containsKey(oppKey)) {
+                    Long otherUserId = m.getSenderId().equals(currentUser.getId()) ? m.getRecipientId() : m.getSenderId();
+                    User otherUser = (otherUserId != null) ? userRepository.findById(otherUserId).orElse(null) : null;
+                    String otherName = otherUser != null ? otherUser.getFullName() : (m.getSenderId().equals(currentUser.getId()) ? m.getRecipientName() : m.getSenderName());
+                    String otherRole = getUserCraft(otherUser);
+                    String avatarUrl = getUserPhotoUrl(otherUser);
+                    String company = "Inquiry";
                     Optional<CastingCall> oppOpt = castingCallRepository.findById(m.getOpportunityId());
                     if (oppOpt.isPresent()) {
                         company = "Inquiry: " + oppOpt.get().getTitle();
                     }
+                    convMap.put(oppKey, ConversationSummaryDTO.builder()
+                            .id(oppKey)
+                            .conversationKey(oppKey)
+                            .targetUserId(otherUserId)
+                            .name(otherName != null ? otherName : "User")
+                            .role(otherRole)
+                            .company(company)
+                            .avatar(avatarUrl)
+                            .email(otherUser != null ? otherUser.getEmail() : "")
+                            .phone(otherUser != null ? otherUser.getMobileNumber() : "")
+                            .lastMsg(m.getMessageText())
+                            .lastMsgTime(m.getCreatedAt())
+                            .opportunityId(m.getOpportunityId())
+                            .build());
                 }
+                continue;
+            }
 
-                convMap.put(key, ConversationSummaryDTO.builder()
-                        .id(key)
-                        .conversationKey(key)
+            // Direct user-to-user conversation (NO booking, NO opportunity)
+            Long otherUserId = m.getSenderId().equals(currentUser.getId()) ? m.getRecipientId() : m.getSenderId();
+            if (otherUserId == null && m.getConversationKey() != null && m.getConversationKey().startsWith("chatreq-")) {
+                try {
+                    Long rId = Long.parseLong(m.getConversationKey().substring(8));
+                    Optional<ChatConnectionRequest> crOpt = chatConnectionRequestRepository.findById(rId);
+                    if (crOpt.isPresent()) {
+                        ChatConnectionRequest cr = crOpt.get();
+                        otherUserId = cr.getSender().getId().equals(currentUser.getId()) ? cr.getRecipient().getId() : cr.getSender().getId();
+                    }
+                } catch (Exception ignored) {}
+            }
+            if (otherUserId == null || otherUserId.equals(currentUser.getId())) {
+                continue;
+            }
+
+            String canonicalKey = "user-" + Math.min(currentUser.getId(), otherUserId) + "-" + Math.max(currentUser.getId(), otherUserId);
+
+            ConversationSummaryDTO existing = convMap.get(canonicalKey);
+            if (existing != null) {
+                if (m.getCreatedAt() != null && (existing.getLastMsgTime() == null || m.getCreatedAt().isAfter(existing.getLastMsgTime()))) {
+                    existing.setLastMsg(m.getMessageText());
+                    existing.setLastMsgTime(m.getCreatedAt());
+                }
+            } else {
+                User otherUser = userRepository.findById(otherUserId).orElse(null);
+                String otherName = otherUser != null ? otherUser.getFullName() : (m.getSenderId().equals(currentUser.getId()) ? m.getRecipientName() : m.getSenderName());
+                String otherRole = getUserCraft(otherUser);
+                String avatarUrl = getUserPhotoUrl(otherUser);
+
+                convMap.put(canonicalKey, ConversationSummaryDTO.builder()
+                        .id(canonicalKey)
+                        .conversationKey(canonicalKey)
                         .targetUserId(otherUserId)
                         .name(otherName != null ? otherName : "User")
                         .role(otherRole)
-                        .company(company)
+                        .company("Direct Conversation")
                         .avatar(avatarUrl)
                         .email(otherUser != null ? otherUser.getEmail() : "")
                         .phone(otherUser != null ? otherUser.getMobileNumber() : "")
                         .lastMsg(m.getMessageText())
                         .lastMsgTime(m.getCreatedAt())
-                        .opportunityId(m.getOpportunityId())
                         .build());
             }
         }
 
+        // Guarantee: deduplicate direct conversations by target user ID so only 1 conversation entry exists per account
+        Map<Long, ConversationSummaryDTO> userDirectMap = new HashMap<>();
+        List<ConversationSummaryDTO> deduplicatedList = new ArrayList<>();
+
+        for (ConversationSummaryDTO conv : convMap.values()) {
+            if (conv.getBookingId() != null || conv.getOpportunityId() != null) {
+                deduplicatedList.add(conv);
+            } else if (conv.getTargetUserId() != null) {
+                if (!userDirectMap.containsKey(conv.getTargetUserId())) {
+                    userDirectMap.put(conv.getTargetUserId(), conv);
+                    deduplicatedList.add(conv);
+                } else {
+                    // Update existing entry with newer message or request info
+                    ConversationSummaryDTO existing = userDirectMap.get(conv.getTargetUserId());
+                    if (conv.getLastMsgTime() != null && (existing.getLastMsgTime() == null || conv.getLastMsgTime().isAfter(existing.getLastMsgTime()))) {
+                        existing.setLastMsg(conv.getLastMsg());
+                        existing.setLastMsgTime(conv.getLastMsgTime());
+                    }
+                    if (existing.getChatRequest() == null && conv.getChatRequest() != null) {
+                        existing.setChatRequest(conv.getChatRequest());
+                    }
+                }
+            } else {
+                deduplicatedList.add(conv);
+            }
+        }
+
+        // Populate isOnline status for deduplicated conversations
+        for (ConversationSummaryDTO conv : deduplicatedList) {
+            if (conv.getTargetUserId() != null) {
+                conv.setIsOnline(isUserOnline(conv.getTargetUserId()));
+            } else {
+                conv.setIsOnline(false);
+            }
+        }
+
         // Sort conversations by latest message / update time descending
-        return convMap.values().stream()
+        return deduplicatedList.stream()
                 .sorted((a, b) -> {
                     LocalDateTime t1 = a.getLastMsgTime() != null ? a.getLastMsgTime() : LocalDateTime.MIN;
                     LocalDateTime t2 = b.getLastMsgTime() != null ? b.getLastMsgTime() : LocalDateTime.MIN;
@@ -278,11 +972,56 @@ public class ChatService {
                 .collect(Collectors.toList());
     }
 
+    private String getUserCraft(User user) {
+        if (user == null) return "User";
+        return profileRepository.findByUser(user)
+                .map(p -> {
+                    if (p.getPrimaryProfession() != null && !p.getPrimaryProfession().trim().isEmpty()) {
+                        return p.getPrimaryProfession();
+                    }
+                    if (p.getCustomProfession() != null && !p.getCustomProfession().trim().isEmpty()) {
+                        return p.getCustomProfession();
+                    }
+                    if (p.getTalentCategory() != null && !p.getTalentCategory().trim().isEmpty()) {
+                        return p.getTalentCategory();
+                    }
+                    return user.getAccountType() != null ? user.getAccountType().name() : "Talent";
+                })
+                .orElse(user.getAccountType() != null ? user.getAccountType().name() : "Talent");
+    }
+
     private String getUserPhotoUrl(User user) {
         if (user == null) return null;
         return profileRepository.findByUser(user)
                 .map(Profile::getProfilePhoto)
                 .orElse(null);
+    }
+
+    public ChatRequestDto toChatRequestDto(ChatConnectionRequest req) {
+        if (req == null) return null;
+        User s = req.getSender();
+        User r = req.getRecipient();
+
+        return ChatRequestDto.builder()
+                .id(req.getId())
+                .senderId(s != null ? s.getId() : null)
+                .senderName(s != null ? s.getFullName() : "User")
+                .senderRole(s != null && s.getAccountType() != null ? s.getAccountType().name() : "USER")
+                .senderCraft(getUserCraft(s))
+                .senderAvatar(getUserPhotoUrl(s))
+                .senderEmail(s != null ? s.getEmail() : "")
+                .recipientId(r != null ? r.getId() : null)
+                .recipientName(r != null ? r.getFullName() : "User")
+                .recipientRole(r != null && r.getAccountType() != null ? r.getAccountType().name() : "USER")
+                .recipientAvatar(getUserPhotoUrl(r))
+                .recipientEmail(r != null ? r.getEmail() : "")
+                .status(req.getStatus())
+                .message(req.getMessage())
+                .conversationKey(req.getConversationKey())
+                .attemptCount(req.getAttemptCount() != null ? req.getAttemptCount() : 1)
+                .createdAt(req.getCreatedAt())
+                .updatedAt(req.getUpdatedAt())
+                .build();
     }
 
     private ChatMessageDTO toDTO(ChatMessage m) {
@@ -297,25 +1036,26 @@ public class ChatService {
                 .opportunityId(m.getOpportunityId())
                 .conversationKey(m.getConversationKey())
                 .messageText(m.getMessageText())
+                .mediaUrl(m.getMediaUrl())
+                .mediaType(m.getMediaType())
+                .fileName(m.getFileName())
+                .fileSize(m.getFileSize())
                 .createdAt(m.getCreatedAt())
                 .build();
     }
 
     private BookingRequestResponse toBookingResponse(BookingRequest b) {
+        if (b == null) return null;
         return BookingRequestResponse.builder()
                 .id(b.getId())
-                .professionalId(b.getProfessional().getId())
-                .professionalName(b.getProfessional().getFullName())
-                .professionalEmail(b.getProfessional().getEmail())
-                .professionalMobile(b.getProfessional().getMobileNumber())
-                .professionalPhotoUrl(getUserPhotoUrl(b.getProfessional()))
-                .talentId(b.getTalent().getId())
-                .talentName(b.getTalent().getFullName())
-                .talentEmail(b.getTalent().getEmail())
-                .talentPhotoUrl(getUserPhotoUrl(b.getTalent()))
-                .bookingDate(b.getBookingDate())
+                .professionalId(b.getProfessional() != null ? b.getProfessional().getId() : null)
+                .professionalName(b.getProfessional() != null ? b.getProfessional().getFullName() : null)
+                .professionalCompany(b.getProfessional() != null ? b.getProfessional().getStageName() : null)
+                .talentId(b.getTalent() != null ? b.getTalent().getId() : null)
+                .talentName(b.getTalent() != null ? b.getTalent().getFullName() : null)
                 .projectTitle(b.getProjectTitle())
                 .projectType(b.getProjectType())
+                .bookingDate(b.getBookingDate())
                 .location(b.getLocation())
                 .offeredRate(b.getOfferedRate())
                 .message(b.getMessage())
@@ -325,6 +1065,7 @@ public class ChatService {
     }
 
     private ProfileAccessRequestDto toAccessRequestDto(ProfileAccessRequest req) {
+        if (req == null) return null;
         return ProfileAccessRequestDto.builder()
                 .id(req.getId())
                 .talentId(req.getTalent() != null ? req.getTalent().getId() : null)
@@ -337,5 +1078,94 @@ public class ChatService {
                 .status(req.getStatus())
                 .createdAt(req.getCreatedAt())
                 .build();
+    }
+
+    // =========================================================================
+    // REAL-TIME PRESENCE & TYPING METHODS
+    // =========================================================================
+
+    private final Map<Long, Long> onlineHeartbeats = new java.util.concurrent.ConcurrentHashMap<>();
+    private final Map<String, Map<Long, Long>> threadTypingStatus = new java.util.concurrent.ConcurrentHashMap<>();
+
+    private static final long ONLINE_TIMEOUT_MS = 25_000L;
+    private static final long TYPING_TIMEOUT_MS = 4_500L;
+
+    public void recordHeartbeat(String userEmail) {
+        User user = userRepository.findByEmail(userEmail).orElse(null);
+        if (user != null) {
+            onlineHeartbeats.put(user.getId(), System.currentTimeMillis());
+        }
+    }
+
+    public void recordOffline(String userEmail) {
+        User user = userRepository.findByEmail(userEmail).orElse(null);
+        if (user != null) {
+            onlineHeartbeats.remove(user.getId());
+        }
+    }
+
+    public boolean isUserOnline(Long userId) {
+        if (userId == null) return false;
+        Long lastSeen = onlineHeartbeats.get(userId);
+        if (lastSeen == null) return false;
+        return (System.currentTimeMillis() - lastSeen) < ONLINE_TIMEOUT_MS;
+    }
+
+    public Map<Long, Boolean> getBatchUserOnlineStatus(List<Long> userIds) {
+        Map<Long, Boolean> result = new HashMap<>();
+        long now = System.currentTimeMillis();
+        if (userIds != null) {
+            for (Long uid : userIds) {
+                if (uid != null) {
+                    Long lastSeen = onlineHeartbeats.get(uid);
+                    boolean online = lastSeen != null && (now - lastSeen) < ONLINE_TIMEOUT_MS;
+                    result.put(uid, online);
+                }
+            }
+        }
+        return result;
+    }
+
+    public void setTypingStatus(String userEmail, String threadKey, boolean isTyping) {
+        if (threadKey == null || threadKey.trim().isEmpty()) return;
+        User user = userRepository.findByEmail(userEmail).orElse(null);
+        if (user == null) return;
+
+        Map<Long, Long> userTypingMap = threadTypingStatus.computeIfAbsent(threadKey, k -> new java.util.concurrent.ConcurrentHashMap<>());
+        if (isTyping) {
+            userTypingMap.put(user.getId(), System.currentTimeMillis());
+        } else {
+            userTypingMap.remove(user.getId());
+        }
+    }
+
+    public Map<String, Object> getThreadTypingStatus(String userEmail, String threadKey) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("isTyping", false);
+        response.put("threadKey", threadKey);
+
+        if (threadKey == null || threadKey.trim().isEmpty()) return response;
+        User currentUser = userRepository.findByEmail(userEmail).orElse(null);
+        Long myId = currentUser != null ? currentUser.getId() : null;
+
+        Map<Long, Long> userTypingMap = threadTypingStatus.get(threadKey);
+        if (userTypingMap == null || userTypingMap.isEmpty()) return response;
+
+        long now = System.currentTimeMillis();
+        for (Map.Entry<Long, Long> entry : userTypingMap.entrySet()) {
+            Long typistId = entry.getKey();
+            Long timestamp = entry.getValue();
+
+            if (!typistId.equals(myId) && timestamp != null && (now - timestamp) < TYPING_TIMEOUT_MS) {
+                User typist = userRepository.findById(typistId).orElse(null);
+                String typistName = typist != null ? typist.getFullName() : "User";
+                response.put("isTyping", true);
+                response.put("typistId", typistId);
+                response.put("typistName", typistName);
+                return response;
+            }
+        }
+
+        return response;
     }
 }

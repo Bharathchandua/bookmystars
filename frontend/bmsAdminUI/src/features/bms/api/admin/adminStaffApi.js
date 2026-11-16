@@ -108,6 +108,25 @@ export const addStaffMember = async (staffData) => {
   }
 };
 
+export const updateStaffMember = async (staffId, staffData) => {
+  try {
+    const res = await apiClient.put(`/admin/staff/${staffId}`, {
+      name: staffData.name,
+      email: (staffData.email || "").trim().toLowerCase(),
+      department: staffData.department,
+      roleId: staffData.roleId,
+      status: staffData.status || "ACTIVE"
+    });
+    if (res.data) {
+      await fetchStaffMembers();
+      return res.data;
+    }
+  } catch (err) {
+    const msg = err.response?.data?.message || err.message;
+    throw new Error(msg);
+  }
+};
+
 export const assignStaffRole = async (staffId, newRoleId) => {
   try {
     await apiClient.put(`/admin/staff/${staffId}/role`, { roleId: newRoleId });

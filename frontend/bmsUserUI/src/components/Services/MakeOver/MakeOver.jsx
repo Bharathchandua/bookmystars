@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
-  ChevronLeft, ChevronRight, ArrowRight, Play, CheckCircle, Star, MapPin,
-  Film, Activity, Video, Music, Users, Award, Shield, Sparkles, Building,
-  Briefcase, Clock, Phone, ShieldCheck, Heart, UserCheck, Camera, Headphones,
-  Palette, User, Map
+  ArrowRight, CheckCircle, Star, MapPin, Film, Activity, Video, Music,
+  Users, Award, Sparkles, Building, ShieldCheck, Heart, UserCheck, Camera,
+  Headphones, Palette, User, Map, Mail, X
 } from "lucide-react";
 import Navbar from "../../Navbar.jsx";
 import FooterAgency from "../../FooterAgency.jsx";
@@ -15,66 +14,7 @@ import makeoverImg from "../../../assets/makeover.png";
 import makeoverCtaGirl from "../../../assets/makeover_cta_girl.png";
 import "./makeover.css";
 
-// Import makeover brand logos
-import logo01 from "../../../assets/makeoverlogos/01_mac.png";
-import logo02 from "../../../assets/makeoverlogos/02_lakme.png";
-import logo03 from "../../../assets/makeoverlogos/03_loreal_paris.png";
-import logo04 from "../../../assets/makeoverlogos/04_nykaa.png";
-import logo05 from "../../../assets/makeoverlogos/05_faces_canada.png";
-import logo06 from "../../../assets/makeoverlogos/06_kryolan.png";
-import logo07 from "../../../assets/makeoverlogos/07_colorgar.png";
-import logo08 from "../../../assets/makeoverlogos/08_estee_lauder.png";
-import logo09 from "../../../assets/makeoverlogos/09_chanel.png";
-import logo10 from "../../../assets/makeoverlogos/10_dior.png";
-import logo11 from "../../../assets/makeoverlogos/11_nars.png";
-import logo12 from "../../../assets/makeoverlogos/12_clinique.png";
-import logo13 from "../../../assets/makeoverlogos/13_bareminerals.png";
-import logo14 from "../../../assets/makeoverlogos/14_shiseido.png";
-import logo15 from "../../../assets/makeoverlogos/15_maybelline.png";
-import logo16 from "../../../assets/makeoverlogos/16_revlon.png";
-import logo17 from "../../../assets/makeoverlogos/17_benefit.png";
-import logo18 from "../../../assets/makeoverlogos/18_bobbi_brown.png";
-import logo19 from "../../../assets/makeoverlogos/19_huda_beauty.png";
-import logo20 from "../../../assets/makeoverlogos/20_lancome.png";
-import logo21 from "../../../assets/makeoverlogos/21_givenchy.png";
-import logo22 from "../../../assets/makeoverlogos/22_yves_saint_laurent.png";
-import logo23 from "../../../assets/makeoverlogos/23_tom_ford.png";
-import logo24 from "../../../assets/makeoverlogos/24_giorgio_armani.png";
-import logo25 from "../../../assets/makeoverlogos/25_make_up_for_ever.png";
-import logo26 from "../../../assets/makeoverlogos/26_charlotte_tilbury.png";
-import logo27 from "../../../assets/makeoverlogos/27_laura_mercier.png";
-import logo28 from "../../../assets/makeoverlogos/28_kiko_milano.png";
-import logo29 from "../../../assets/makeoverlogos/29_morphe.png";
-import logo30 from "../../../assets/makeoverlogos/30_colourpop.png";
-import logo31 from "../../../assets/makeoverlogos/31_milk_makeup.png";
-import logo32 from "../../../assets/makeoverlogos/32_fenty_beauty.png";
-import logo33 from "../../../assets/makeoverlogos/33_elf.png";
-import logo34 from "../../../assets/makeoverlogos/34_tarte.png";
-import logo35 from "../../../assets/makeoverlogos/35_too_faced.png";
-import logo36 from "../../../assets/makeoverlogos/36_smashbox.png";
-import logo37 from "../../../assets/makeoverlogos/37_urban_decay.png";
-import logo38 from "../../../assets/makeoverlogos/38_becca.png";
-import logo39 from "../../../assets/makeoverlogos/39_dolce_gabbana.png";
-import logo40 from "../../../assets/makeoverlogos/40_avon.png";
-import logo41 from "../../../assets/makeoverlogos/41_covergirl.png";
-import logo42 from "../../../assets/makeoverlogos/42_rimmel.png";
-import logo43 from "../../../assets/makeoverlogos/43_sugar.png";
-import logo44 from "../../../assets/makeoverlogos/44_innisfree.png";
-import logo45 from "../../../assets/makeoverlogos/45_laneige.png";
-import logo46 from "../../../assets/makeoverlogos/46_sulwhasoo.png";
-import logo47 from "../../../assets/makeoverlogos/47_iope.png";
-import logo48 from "../../../assets/makeoverlogos/48_the_face_shop.png";
-import logo49 from "../../../assets/makeoverlogos/49_tony_moly.png";
-import logo50 from "../../../assets/makeoverlogos/50_bioderma.png";
-import logo51 from "../../../assets/makeoverlogos/51_la_roche_posay.png";
-import logo52 from "../../../assets/makeoverlogos/52_vichy.png";
-import logo53 from "../../../assets/makeoverlogos/53_caudalie.png";
-import logo54 from "../../../assets/makeoverlogos/54_ole_henriksen.png";
-import logo55 from "../../../assets/makeoverlogos/55_kiehls.png";
-import logo56 from "../../../assets/makeoverlogos/56_neutrogena.png";
-
 export default function Makeover() {
-  const [slideIndex, setSlideIndex] = useState(0);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
   useEffect(() => {
@@ -82,6 +22,17 @@ export default function Makeover() {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  // Modal State for Makeover Enquiry
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [enquirySuccess, setEnquirySuccess] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    category: "Film & TV Makeover",
+    message: ""
+  });
 
   const [muasCount, setMuasCount] = useState(0);
   const [agenciesCount, setAgenciesCount] = useState(0);
@@ -107,15 +58,6 @@ export default function Makeover() {
 
     return () => clearInterval(timer);
   }, []);
-
-  const partnerLogos = [
-    logo01, logo02, logo03, logo04, logo05, logo06, logo07, logo08, logo09, logo10,
-    logo11, logo12, logo13, logo14, logo15, logo16, logo17, logo18, logo19, logo20,
-    logo21, logo22, logo23, logo24, logo25, logo26, logo27, logo28, logo29, logo30,
-    logo31, logo32, logo33, logo34, logo35, logo36, logo37, logo38, logo39, logo40,
-    logo41, logo42, logo43, logo44, logo45, logo46, logo47, logo48, logo49, logo50,
-    logo51, logo52, logo53, logo54, logo55, logo56
-  ];
 
   const categories = [
     {
@@ -222,20 +164,35 @@ export default function Makeover() {
     }
   ];
 
-  const stats = [
-    { value: "500+", label: "Makeup Artists", icon: <Users size={24} /> },
-    { value: "200+", label: "Beauty Agencies", icon: <Building size={24} /> },
-    { value: "100+", label: "Beauty Brands", icon: <Award size={24} /> },
-    { value: "50K+", label: "Projects Completed", icon: <Briefcase size={24} /> },
-    { value: "20+", label: "Cities Covered", icon: <MapPin size={24} /> }
-  ];
-
   const trustBadges = [
     { text: "100% Secure Bookings", icon: <ShieldCheck size={24} /> },
     { text: "Transparent Pricing", icon: <User size={24} /> },
     { text: "Dedicated Support", icon: <Headphones size={24} /> },
     { text: "Nationwide Network", icon: <Map size={24} /> }
   ];
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleEnquirySubmit = (e) => {
+    e.preventDefault();
+    if (!formData.name || !formData.email || !formData.message) return;
+
+    setEnquirySuccess(true);
+    setTimeout(() => {
+      setEnquirySuccess(false);
+      setIsModalOpen(false);
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        category: "Film & TV Makeover",
+        message: ""
+      });
+    }, 2000);
+  };
 
   return (
     <div className="mo-page-wrapper">
@@ -298,18 +255,14 @@ export default function Makeover() {
                 </div>
               </div>
 
-              {/* Buttons */}
+              {/* Single "Enquire" Button */}
               <div className="mo-hero-buttons">
-                <Button className="btn-mo-find">
-                  Find Your Makeover Expert
-                  <ArrowRight size={16} />
-                </Button>
-
-                <Button className="btn-mo-works">
-                  <div className="mo-play-icon-circle">
-                    <Play size={10} fill="currentColor" />
-                  </div>
-                  How It Works
+                <Button 
+                  className="btn-mo-enquire"
+                  icon={<Mail size={18} />}
+                  onClick={() => setIsModalOpen(true)}
+                >
+                  Enquire
                 </Button>
               </div>
             </div>
@@ -393,35 +346,7 @@ export default function Makeover() {
           </div>
         </section>
 
-        {/* ── 3. OUR PARTNER NETWORK ── */}
-        <section className="mo-partner-section">
-          <div className="mo-partner-container">
-            <h2 className="mo-partner-title">
-              Our Partner Network
-            </h2>
-            <p className="mo-partner-subtitle">
-              We tie up with the best beauty brands, agencies &amp; professionals
-            </p>
-
-            <div className="mo-logos-marquee">
-              <div className="mo-logos-track">
-                {partnerLogos.map((logo, index) => (
-                  <div key={index} className="mo-logo-item">
-                    <img src={logo} alt={`Partner Logo ${index + 1}`} />
-                  </div>
-                ))}
-                {/* Duplicate for infinite loop */}
-                {partnerLogos.map((logo, index) => (
-                  <div key={`dup-${index}`} className="mo-logo-item">
-                    <img src={logo} alt={`Partner Logo Duplicate ${index + 1}`} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ── 4. HOW IT WORKS ── */}
+        {/* ── 3. HOW IT WORKS ── */}
         <section className="mo-works-section">
           <div className="mo-works-container">
             <div className="mo-section-header" style={{ marginBottom: "20px" }}>
@@ -450,7 +375,7 @@ export default function Makeover() {
           </div>
         </section>
 
-        {/* ── 5. WHY CHOOSE ── */}
+        {/* ── 4. WHY CHOOSE ── */}
         <section className="mo-why-section">
           <div className="mo-why-container">
             <div className="mo-section-header">
@@ -470,22 +395,7 @@ export default function Makeover() {
           </div>
         </section>
 
-        {/* ── 6. STATS BAR ── */}
-        <section className="mo-stats-section">
-          <div className="mo-stats-container">
-            {stats.map((s, i) => (
-              <div className="mo-stat-item" key={i}>
-                <div className="mo-stat-icon">{s.icon}</div>
-                <div className="mo-stat-text">
-                  <span className="mo-stat-value">{s.value}</span>
-                  <span className="mo-stat-label">{s.label}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ── 7. FOOTER CTA ── */}
+        {/* ── 5. FOOTER CTA ── */}
         <section className="mo-cta-section">
           <div className="mo-cta-container">
             <div className="mo-cta-left-img">
@@ -500,8 +410,8 @@ export default function Makeover() {
                 </p>
               </div>
               <div className="mo-cta-right-btn">
-                <Button className="btn-mo-cta-find">
-                  Find Your Makeover Expert
+                <Button className="btn-mo-cta-find" onClick={() => setIsModalOpen(true)}>
+                  Enquire Now
                   <ArrowRight size={18} />
                 </Button>
               </div>
@@ -509,7 +419,7 @@ export default function Makeover() {
           </div>
         </section>
 
-        {/* ── 8. TRUST BADGES ── */}
+        {/* ── 6. TRUST BADGES ── */}
         <section className="mo-trust-section">
           <div className="mo-trust-container">
             {trustBadges.map((b, i) => (
@@ -526,6 +436,106 @@ export default function Makeover() {
       </main>
 
       <FooterAgency />
+
+      {/* ── 7. MAKEOVER ENQUIRY MODAL ── */}
+      {isModalOpen && (
+        <div className="mo-modal-overlay">
+          <div className="mo-modal-card animate-zoomIn">
+            <div className="modal-header">
+              <h3>Enquire About Makeover Services</h3>
+              <Button className="btn-close-modal" onClick={() => setIsModalOpen(false)}>
+                <X size={20} />
+              </Button>
+            </div>
+
+            {enquirySuccess ? (
+              <div className="modal-success-screen">
+                <CheckCircle size={52} className="success-icon" />
+                <h4>Enquiry Submitted!</h4>
+                <p>Thank you for reaching out. Our makeover coordinator will contact you shortly.</p>
+              </div>
+            ) : (
+              <form onSubmit={handleEnquirySubmit} className="modal-form">
+                <div className="form-group-row">
+                  <div className="form-item">
+                    <label>Your Name *</label>
+                    <input 
+                      type="text" 
+                      name="name" 
+                      value={formData.name} 
+                      onChange={handleInputChange} 
+                      placeholder="e.g. Priya Kapoor" 
+                      required 
+                    />
+                  </div>
+                  <div className="form-item">
+                    <label>Email Address *</label>
+                    <input 
+                      type="email" 
+                      name="email" 
+                      value={formData.email} 
+                      onChange={handleInputChange} 
+                      placeholder="e.g. priya@example.com" 
+                      required 
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group-row">
+                  <div className="form-item">
+                    <label>Phone Number *</label>
+                    <input 
+                      type="tel" 
+                      name="phone" 
+                      value={formData.phone} 
+                      onChange={handleInputChange} 
+                      placeholder="e.g. +91 98765 43210" 
+                      required 
+                    />
+                  </div>
+                  <div className="form-item">
+                    <label>Makeover Category</label>
+                    <select 
+                      name="category" 
+                      value={formData.category} 
+                      onChange={handleInputChange}
+                    >
+                      <option value="Film & TV Makeover">Film &amp; TV Makeover</option>
+                      <option value="Event Makeover">Event Makeover</option>
+                      <option value="Dance Makeover">Dance Makeover</option>
+                      <option value="Ad Shoot Makeover">Ad Shoot Makeover</option>
+                      <option value="Music Video Makeover">Music Video Makeover</option>
+                      <option value="Influencer Makeover">Influencer Makeover</option>
+                      <option value="Bridal & Occasion Makeover">Bridal &amp; Occasion Makeover</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-item">
+                  <label>Shoot / Event Details &amp; Location *</label>
+                  <textarea 
+                    name="message" 
+                    value={formData.message} 
+                    onChange={handleInputChange} 
+                    placeholder="Date of event, on-location or studio requirement, number of artists needed..." 
+                    rows="4" 
+                    required
+                  ></textarea>
+                </div>
+
+                <div className="form-actions mt-4">
+                  <Button type="button" className="btn-cancel" onClick={() => setIsModalOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" className="btn-submit-form">
+                    Submit Enquiry
+                  </Button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,35 +1,23 @@
-import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import {
-  ArrowRight, ChevronLeft, ChevronRight, Film, Music, Tv, Smartphone,
-  Mic, Star, Globe, Users, Award, Zap, TrendingUp, Shield, Handshake
-} from "lucide-react";
+import React, { useState } from "react";
+import { Mail, X, CheckCircle } from "lucide-react";
 import Navbar from "../../Navbar.jsx";
 import FooterAgency from "../../FooterAgency.jsx";
 import Button from "../../common/Button.jsx";
 import Card from "../../common/Card.jsx";
 import heroImg from "../../../assets/media_hero.png";
-import beyondSpotlightImg from "../../../assets/beyond_the_spotlight_poster.png";
-import rhythmUnpluggedImg from "../../../assets/rhythm_unplugged_poster.png";
-import cityLightsImg from "../../../assets/city_lights_poster.png";
-import dreamsLiveImg from "../../../assets/dreams_live_poster.png";
-import legendsRiseImg from "../../../assets/legends_rise_poster.png";
-import brokenSilenceImg from "../../../assets/broken_silence_poster.png";
-import theJourneyImg from "../../../assets/the_journey_poster.png";
-
-// Partner Logos
-import netflixLogoImg from "../../../assets/Netflix.png";
-import amazonPrimeLogoImg from "../../../assets/AmazonPrime.png";
-import zee5LogoImg from "../../../assets/Zee5.png";
-import sonyLogoImg from "../../../assets/Sony.png";
-import mtvLogoImg from "../../../assets/MTv.png";
-import disneyHotstarLogoImg from "../../../assets/DisneyHotstar.png";
-import hungamaLogoImg from "../../../assets/Hangama.png";
-
 import "./media-entertainment.css";
 
 export default function MediaEntertainment() {
-  const [carouselIndex, setCarouselIndex] = useState(0);
+  // Modal State for Contact Us
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const [contactSuccess, setContactSuccess] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    interest: "Film & TV Production",
+    message: ""
+  });
 
   const services = [
     {
@@ -127,77 +115,28 @@ export default function MediaEntertainment() {
     },
   ];
 
-  const whyChoose = [
-    {
-      title: "Extensive Network",
-      desc: "Access to a wide network of talent, creators and partners.",
-      icon: <Globe size={22} style={{ color: "#ec008c" }} />,
-    },
-    {
-      title: "Industry Expertise",
-      desc: "Years of experience in delivering successful projects.",
-      icon: <Award size={22} style={{ color: "#ec008c" }} />,
-    },
-    {
-      title: "End-to-End Support",
-      desc: "From ideation to distribution, we've got you covered.",
-      icon: <Shield size={22} style={{ color: "#ec008c" }} />,
-    },
-    {
-      title: "Global Reach",
-      desc: "Connecting stories and talent to audiences worldwide.",
-      icon: <TrendingUp size={22} style={{ color: "#ec008c" }} />,
-    },
-  ];
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
 
-  const works = [
-    { image: beyondSpotlightImg, type: "Web Series" },
-    { image: rhythmUnpluggedImg, type: "Music Album" },
-    { image: cityLightsImg, type: "Short Film" },
-    { image: dreamsLiveImg, type: "Concert Tour" },
-    { image: legendsRiseImg, type: "Documentary" },
-    { image: brokenSilenceImg, type: "Short Film" },
-    { image: theJourneyImg, type: "Documentary" },
-  ];
+  const handleContactSubmit = (e) => {
+    e.preventDefault();
+    if (!formData.name || !formData.email || !formData.message) return;
 
-  const stats = [
-    { value: "10K+", label: "Projects Delivered", icon: <Film size={28} /> },
-    { value: "500+", label: "Happy Clients", icon: <Users size={28} /> },
-    { value: "5K+", label: "Talent Onboarded", icon: <Star size={28} /> },
-    { value: "50+", label: "Countries Reached", icon: <Globe size={28} /> },
-  ];
-
-  const partners = [
-    { img: netflixLogoImg, alt: "Netflix" },
-    { img: amazonPrimeLogoImg, alt: "Amazon Prime" },
-    { img: zee5LogoImg, alt: "Zee5" },
-    { img: sonyLogoImg, alt: "Sony LIV" },
-    { img: mtvLogoImg, alt: "MTV" },
-    { img: disneyHotstarLogoImg, alt: "Disney+ Hotstar" },
-    { img: hungamaLogoImg, alt: "Hungama" },
-  ];
-
-  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-
-  useEffect(() => {
-    const handleResize = () => setWindowWidth(window.innerWidth);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  let visibleCards = 5;
-  if (windowWidth <= 480) {
-    visibleCards = 1;
-  } else if (windowWidth <= 768) {
-    visibleCards = 2;
-  } else if (windowWidth <= 1200) {
-    visibleCards = 3;
-  }
-
-  const maxIndex = Math.max(0, works.length - visibleCards);
-
-  const prevSlide = () => setCarouselIndex((i) => Math.max(0, i - 1));
-  const nextSlide = () => setCarouselIndex((i) => Math.min(maxIndex, i + 1));
+    setContactSuccess(true);
+    setTimeout(() => {
+      setContactSuccess(false);
+      setIsContactModalOpen(false);
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        interest: "Film & TV Production",
+        message: ""
+      });
+    }, 2000);
+  };
 
   return (
     <div className="me-page-wrapper">
@@ -205,7 +144,7 @@ export default function MediaEntertainment() {
 
       <main className="me-page-content">
 
-        {/* ── 1. HERO ── */}
+        {/* ── 1. HERO SECTION ── */}
         <section className="me-hero-section">
           <div className="me-hero-container">
             {/* Left */}
@@ -224,73 +163,14 @@ export default function MediaEntertainment() {
                 brands and talent to bring impactful stories to life.
               </p>
 
+              {/* Single Contact Us Button */}
               <div className="me-hero-buttons">
                 <Button
-                  onMouseEnter={e => {
-                    e.currentTarget.style.transform = 'translateY(-3px)';
-                    e.currentTarget.style.boxShadow = '0 8px 36px rgba(236,0,140,0.55)';
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 4px 24px rgba(236,0,140,0.35)';
-                  }}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    background: 'linear-gradient(135deg, #ec008c 0%, #5b00d7 100%)',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '10px',
-                    padding: '13px 28px',
-                    fontSize: '15px',
-                    fontWeight: '700',
-                    cursor: 'pointer',
-                    letterSpacing: '0.3px',
-                    boxShadow: '0 4px 24px rgba(236,0,140,0.35)',
-                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                    outline: 'none',
-                    whiteSpace: 'nowrap',
-                  }}
+                  className="btn-me-contact"
+                  icon={<Mail size={18} />}
+                  onClick={() => setIsContactModalOpen(true)}
                 >
-                  Explore Our Services
-                  <ArrowRight size={16} />
-                </Button>
-
-                <Button
-                  onMouseEnter={e => {
-                    e.currentTarget.style.background = '#5b00d7';
-                    e.currentTarget.style.borderColor = '#5b00d7';
-                    e.currentTarget.style.transform = 'translateY(-3px)';
-                    e.currentTarget.style.boxShadow = '0 8px 32px rgba(91,0,215,0.45)';
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.background = '#05072d';
-                    e.currentTarget.style.borderColor = '#05072d';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 4px 20px rgba(5,7,45,0.25)';
-                  }}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    background: '#05072d',
-                    color: '#fff',
-                    border: '2px solid #05072d',
-                    borderRadius: '10px',
-                    padding: '13px 28px',
-                    fontSize: '15px',
-                    fontWeight: '700',
-                    cursor: 'pointer',
-                    letterSpacing: '0.3px',
-                    boxShadow: '0 4px 20px rgba(5,7,45,0.25)',
-                    transition: 'transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease',
-                    outline: 'none',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  <Handshake size={16} />
-                  Partner With Us
+                  Contact Us
                 </Button>
               </div>
             </div>
@@ -344,156 +224,108 @@ export default function MediaEntertainment() {
           </div>
         </section>
 
-        {/* ── 4. WHY CHOOSE + OUR WORK (SIDE-BY-SIDE) ── */}
-        <section className="me-why-work-section">
-          <div className="me-why-work-container">
-
-            {/* Left Column - Why Choose */}
-            <div className="me-why-col">
-              <h2 className="me-section-heading">Why Choose BookMyStars?</h2>
-              <div className="me-why-list">
-                {whyChoose.map((w, i) => (
-                  <div className="me-why-item" key={i}>
-                    <div className="me-why-icon">{w.icon}</div>
-                    <div>
-                      <h4 className="me-why-title">{w.title}</h4>
-                      <p className="me-why-desc">{w.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="me-why-btn-container">
-                <Button
-                  onMouseEnter={e => {
-                    e.currentTarget.style.background = "#ec008c";
-                    e.currentTarget.style.color = "#ffffff";
-                    e.currentTarget.style.transform = "translateY(-2px)";
-                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(236,0,140,0.2)";
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.background = "#ffffff";
-                    e.currentTarget.style.color = "#ec008c";
-                    e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow = "none";
-                  }}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "10px",
-                    background: "#ffffff",
-                    color: "#ec008c",
-                    border: "1.5px solid #ec008c",
-                    borderRadius: "10px",
-                    padding: "11px 24px",
-                    fontSize: "14px",
-                    fontWeight: "700",
-                    cursor: "pointer",
-                    transition: "transform 0.2s ease, background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease",
-                    outline: "none",
-                  }}
-                >
-                  Learn More About Us
-                  <ArrowRight size={16} />
-                </Button>
-              </div>
-            </div>
-
-            {/* Right Column - Our Work Carousel */}
-            <div className="me-work-col">
-              <h2 className="me-section-heading">Our Work in Action</h2>
-
-              <div className="me-work-carousel-wrapper">
-                <Button
-                  className="me-carousel-btn me-carousel-prev"
-                  onClick={prevSlide}
-                  disabled={carouselIndex === 0}
-                >
-                  <ChevronLeft size={20} />
-                </Button>
-
-                <div className="me-work-track-outer">
-                  <div
-                    className="me-work-track"
-                    style={{
-                      transform: `translateX(calc(-${carouselIndex} * (100% + 14px) / ${visibleCards}))`,
-                    }}
-                  >
-                    {works.map((w, i) => (
-                      <Card
-                        className="me-work-card"
-                        key={i}
-                        style={{
-                          flex: `0 0 calc(100% / ${visibleCards} - ${(14 * (visibleCards - 1)) / visibleCards}px)`,
-                        }}
-                      >
-                        <img src={w.image} alt="Work Poster" className="me-work-card-img" />
-                        <div className="me-work-card-overlay" />
-                        <div className="me-work-card-content">
-                          <span className="me-work-card-type">{w.type}</span>
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-
-                <Button
-                  className="me-carousel-btn me-carousel-next"
-                  onClick={nextSlide}
-                  disabled={carouselIndex >= maxIndex}
-                >
-                  <ChevronRight size={20} />
-                </Button>
-              </div>
-
-              {maxIndex > 0 && (
-                <div className="me-carousel-dots" style={{ marginTop: "24px" }}>
-                  {Array.from({ length: maxIndex + 1 }).map((_, i) => (
-                    <Button
-                      key={i}
-                      className={`me-carousel-dot ${i === carouselIndex ? "active" : ""}`}
-                      onClick={() => setCarouselIndex(i)}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-
-          </div>
-        </section>
-
-        {/* ── 5. STATS BAR ── */}
-        <section className="me-stats-section">
-          <div className="me-stats-container">
-            {stats.map((s, i) => (
-              <div className="me-stat-item" key={i}>
-                <div className="me-stat-icon">{s.icon}</div>
-                <div className="me-stat-text">
-                  <span className="me-stat-value">{s.value}</span>
-                  <span className="me-stat-label">{s.label}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ── 6. TRUSTED PARTNERS ── */}
-        <section className="me-partners-section">
-          <div className="me-partners-container">
-            <h2 className="me-section-heading">Trusted by Leading Brands &amp; Partners</h2>
-            <div className="me-partners-logos">
-              {partners.map((p, i) => (
-                <div className="me-partner-logo-item" key={i}>
-                  <img src={p.img} alt={p.alt} className="me-partner-logo-img" />
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
       </main>
 
       <FooterAgency />
+
+      {/* ── 4. CONTACT US MODAL ── */}
+      {isContactModalOpen && (
+        <div className="me-modal-overlay">
+          <div className="me-modal-card animate-zoomIn">
+            <div className="modal-header">
+              <h3>Contact Our Production Team</h3>
+              <Button className="btn-close-modal" onClick={() => setIsContactModalOpen(false)}>
+                <X size={20} />
+              </Button>
+            </div>
+
+            {contactSuccess ? (
+              <div className="modal-success-screen">
+                <CheckCircle size={52} className="success-icon" />
+                <h4>Message Delivered!</h4>
+                <p>Thank you for reaching out. Our media &amp; entertainment executive will contact you shortly.</p>
+              </div>
+            ) : (
+              <form onSubmit={handleContactSubmit} className="modal-form">
+                <div className="form-group-row">
+                  <div className="form-item">
+                    <label>Your Name *</label>
+                    <input 
+                      type="text" 
+                      name="name" 
+                      value={formData.name} 
+                      onChange={handleInputChange} 
+                      placeholder="e.g. Vikramaditya Roy" 
+                      required 
+                    />
+                  </div>
+                  <div className="form-item">
+                    <label>Email Address *</label>
+                    <input 
+                      type="email" 
+                      name="email" 
+                      value={formData.email} 
+                      onChange={handleInputChange} 
+                      placeholder="e.g. vikram@studio.com" 
+                      required 
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group-row">
+                  <div className="form-item">
+                    <label>Phone Number *</label>
+                    <input 
+                      type="tel" 
+                      name="phone" 
+                      value={formData.phone} 
+                      onChange={handleInputChange} 
+                      placeholder="e.g. +91 98765 43210" 
+                      required 
+                    />
+                  </div>
+                  <div className="form-item">
+                    <label>Area of Interest</label>
+                    <select 
+                      name="interest" 
+                      value={formData.interest} 
+                      onChange={handleInputChange}
+                    >
+                      <option value="Film & TV Production">Film &amp; TV Production</option>
+                      <option value="Music & Audio Production">Music &amp; Audio Production</option>
+                      <option value="Digital & OTT Originals">Digital &amp; OTT Originals</option>
+                      <option value="Marketing & Promotion Strategy">Marketing &amp; Promotion Strategy</option>
+                      <option value="Talent Management & Casting">Talent Management &amp; Casting</option>
+                      <option value="Live Events & Experiences">Live Events &amp; Experiences</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-item">
+                  <label>Project Details / Message *</label>
+                  <textarea 
+                    name="message" 
+                    value={formData.message} 
+                    onChange={handleInputChange} 
+                    placeholder="Tell us about your project concept, target release date, or specific production needs..." 
+                    rows="4" 
+                    required
+                  ></textarea>
+                </div>
+
+                <div className="form-actions mt-4">
+                  <Button type="button" className="btn-cancel" onClick={() => setIsContactModalOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" className="btn-submit-form">
+                    Send Message
+                  </Button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,7 +1,6 @@
 import PagesButton from "../common/PagesButton";
 import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { CALENDAR_EVENTS } from "./calendarData.js";
 
 const MONTH_NAMES = [
   "January","February","March","April","May","June",
@@ -28,7 +27,7 @@ function buildMiniGrid(year, month) {
   return cells;
 }
 
-export default function MiniCalendar({ syncDate, onDateClick }) {
+export default function MiniCalendar({ syncDate, onDateClick, events = [] }) {
   const initialDate = syncDate || new Date();
   const [viewYear,  setViewYear]  = useState(initialDate.getFullYear());
   const [viewMonth, setViewMonth] = useState(initialDate.getMonth());
@@ -38,8 +37,9 @@ export default function MiniCalendar({ syncDate, onDateClick }) {
 
   // Days that have events
   const eventDays = new Set(
-    CALENDAR_EVENTS
+    (events || [])
       .filter(e => {
+        if (!e.date) return false;
         const [y, m] = e.date.split("-").map(Number);
         return y === viewYear && m - 1 === viewMonth;
       })
@@ -80,8 +80,8 @@ export default function MiniCalendar({ syncDate, onDateClick }) {
         {cells.map((cell, idx) => {
           const isToday =
             !cell.isOtherMonth &&
-            cell.y  === today.getFullYear() &&
-            cell.m  === today.getMonth() &&
+            cell.y   === today.getFullYear() &&
+            cell.m   === today.getMonth() &&
             cell.day === today.getDate();
 
           const hasEvent = !cell.isOtherMonth && eventDays.has(cell.day);

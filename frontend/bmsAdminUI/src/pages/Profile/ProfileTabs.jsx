@@ -57,6 +57,7 @@ import {
   confirmDelete,
   showWarning
 } from "../../shared/utils/alert";
+import MediaModerationBadge from "../../components/common/MediaModerationBadge";
 
 /* ── Reusable Modal for Tabs ── */
 function TabModal({ title, isOpen, onClose, children, maxWidth = "500px" }) {
@@ -157,7 +158,9 @@ export function PortfolioTab() {
           img: getFullImageUrl(b.imageUrl || b.photoUrl || b.url || ""),
           title: b.title || "Portfolio Photo",
           category: b.category || "Fashion",
-          year: b.year || new Date().getFullYear().toString()
+          year: b.year || new Date().getFullYear().toString(),
+          status: b.status || "APPROVED",
+          rejectionReason: b.rejectionReason
         }));
         setItems(mapped);
       } else {
@@ -201,7 +204,9 @@ export function PortfolioTab() {
       setNewTitle("");
       setNewFile(null);
       setPreviewUrl("");
-      showSuccess("Photo Uploaded!", "Portfolio photo uploaded successfully.");
+      const currentUser = getStoredUser();
+      const isStarVerified = currentUser?.isApproved === true || (currentUser?.verificationStatus || "").toUpperCase() === "APPROVED";
+      showSuccess(isStarVerified ? "Photo Published Live!" : "Submitted for Curation!", isStarVerified ? "As a Verified Star, your photo is live on your public profile." : "Your photo was uploaded and submitted to Admin for verification. It will go live once approved.");
     } catch (err) {
       showError("Upload Failed", err.message || "Failed to upload portfolio photo");
     } finally {
@@ -331,6 +336,9 @@ export function PortfolioTab() {
                 border: "1px solid #e2e8f0"
               }}
             >
+              <div style={{ position: "absolute", top: "10px", left: "10px", zIndex: 3 }}>
+                <MediaModerationBadge status={item.status} rejectionReason={item.rejectionReason} />
+              </div>
               <img
                 src={item.img}
                 alt={item.title}
@@ -1874,9 +1882,11 @@ export function VideosTab() {
 
       await loadVideos();
       setShowModal(false);
+      const currUser = getStoredUser();
+      const isVerifiedStar = currUser?.isApproved === true || (currUser?.verificationStatus || "").toUpperCase() === "APPROVED";
       showSuccess(
-        editingVideo ? "Video Updated!" : "Video Uploaded!",
-        editingVideo ? "Video details have been updated." : "Video has been added to your profile."
+        editingVideo ? "Video Updated!" : (isVerifiedStar ? "Video Published Live!" : "Submitted for Review!"),
+        editingVideo ? "Video details have been updated." : (isVerifiedStar ? "As a Verified Star, your video reel is live on your public profile." : "Your video has been submitted to Admin for moderation. It will go live once approved.")
       );
     } catch (err) {
       showError("Failed to Save Video", err.message || "Failed to save video.");
@@ -2044,6 +2054,9 @@ export function VideosTab() {
                   </div>
                 )}
 
+                <div style={{ position: "absolute", top: "10px", left: "10px", zIndex: 3 }}>
+                  <MediaModerationBadge status={vid.status} rejectionReason={vid.rejectionReason} />
+                </div>
                 {/* Play Button Overlay */}
                 <button
                   type="button"

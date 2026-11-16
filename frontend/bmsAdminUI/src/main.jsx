@@ -6,7 +6,12 @@ import "bootstrap-icons/font/bootstrap-icons.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./styles.css";
 
-import App from "./App.jsx";
+import Swal from "sweetalert2";
+if (typeof window !== "undefined") {
+  window.Swal = Swal;
+}
+
+import App from "./app/App.jsx";
 
 /* ── Favicon: loaded from src/assets so Vite hashes it (no cache issues) ── */
 import faviconSrc from "./assets/favicon.png";
@@ -20,6 +25,64 @@ import faviconSrc from "./assets/favicon.png";
     link.href = faviconSrc;
     document.head.appendChild(link);
   });
+})();
+
+// Universal Safe localStorage Protection & Bloat Sanitizer
+// Universal Safe localStorage Protection & Bloat Sanitizer
+(function installSafeStorage() {
+  try {
+    // 1. Purge any bloated keys (Base64 images, banners, deprecated profiles, or cached entries > 15KB)
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (!key) continue;
+      if (key === "bms_token" || key === "bms_admin_token") continue;
+      if (key.startsWith("bms_partner_profile_") || key.startsWith("bms_client_profile_")) {
+        console.warn("[SafeStorage] Purged deprecated profile cache key on startup:", key);
+        localStorage.removeItem(key);
+        continue;
+      }
+      const val = localStorage.getItem(key);
+      if (val && (val.includes("data:image/") || val.startsWith("data:") || val.length > 15000)) {
+        console.warn("[SafeStorage] Purged bloated key on startup:", key);
+        localStorage.removeItem(key);
+      }
+    }
+
+    // 2. Wrap window.localStorage.setItem so quota errors NEVER crash the app
+    const originalSetItem = window.localStorage.setItem.bind(window.localStorage);
+    window.localStorage.setItem = function(key, value) {
+      try {
+        originalSetItem(key, value);
+      } catch (err) {
+        console.warn(`[SafeStorage] QuotaExceeded handled for key "${key}". Auto-pruning caches.`);
+        try {
+          for (let i = window.localStorage.length - 1; i >= 0; i--) {
+            const k = window.localStorage.key(i);
+            if (k && k !== "bms_token" && k !== "bms_admin_token" && k !== "bms_user" && k !== "bms_admin_user") {
+              window.localStorage.removeItem(k);
+            }
+          }
+          try {
+            originalSetItem(key, value);
+          } catch (_) {
+            console.warn(`[SafeStorage] Silently skipped non-critical storage write for "${key}".`);
+          }
+        } catch (_) {}
+      }
+    };
+
+    // 3. Wrap window.sessionStorage.setItem similarly
+    const originalSessionSetItem = window.sessionStorage.setItem.bind(window.sessionStorage);
+    window.sessionStorage.setItem = function(key, value) {
+      try {
+        originalSessionSetItem(key, value);
+      } catch (err) {
+        console.warn(`[SafeStorage] SessionStorage error handled for key "${key}".`);
+      }
+    };
+  } catch (e) {
+    console.warn("installSafeStorage note:", e);
+  }
 })();
 
 /* ── Global Error Boundary: Prevents Blank Screens on Uncaught React Errors ── */

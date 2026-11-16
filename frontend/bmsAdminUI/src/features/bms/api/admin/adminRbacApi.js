@@ -272,6 +272,9 @@ export const deleteDynamicRole = async (roleId) => {
     await fetchDynamicRoles();
     return;
   } catch (err) {
+    if (err.response?.data?.message) {
+      throw new Error(err.response.data.message);
+    }
     console.warn("Backend deleteDynamicRole fallback:", err);
   }
   const current = getDynamicRoles();

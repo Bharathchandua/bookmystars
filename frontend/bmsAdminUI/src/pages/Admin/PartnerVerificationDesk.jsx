@@ -26,16 +26,21 @@ import {
   Megaphone,
   GraduationCap,
   Video,
-  Play
+  Play,
+  Globe,
+  Trash2
 } from "lucide-react";
+import AdminSocialControlModal from "./components/AdminSocialControlModal";
+import AdminShowcaseModerationView from "./components/AdminShowcaseModerationView";
 import {
   getAdminPartners,
   verifyAdminPartner,
   rejectAdminPartner,
+  deleteAdminPartner,
   getPendingPartnersCount
 } from "../../features/bms/api/partners/partnerApi";
 import { opportunitiesApi } from "../../features/bms/api/opportunities/opportunitiesApi";
-import { showSuccess, showError } from "../../shared/utils/alert";
+import { showSuccess, showError, confirmDelete } from "../../shared/utils/alert";
 import RequirementFormBuilderDesk from "./components/RequirementFormBuilderDesk";
 import EntityContextSelectorBar from "./components/EntityContextSelectorBar";
 import { getPartnerCustomFields } from "../../shared/utils/customFieldsConfig";
@@ -79,6 +84,7 @@ export default function PartnerVerificationDesk({ initialSuiteTab = "VERIFICATIO
   const [actionLoadingId, setActionLoadingId] = useState(null);
   const [rejectModalPartner, setRejectModalPartner] = useState(null);
   const [rejectionReason, setRejectionReason] = useState("");
+  const [socialModalPartner, setSocialModalPartner] = useState(null);
 
   // Top-level suite tabs: VERIFICATIONS | FORM_BUILDER | AUDITIONS | ANALYTICS
   const [suiteTab, setSuiteTab] = useState(initialSuiteTab);
@@ -272,6 +278,26 @@ export default function PartnerVerificationDesk({ initialSuiteTab = "VERIFICATIO
     }
   };
 
+  const handleDeletePartner = async (partner) => {
+    try {
+      const confirmed = await confirmDelete(
+        partner.fullName || partner.businessName || "this partner academy",
+        `Are you sure you want to permanently delete "${partner.fullName || partner.businessName}"? All profile data, training batches, and records will be removed from database.`
+      );
+      if (confirmed) {
+        setActionLoadingId(partner.id);
+        await deleteAdminPartner(partner.id);
+        showSuccess("Partner Deleted", `"${partner.fullName || partner.businessName}" has been permanently removed from database.`);
+        window.dispatchEvent(new CustomEvent("bms_partner_updated", { detail: { id: partner.id, status: "DELETED" } }));
+        await fetchPartners();
+      }
+    } catch (err) {
+      showError("Delete Failed", err.message || "Failed to delete partner academy.");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* 1. Header Banner */}
@@ -320,6 +346,7 @@ export default function PartnerVerificationDesk({ initialSuiteTab = "VERIFICATIO
       <div className="flex flex-wrap items-center gap-2 p-1.5 bg-white rounded-2xl border border-slate-200/80 shadow-xs">
         {[
           { id: "VERIFICATIONS", label: "Academy Accreditation & Approvals", icon: ShieldCheck, badge: stats.pending > 0 ? stats.pending : null, badgeColor: "bg-amber-100 text-amber-800" },
+          { id: "SHOWCASE", label: "Showcase Works Moderation", icon: Sparkles, badge: null, badgeColor: "bg-purple-100 text-purple-800" },
           { id: "FORM_BUILDER", label: "'Post an Audition' Form Builder", icon: Sliders, badge: `${customFieldsCount} Fields`, badgeColor: "bg-purple-100 text-purple-800" },
           { id: "AUDITIONS", label: "Live Audition Batches Moderation", icon: Megaphone, badge: liveAuditions.length, badgeColor: "bg-pink-100 text-pink-800" },
           { id: "ANALYTICS", label: "Student Flow & Academy Analytics", icon: TrendingUp, badge: "Active", badgeColor: "bg-emerald-100 text-emerald-800" }
@@ -352,6 +379,10 @@ export default function PartnerVerificationDesk({ initialSuiteTab = "VERIFICATIO
       </div>
 
       {/* 4. SUITE TAB CONTENT SWITCHER */}
+      {suiteTab === "SHOWCASE" && (
+        <AdminShowcaseModerationView entityType="PARTNER" />
+      )}
+
       {suiteTab === "FORM_BUILDER" && (
         <RequirementFormBuilderDesk
           moduleType="PARTNER"
@@ -509,9 +540,10 @@ export default function PartnerVerificationDesk({ initialSuiteTab = "VERIFICATIO
                           <button
                             type="button"
                             onClick={() => handleToggleAuditionStatus(aud, "OPEN")}
-                            className="px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold transition cursor-pointer"
+                            className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs"
                           >
-                            Mark Open
+                            <CheckCircle2 size={13} />
+                            <span>Approve & Go Live</span>
                           </button>
                         )}
                         {aud.status !== "PAUSED" && (
@@ -903,6 +935,15 @@ export default function PartnerVerificationDesk({ initialSuiteTab = "VERIFICATIO
                   </div>
 
                   <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSocialModalPartner(partner)}
+                      className="px-3 py-1.5 rounded-xl border border-purple-200 bg-purple-50/70 hover:bg-purple-100/70 text-purple-700 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                      title="Manage academy social channels & public visibility"
+                    >
+                      <Globe size={13} />
+                      <span>Socials & Visibility</span>
+                    </button>
                     {isPending && (
                       <>
                         <button
@@ -929,6 +970,15 @@ export default function PartnerVerificationDesk({ initialSuiteTab = "VERIFICATIO
 
                     {isApproved && (
                       <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSocialModalPartner(partner)}
+                      className="px-3 py-1.5 rounded-xl border border-purple-200 bg-purple-50/70 hover:bg-purple-100/70 text-purple-700 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                      title="Manage academy social channels & public visibility"
+                    >
+                      <Globe size={13} />
+                      <span>Socials & Visibility</span>
+                    </button>
                         <span className="text-xs font-bold text-emerald-700 flex items-center gap-1 bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-200">
                           <UserCheck size={14} />
                           Platform Login Active
@@ -954,6 +1004,17 @@ export default function PartnerVerificationDesk({ initialSuiteTab = "VERIFICATIO
                         <span>Re-Verify & Approve</span>
                       </button>
                     )}
+
+                    {/* Delete partner button */}
+                    <button
+                      type="button"
+                      onClick={() => handleDeletePartner(partner)}
+                      disabled={actionLoadingId === partner.id}
+                      className="p-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl transition cursor-pointer disabled:opacity-50"
+                      title="Permanently delete partner academy"
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   </div>
                 </div>
               </div>
@@ -987,6 +1048,19 @@ export default function PartnerVerificationDesk({ initialSuiteTab = "VERIFICATIO
             theme="purple"
           />
         </ConfirmDialog>
+      )}
+
+      {/* Admin Social Media & Visibility Control Modal */}
+      {socialModalPartner && (
+        <AdminSocialControlModal
+          isOpen={Boolean(socialModalPartner)}
+          onClose={() => setSocialModalPartner(null)}
+          entityType="PARTNER"
+          entity={socialModalPartner}
+          onUpdated={(updated) => {
+            setPartners(prev => prev.map(p => p.id === socialModalPartner.id ? { ...p, ...updated } : p));
+          }}
+        />
       )}
     </div>
   );

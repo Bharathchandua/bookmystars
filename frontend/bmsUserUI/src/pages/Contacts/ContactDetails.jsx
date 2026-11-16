@@ -56,7 +56,7 @@ export default function ContactDetails({
               />
             ) : (
               <div className="contact-header-avatar-placeholder">
-                {contact.companyInfo?.logoText || contact.name.charAt(0)}
+                {contact.companyInfo?.logoText || (contact.name ? contact.name.charAt(0).toUpperCase() : "U")}
               </div>
             )}
             {contact.online && <span className="contact-header-online-badge" />}

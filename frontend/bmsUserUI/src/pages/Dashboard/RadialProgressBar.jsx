@@ -1,20 +1,62 @@
 import PagesButton from "../common/PagesButton";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Check } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { getCurrentUserProfile } from "../../features/bms/api/profile/profileApi";
+import { getMyWorkExperiences } from "../../features/bms/api/profile/workExperienceApi";
+import { getUserSkills } from "../../features/bms/api/profile/skillsApi";
+import { getMyPortfolio } from "../../features/bms/api/media/portfolioApi";
+import { getStoredUser } from "../../features/bms/api/auth/authApi";
 
 export default function RadialProgressBar() {
+  const navigate = useNavigate();
   const [tasks, setTasks] = useState([
-    { id: "basic", label: "Basic Information", completed: true },
-    { id: "about", label: "About Me", completed: true },
-    { id: "experience", label: "Experience", completed: true },
-    { id: "skills", label: "Skills", completed: true },
-    { id: "media", label: "Media", completed: true },
-    { id: "social", label: "Social Links", completed: false }
+    { id: "basic", label: "Basic Information", completed: false, path: "/profile?tab=overview" },
+    { id: "about", label: "About Me", completed: false, path: "/profile?tab=overview" },
+    { id: "experience", label: "Experience", completed: false, path: "/profile?tab=experience" },
+    { id: "skills", label: "Skills", completed: false, path: "/profile?tab=skills" },
+    { id: "media", label: "Media", completed: false, path: "/my-media" },
+    { id: "social", label: "Social Links", completed: false, path: "/profile?tab=overview" }
   ]);
 
-  const toggleTask = (id) => {
-    setTasks(tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
-  };
+  useEffect(() => {
+    async function evaluateProfileCompletion() {
+      try {
+        const user = getStoredUser();
+        const [profileRes, expRes, photosRes] = await Promise.all([
+          getCurrentUserProfile().catch(() => null),
+          getMyWorkExperiences().catch(() => []),
+          getMyPortfolio().catch(() => [])
+        ]);
+
+        const p = profileRes || {};
+        const skillsRes = user?.id ? getUserSkills(user.id) : [];
+        const basicCompleted = Boolean(user?.fullName && user?.email && (user?.location || p.location));
+        const aboutCompleted = Boolean(p.about && typeof p.about === "string" && p.about.trim().length > 20);
+        const expCompleted = Array.isArray(expRes) && expRes.length > 0;
+        const skillsCompleted = (Array.isArray(skillsRes) && skillsRes.length > 0) || (Array.isArray(p.skills) ? p.skills.length > 0 : (typeof p.skills === "string" && p.skills.trim().length > 0));
+        const mediaCompleted = Array.isArray(photosRes) && photosRes.length > 0;
+        const socialCompleted = Boolean(p.instagram || p.youtube || p.website || p.imdb);
+
+        setTasks([
+          { id: "basic", label: "Basic Information", completed: basicCompleted, path: "/profile?tab=overview" },
+          { id: "about", label: "About Me", completed: aboutCompleted, path: "/profile?tab=overview" },
+          { id: "experience", label: "Experience", completed: expCompleted, path: "/profile?tab=experience" },
+          { id: "skills", label: "Skills", completed: skillsCompleted, path: "/profile?tab=skills" },
+          { id: "media", label: "Media", completed: mediaCompleted, path: "/my-media" },
+          { id: "social", label: "Social Links", completed: socialCompleted, path: "/profile?tab=overview" }
+        ]);
+      } catch (e) {
+        console.warn("Could not evaluate dynamic profile completion:", e);
+      }
+    }
+
+    evaluateProfileCompletion();
+
+    const handleProfileUpdate = () => evaluateProfileCompletion();
+    window.addEventListener("profile_updated", handleProfileUpdate);
+    return () => window.removeEventListener("profile_updated", handleProfileUpdate);
+  }, []);
 
   const completedCount = tasks.filter(t => t.completed).length;
   const percentage = Math.round((completedCount / tasks.length) * 100);
@@ -87,12 +129,13 @@ export default function RadialProgressBar() {
           {tasks.map((task) => (
             <div
               key={task.id}
-              onClick={() => toggleTask(task.id)}
+              onClick={() => navigate(task.path)}
               className="flex items-center justify-between cursor-pointer group"
               style={{ fontSize: '16px', gap: '8px' }}
+              title={`Click to edit ${task.label}`}
             >
               <span 
-                className="font-bold text-slate-800 transition-colors duration-150 group-hover:text-pink-600"
+                className={`font-bold transition-colors duration-150 ${task.completed ? "text-slate-800" : "text-slate-500"} group-hover:text-pink-600`}
                 style={{ flex: 1, minWidth: 0, wordBreak: 'break-word', lineHeight: '1.2' }}
               >
                 {task.label}
@@ -101,7 +144,7 @@ export default function RadialProgressBar() {
               <div 
                 className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200"
                 style={{
-                  border: task.completed ? '2px solid #16a34a' : '2px solid #475569',
+                  border: task.completed ? '2px solid #16a34a' : '2px solid #94a3b8',
                   backgroundColor: task.completed ? '#16a34a' : '#f8fafc',
                   color: '#ffffff',
                   boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
@@ -115,7 +158,10 @@ export default function RadialProgressBar() {
       </div>
 
       {/* Action Button at bottom */}
-      <PagesButton className="w-full mt-4 btn-outline-db">
+      <PagesButton
+        onClick={() => navigate("/profile")}
+        className="w-full mt-4 btn-outline-db"
+      >
         Complete Profile
       </PagesButton>
     </div>

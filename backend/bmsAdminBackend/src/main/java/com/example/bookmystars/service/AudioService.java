@@ -27,7 +27,9 @@ public class AudioService {
     private final AudioRepository audioRepository;
     private final UserRepository userRepository;
 
-    private final Path uploadDirectory = Paths.get("uploads/audios");
+    private Path getUploadDirectory() {
+        return com.example.bookmystars.util.UploadStorageUtil.getCategoryUploadDir("audios");
+    }
 
     public AudioResponse uploadAudio(
             String email,
@@ -42,7 +44,7 @@ public class AudioService {
         String fileExtension = com.example.bookmystars.util.FileValidationUtil.validateAudio(file);
         String originalFileName = file.getOriginalFilename();
 
-        Files.createDirectories(uploadDirectory);
+        Path uploadDirectory = com.example.bookmystars.util.UploadStorageUtil.getCategoryUploadDir("audios");
 
         String fileName = "audio_" + user.getId() + "_" + UUID.randomUUID().toString().substring(0, 8) + fileExtension;
         Path filePath = uploadDirectory.resolve(fileName);
@@ -56,6 +58,10 @@ public class AudioService {
 
         String format = fileExtension.replace(".", "").toUpperCase();
 
+        boolean isUserVerified = (user.getIsApproved() != null && user.getIsApproved()) ||
+                "APPROVED".equalsIgnoreCase(user.getVerificationStatus());
+        String initialStatus = isUserVerified ? "APPROVED" : "PENDING";
+
         Audio audio = Audio.builder()
                 .user(user)
                 .title(title != null && !title.isBlank() ? title.trim() : (originalFileName != null ? originalFileName : "Audio Track"))
@@ -64,6 +70,7 @@ public class AudioService {
                 .format(format)
                 .duration(duration != null && !duration.isBlank() ? duration.trim() : "01:15")
                 .sizeStr(sizeStr)
+                .status(initialStatus)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -75,6 +82,10 @@ public class AudioService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
+        boolean isUserVerified = (user.getIsApproved() != null && user.getIsApproved()) ||
+                "APPROVED".equalsIgnoreCase(user.getVerificationStatus());
+        String initialStatus = isUserVerified ? "APPROVED" : "PENDING";
+
         Audio audio = Audio.builder()
                 .user(user)
                 .title(request.getTitle())
@@ -83,6 +94,7 @@ public class AudioService {
                 .format(request.getFormat() != null ? request.getFormat() : "MP3")
                 .duration(request.getDuration() != null ? request.getDuration() : "01:00")
                 .sizeStr("2.5 MB")
+                .status(initialStatus)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -113,7 +125,7 @@ public class AudioService {
         String audioUrl = audio.getAudioUrl();
         if (audioUrl != null && audioUrl.startsWith("/uploads/audios/")) {
             String fileName = audioUrl.substring(audioUrl.lastIndexOf("/") + 1);
-            Path filePath = uploadDirectory.resolve(fileName);
+            Path filePath = getUploadDirectory().resolve(fileName);
             Files.deleteIfExists(filePath);
         }
 
@@ -129,6 +141,10 @@ public class AudioService {
                 .format(audio.getFormat())
                 .duration(audio.getDuration())
                 .sizeStr(audio.getSizeStr())
+                .status(audio.getStatus() != null ? audio.getStatus() : "APPROVED")
+                .rejectionReason(audio.getRejectionReason())
+                .reviewedBy(audio.getReviewedBy())
+                .reviewedAt(audio.getReviewedAt())
                 .createdAt(audio.getCreatedAt())
                 .build();
     }

@@ -58,6 +58,10 @@ public class AudioService {
 
         String format = fileExtension.replace(".", "").toUpperCase();
 
+        boolean isUserVerified = (user.getIsApproved() != null && user.getIsApproved()) ||
+                "APPROVED".equalsIgnoreCase(user.getVerificationStatus());
+        String initialStatus = isUserVerified ? "APPROVED" : "PENDING";
+
         Audio audio = Audio.builder()
                 .user(user)
                 .title(title != null && !title.isBlank() ? title.trim() : (originalFileName != null ? originalFileName : "Audio Track"))
@@ -66,6 +70,7 @@ public class AudioService {
                 .format(format)
                 .duration(duration != null && !duration.isBlank() ? duration.trim() : "01:15")
                 .sizeStr(sizeStr)
+                .status(initialStatus)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -77,6 +82,10 @@ public class AudioService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
+        boolean isUserVerified = (user.getIsApproved() != null && user.getIsApproved()) ||
+                "APPROVED".equalsIgnoreCase(user.getVerificationStatus());
+        String initialStatus = isUserVerified ? "APPROVED" : "PENDING";
+
         Audio audio = Audio.builder()
                 .user(user)
                 .title(request.getTitle())
@@ -85,6 +94,7 @@ public class AudioService {
                 .format(request.getFormat() != null ? request.getFormat() : "MP3")
                 .duration(request.getDuration() != null ? request.getDuration() : "01:00")
                 .sizeStr("2.5 MB")
+                .status(initialStatus)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -131,6 +141,10 @@ public class AudioService {
                 .format(audio.getFormat())
                 .duration(audio.getDuration())
                 .sizeStr(audio.getSizeStr())
+                .status(audio.getStatus() != null ? audio.getStatus() : "APPROVED")
+                .rejectionReason(audio.getRejectionReason())
+                .reviewedBy(audio.getReviewedBy())
+                .reviewedAt(audio.getReviewedAt())
                 .createdAt(audio.getCreatedAt())
                 .build();
     }

@@ -1,11 +1,12 @@
 import PagesButton from "../common/PagesButton";
-export default function BookingsTabs({ activeTab, setActiveTab }) {
+
+export default function BookingsTabs({ activeTab, setActiveTab, counts = {} }) {
   const tabs = [
-    { id: "All Bookings", label: "All Bookings" },
-    { id: "Confirmed", label: "Confirmed", count: 12, badgeClass: "tab-badge-confirmed" },
-    { id: "Pending", label: "Pending", count: 4, badgeClass: "tab-badge-pending" },
-    { id: "Completed", label: "Completed", count: 20, badgeClass: "tab-badge-completed" },
-    { id: "Cancelled", label: "Cancelled", count: 2, badgeClass: "tab-badge-cancelled" },
+    { id: "All Bookings", label: "All Bookings", count: counts.all },
+    { id: "Confirmed", label: "Confirmed", count: counts.confirmed, badgeClass: "tab-badge-confirmed" },
+    { id: "Pending", label: "Pending", count: counts.pending, badgeClass: "tab-badge-pending" },
+    { id: "Completed", label: "Completed", count: counts.completed, badgeClass: "tab-badge-completed" },
+    { id: "Cancelled", label: "Cancelled", count: counts.cancelled, badgeClass: "tab-badge-cancelled" },
   ];
 
   return (
@@ -17,7 +18,7 @@ export default function BookingsTabs({ activeTab, setActiveTab }) {
           onClick={() => setActiveTab(tab.id)}
         >
           <span>{tab.label}</span>
-          {tab.count !== undefined && (
+          {typeof tab.count === "number" && (
             <span className={`bookings-tab-badge ${tab.badgeClass || ""}`}>
               {tab.count}
             </span>

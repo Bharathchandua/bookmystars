@@ -1,0 +1,20 @@
+{
+  "name": "bookmystars-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev:user": "npm run dev --prefix frontend/bmsUserUI",
+    "dev:admin": "npm run dev --prefix frontend/bmsAdminUI",
+    "dev:partner": "npm run dev --prefix frontend/bmsPartnerUI",
+    "dev:client": "npm run dev --prefix frontend/bmsClientUI",
+    "backend:user": "cd backend && set \"JAVA_HOME=C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.21.9-hotspot\" && mvnw.cmd spring-boot:run -pl bmsUserBackend \"-Dspring-boot.run.profiles=local\"",
+    "backend:admin": "cd backend && set \"JAVA_HOME=C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.21.9-hotspot\" && mvnw.cmd spring-boot:run -pl bmsAdminBackend \"-Dspring-boot.run.profiles=local\"",
+    "backend:partner": "cd backend && set \"JAVA_HOME=C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.21.9-hotspot\" && mvnw.cmd spring-boot:run -pl bmsPartnerBackend \"-Dspring-boot.run.profiles=local\"",
+    "backend:client": "cd backend && set \"JAVA_HOME=C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.21.9-hotspot\" && mvnw.cmd spring-boot:run -pl bmsClientBackend \"-Dspring-boot.run.profiles=local\"",
+    "build:user": "npm run build --prefix frontend/bmsUserUI",
+    "build:admin": "npm run build --prefix frontend/bmsAdminUI",
+    "build:partner": "npm run build --prefix frontend/bmsPartnerUI",
+    "build:client": "npm run build --prefix frontend/bmsClientUI",
+    "build:all": "npm run build --prefix frontend"
+  }
+}

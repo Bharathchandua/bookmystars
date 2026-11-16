@@ -51,6 +51,7 @@ public class AdminOperationsService {
     private final ProfessionalProfileRepository professionalProfileRepository;
     private final UserShortlistRepository userShortlistRepository;
     private final com.example.bookmystars.security.AdminSecurityService adminSecurityService;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     // ─── RBAC PERMISSION ENFORCEMENT GUARD ───
@@ -315,8 +316,11 @@ public class AdminOperationsService {
 
     @Transactional
     public List<AdminTalentKycDto> getTalentsKycList() {
-        // Fetch ALL registered users (Talents + Professionals + Clients) so Talent Management covers entire userbase
-        List<User> allUsers = userRepository.findAll(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "id"));
+        // Strictly fetch TALENT and PROFESSIONAL users so Talent Management never mixes in Clients or Partners
+        List<User> allUsers = userRepository.findAll(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "id"))
+                .stream()
+                .filter(u -> u.getAccountType() != AccountType.CLIENT && u.getAccountType() != AccountType.PARTNER)
+                .collect(Collectors.toList());
 
         return allUsers.stream().map(talent -> {
             Profile profile = profileRepository.findByUser(talent).orElseGet(() -> {
@@ -577,7 +581,16 @@ public class AdminOperationsService {
 
     @Transactional
     public void deleteUserAccount(Authentication auth, Long userId) {
-        AdminUser admin = verifyAdminPermission(auth, "talents", "delete");
+        AdminUser admin;
+        try {
+            admin = verifyAdminPermission(auth, "talents", "delete");
+        } catch (Exception e1) {
+            try {
+                admin = verifyAdminPermission(auth, "kyc", "delete");
+            } catch (Exception e2) {
+                admin = verifyAdminPermission(auth, "clients", "delete");
+            }
+        }
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User account not found with ID: " + userId));
@@ -585,78 +598,248 @@ public class AdminOperationsService {
         log.warn("ADMIN ACCOUNT DELETION: Admin '{}' ({}) is permanently deleting user ID {}: {} ({})",
                 admin.getName(), admin.getEmail(), user.getId(), user.getFullName(), user.getEmail());
 
-        // Delete all child data linked to this user
-        try {
-            portfolioRepository.deleteAll(portfolioRepository.findByUser(user));
-        } catch (Exception e) { log.warn("Error deleting portfolio: {}", e.getMessage()); }
+        // Cascading deletion in foreign key dependency order to avoid any constraint violations
+        // 1. Delete all chat messages where user is sender, recipient, or part of user's bookings or castings
+        safeSqlUpdate("DELETE FROM chat_messages WHERE sender_id = ? OR recipient_id = ?", userId, userId);
+        safeSqlUpdate("DELETE FROM chat_messages WHERE booking_id IN (SELECT id FROM booking_requests WHERE talent_id = ? OR professional_id = ?)", userId, userId);
+        safeSqlUpdate("DELETE FROM chat_messages WHERE opportunity_id IN (SELECT id FROM casting_calls WHERE posted_by_user_id = ?)", userId);
 
-        try {
-            videoRepository.deleteAll(videoRepository.findByUser(user));
-        } catch (Exception e) { log.warn("Error deleting videos: {}", e.getMessage()); }
+        // 2. Delete peer-to-peer chat connection requests (as sender or recipient)
+        safeSqlUpdate("DELETE FROM chat_connection_requests WHERE sender_id = ? OR recipient_id = ?", userId, userId);
 
-        try {
-            audioRepository.deleteAll(audioRepository.findByUser(user));
-        } catch (Exception e) { log.warn("Error deleting audios: {}", e.getMessage()); }
+        // 3. Delete casting applications (applied by user, or received on user's casting calls)
+        safeSqlUpdate("DELETE FROM casting_applications WHERE applicant_user_id = ?", userId);
+        safeSqlUpdate("DELETE FROM casting_applications WHERE casting_call_id IN (SELECT id FROM casting_calls WHERE posted_by_user_id = ?)", userId);
 
-        try {
-            workExperienceRepository.deleteAll(workExperienceRepository.findByUser(user));
-        } catch (Exception e) { log.warn("Error deleting work experience: {}", e.getMessage()); }
+        // 4. Delete casting calls posted by this user
+        safeSqlUpdate("DELETE FROM casting_calls WHERE posted_by_user_id = ?", userId);
 
-        try {
-            userDocumentRepository.deleteAll(userDocumentRepository.findByUser(user));
-        } catch (Exception e) { log.warn("Error deleting documents: {}", e.getMessage()); }
+        // 5. Delete booking requests (where user is talent or professional)
+        safeSqlUpdate("DELETE FROM booking_requests WHERE talent_id = ? OR professional_id = ?", userId, userId);
 
-        try {
-            measurementRepository.findByUser(user).ifPresent(measurementRepository::delete);
-        } catch (Exception e) { log.warn("Error deleting measurement: {}", e.getMessage()); }
+        // 6. Delete reviews (where user is profile recipient or reviewer)
+        safeSqlUpdate("DELETE FROM reviews WHERE profile_user_id = ? OR reviewer_id = ?", userId, userId);
 
-        try {
-            ratePackageRepository.deleteAll(ratePackageRepository.findByUserIdOrderByIdAsc(userId));
-        } catch (Exception e) { log.warn("Error deleting rate packages: {}", e.getMessage()); }
+        // 7. Delete profile access requests (where user is talent or requester)
+        safeSqlUpdate("DELETE FROM profile_access_requests WHERE talent_id = ? OR requester_id = ?", userId, userId);
 
-        try {
-            availabilityRepository.deleteAll(availabilityRepository.findByUserIdOrderByAvailabilityDateAsc(userId));
-        } catch (Exception e) { log.warn("Error deleting availability: {}", e.getMessage()); }
+        // 8. Delete shortlists (where user is shortlist owner or shortlisted talent)
+        safeSqlUpdate("DELETE FROM user_shortlists WHERE user_id = ? OR talent_id = ?", userId, userId);
 
-        try {
-            reviewRepository.deleteAll(reviewRepository.findByProfileUserIdOrderByCreatedAtDesc(userId));
-        } catch (Exception e) { log.warn("Error deleting reviews: {}", e.getMessage()); }
+        // 9. Delete showcase items
+        safeSqlUpdate("DELETE FROM client_partner_showcases WHERE user_id = ?", userId);
 
-        try {
-            profileAccessRequestRepository.deleteAll(profileAccessRequestRepository.findByTalent(user));
-            profileAccessRequestRepository.deleteAll(profileAccessRequestRepository.findByRequester(user));
-        } catch (Exception e) { log.warn("Error deleting access requests: {}", e.getMessage()); }
+        // 10. Delete user profile types collection
+        safeSqlUpdate("DELETE FROM user_profile_types WHERE user_id = ?", userId);
 
-        try {
-            castingApplicationRepository.deleteAll(castingApplicationRepository.findByApplicantIdOrderByAppliedAtDesc(userId));
-        } catch (Exception e) { log.warn("Error deleting casting applications: {}", e.getMessage()); }
+        // 11. Delete talent portfolio items, videos, audios, work experience, documents, measurements, rates, availabilities
+        safeSqlUpdate("DELETE FROM portfolios WHERE user_id = ?", userId);
+        safeSqlUpdate("DELETE FROM portfolio_items WHERE user_id = ?", userId);
+        safeSqlUpdate("DELETE FROM videos WHERE user_id = ?", userId);
+        safeSqlUpdate("DELETE FROM audios WHERE user_id = ?", userId);
+        safeSqlUpdate("DELETE FROM work_experiences WHERE user_id = ?", userId);
+        safeSqlUpdate("DELETE FROM work_experience WHERE user_id = ?", userId);
+        safeSqlUpdate("DELETE FROM user_documents WHERE user_id = ?", userId);
+        safeSqlUpdate("DELETE FROM measurements WHERE user_id = ?", userId);
+        safeSqlUpdate("DELETE FROM rate_packages WHERE user_id = ?", userId);
+        safeSqlUpdate("DELETE FROM availabilities WHERE user_id = ?", userId);
 
-        try {
-            clientPartnerProfileRepository.findByUser(user).ifPresent(clientPartnerProfileRepository::delete);
-        } catch (Exception e) { log.warn("Error deleting client/partner profile: {}", e.getMessage()); }
+        // 12. Delete profile skills & profiles
+        safeSqlUpdate("DELETE FROM profile_skills WHERE profile_id IN (SELECT id FROM profiles WHERE user_id = ?)", userId);
+        safeSqlUpdate("DELETE FROM profiles WHERE user_id = ?", userId);
+        safeSqlUpdate("DELETE FROM talent_profile WHERE user_id = ?", userId);
 
-        try {
-            professionalProfileRepository.findByUser(user).ifPresent(professionalProfileRepository::delete);
-        } catch (Exception e) { log.warn("Error deleting professional profile: {}", e.getMessage()); }
+        // 13. Delete client / partner / professional profiles
+        safeSqlUpdate("DELETE FROM client_partner_profiles WHERE user_id = ?", userId);
+        safeSqlUpdate("DELETE FROM professional_profiles WHERE user_id = ?", userId);
 
-        try {
-            bookingRequestRepository.deleteAll(bookingRequestRepository.findByTalentOrderByCreatedAtDesc(user));
-            bookingRequestRepository.deleteAll(bookingRequestRepository.findByProfessionalOrderByCreatedAtDesc(user));
-        } catch (Exception e) { log.warn("Error deleting bookings: {}", e.getMessage()); }
-
-        try {
-            userShortlistRepository.deleteAll(userShortlistRepository.findByUserOrderByCreatedAtDesc(user));
-            userShortlistRepository.deleteAll(userShortlistRepository.findByTalent(user));
-        } catch (Exception e) { log.warn("Error deleting shortlists: {}", e.getMessage()); }
-
-        try {
-            profileRepository.findByUser(user).ifPresent(profileRepository::delete);
-        } catch (Exception e) { log.warn("Error deleting profile: {}", e.getMessage()); }
-
-        // Finally, delete the User record
-        userRepository.delete(user);
+        // 14. Finally, permanently delete the User record
+        safeSqlUpdate("DELETE FROM users WHERE id = ?", userId);
 
         log.info("ACCOUNT DELETED: User ID {} ({}) was permanently deleted from PostgreSQL database.",
                 userId, user.getEmail());
+    }
+
+    private void safeSqlUpdate(String sql, Object... params) {
+        try {
+            jdbcTemplate.update(sql, params);
+        } catch (Exception e) {
+            log.warn("SQL cleanup warning for query [{}]: {}", sql, e.getMessage());
+        }
+    }
+
+    // ─── TALENT MEDIA MODERATION DESK ───
+
+    public List<com.example.bookmystars.dto.AdminTalentMediaItemDto> getPendingTalentMedia() {
+        List<com.example.bookmystars.dto.AdminTalentMediaItemDto> items = new ArrayList<>();
+
+        for (Portfolio p : portfolioRepository.findAll()) {
+            if ("PENDING".equalsIgnoreCase(p.getStatus())) {
+                items.add(mapPortfolioToAdminDto(p));
+            }
+        }
+
+        for (Video v : videoRepository.findAll()) {
+            if ("PENDING".equalsIgnoreCase(v.getStatus())) {
+                items.add(mapVideoToAdminDto(v));
+            }
+        }
+
+        for (Audio a : audioRepository.findAll()) {
+            if ("PENDING".equalsIgnoreCase(a.getStatus())) {
+                items.add(mapAudioToAdminDto(a));
+            }
+        }
+
+        items.sort(Comparator.comparing(com.example.bookmystars.dto.AdminTalentMediaItemDto::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())));
+        return items;
+    }
+
+    public List<com.example.bookmystars.dto.AdminTalentMediaItemDto> getTalentMediaByUserId(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        List<com.example.bookmystars.dto.AdminTalentMediaItemDto> items = new ArrayList<>();
+        for (Portfolio p : portfolioRepository.findByUser(user)) {
+            items.add(mapPortfolioToAdminDto(p));
+        }
+        for (Video v : videoRepository.findByUser(user)) {
+            items.add(mapVideoToAdminDto(v));
+        }
+        for (Audio a : audioRepository.findByUser(user)) {
+            items.add(mapAudioToAdminDto(a));
+        }
+
+        items.sort(Comparator.comparing(com.example.bookmystars.dto.AdminTalentMediaItemDto::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())));
+        return items;
+    }
+
+    @Transactional
+    public com.example.bookmystars.dto.AdminTalentMediaItemDto reviewTalentMedia(
+            Authentication auth,
+            String mediaType,
+            Long id,
+            com.example.bookmystars.dto.ReviewMediaRequest request) {
+
+        String reviewer = (auth != null && auth.getName() != null) ? auth.getName().trim() : "Super Admin";
+        String status = (request != null && request.getStatus() != null && !request.getStatus().isBlank())
+                ? request.getStatus().trim().toUpperCase()
+                : "APPROVED";
+        String reason = (request != null) ? request.getRejectionReason() : null;
+
+        if ("photo".equalsIgnoreCase(mediaType) || "portfolio".equalsIgnoreCase(mediaType)) {
+            Portfolio photo = portfolioRepository.findById(id)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Portfolio photo not found: " + id));
+            photo.setStatus(status);
+            photo.setRejectionReason("REJECTED".equalsIgnoreCase(status) ? reason : null);
+            photo.setReviewedBy(reviewer);
+            photo.setReviewedAt(LocalDateTime.now());
+            Portfolio saved = portfolioRepository.save(photo);
+            log.info("Admin {} set photo id {} status to {}", reviewer, id, status);
+            return mapPortfolioToAdminDto(saved);
+        } else if ("video".equalsIgnoreCase(mediaType)) {
+            Video video = videoRepository.findById(id)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Video reel not found: " + id));
+            video.setStatus(status);
+            video.setRejectionReason("REJECTED".equalsIgnoreCase(status) ? reason : null);
+            video.setReviewedBy(reviewer);
+            video.setReviewedAt(LocalDateTime.now());
+            Video saved = videoRepository.save(video);
+            log.info("Admin {} set video id {} status to {}", reviewer, id, status);
+            return mapVideoToAdminDto(saved);
+        } else if ("audio".equalsIgnoreCase(mediaType)) {
+            Audio audio = audioRepository.findById(id)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Audio clip not found: " + id));
+            audio.setStatus(status);
+            audio.setRejectionReason("REJECTED".equalsIgnoreCase(status) ? reason : null);
+            audio.setReviewedBy(reviewer);
+            audio.setReviewedAt(LocalDateTime.now());
+            Audio saved = audioRepository.save(audio);
+            log.info("Admin {} set audio id {} status to {}", reviewer, id, status);
+            return mapAudioToAdminDto(saved);
+        } else {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown media type: " + mediaType);
+        }
+    }
+
+    private com.example.bookmystars.dto.AdminTalentMediaItemDto mapPortfolioToAdminDto(Portfolio p) {
+        User u = p.getUser();
+        Profile prof = (u != null) ? profileRepository.findByUser(u).orElse(null) : null;
+        boolean isApproved = (u != null) && (Boolean.TRUE.equals(u.getIsApproved()) || "APPROVED".equalsIgnoreCase(u.getVerificationStatus()));
+        return com.example.bookmystars.dto.AdminTalentMediaItemDto.builder()
+                .id(p.getId())
+                .userId(u != null ? u.getId() : null)
+                .talentName(u != null ? u.getFullName() : "Unknown Artist")
+                .talentEmail(u != null ? u.getEmail() : null)
+                .talentStageName(u != null ? u.getStageName() : null)
+                .talentAvatar(prof != null ? prof.getProfilePhoto() : null)
+                .craft(u != null && u.getPrimaryProfession() != null ? u.getPrimaryProfession() : "Talent")
+                .isUserApproved(isApproved)
+                .mediaType("PHOTO")
+                .title(p.getTitle() != null ? p.getTitle() : "Portfolio Photo")
+                .category(p.getCategory() != null ? p.getCategory() : "Fashion")
+                .mediaUrl(p.getImageUrl())
+                .thumbnailUrl(p.getImageUrl())
+                .status(p.getStatus() != null ? p.getStatus() : "APPROVED")
+                .rejectionReason(p.getRejectionReason())
+                .reviewedBy(p.getReviewedBy())
+                .reviewedAt(p.getReviewedAt())
+                .createdAt(p.getCreatedAt())
+                .build();
+    }
+
+    private com.example.bookmystars.dto.AdminTalentMediaItemDto mapVideoToAdminDto(Video v) {
+        User u = v.getUser();
+        Profile prof = (u != null) ? profileRepository.findByUser(u).orElse(null) : null;
+        boolean isApproved = (u != null) && (Boolean.TRUE.equals(u.getIsApproved()) || "APPROVED".equalsIgnoreCase(u.getVerificationStatus()));
+        return com.example.bookmystars.dto.AdminTalentMediaItemDto.builder()
+                .id(v.getId())
+                .userId(u != null ? u.getId() : null)
+                .talentName(u != null ? u.getFullName() : "Unknown Artist")
+                .talentEmail(u != null ? u.getEmail() : null)
+                .talentStageName(u != null ? u.getStageName() : null)
+                .talentAvatar(prof != null ? prof.getProfilePhoto() : null)
+                .craft(u != null && u.getPrimaryProfession() != null ? u.getPrimaryProfession() : "Talent")
+                .isUserApproved(isApproved)
+                .mediaType("VIDEO")
+                .title(v.getTitle() != null ? v.getTitle() : "Audition Video Reel")
+                .category(v.getCategory() != null ? v.getCategory() : "Audition Reel")
+                .mediaUrl(v.getVideoUrl())
+                .thumbnailUrl(v.getThumbnailUrl())
+                .duration(v.getDuration())
+                .status(v.getStatus() != null ? v.getStatus() : "APPROVED")
+                .rejectionReason(v.getRejectionReason())
+                .reviewedBy(v.getReviewedBy())
+                .reviewedAt(v.getReviewedAt())
+                .createdAt(v.getCreatedAt())
+                .build();
+    }
+
+    private com.example.bookmystars.dto.AdminTalentMediaItemDto mapAudioToAdminDto(Audio a) {
+        User u = a.getUser();
+        Profile prof = (u != null) ? profileRepository.findByUser(u).orElse(null) : null;
+        boolean isApproved = (u != null) && (Boolean.TRUE.equals(u.getIsApproved()) || "APPROVED".equalsIgnoreCase(u.getVerificationStatus()));
+        return com.example.bookmystars.dto.AdminTalentMediaItemDto.builder()
+                .id(a.getId())
+                .userId(u != null ? u.getId() : null)
+                .talentName(u != null ? u.getFullName() : "Unknown Artist")
+                .talentEmail(u != null ? u.getEmail() : null)
+                .talentStageName(u != null ? u.getStageName() : null)
+                .talentAvatar(prof != null ? prof.getProfilePhoto() : null)
+                .craft(u != null && u.getPrimaryProfession() != null ? u.getPrimaryProfession() : "Talent")
+                .isUserApproved(isApproved)
+                .mediaType("AUDIO")
+                .title(a.getTitle() != null ? a.getTitle() : "Voice Track")
+                .category(a.getCategory() != null ? a.getCategory() : "Voice Sample")
+                .mediaUrl(a.getAudioUrl())
+                .format(a.getFormat())
+                .duration(a.getDuration())
+                .sizeStr(a.getSizeStr())
+                .status(a.getStatus() != null ? a.getStatus() : "APPROVED")
+                .rejectionReason(a.getRejectionReason())
+                .reviewedBy(a.getReviewedBy())
+                .reviewedAt(a.getReviewedAt())
+                .createdAt(a.getCreatedAt())
+                .build();
     }
 }

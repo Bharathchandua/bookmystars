@@ -17,7 +17,17 @@ export default function OpportunityFilters({
     locationFilter !== "ALL";
 
   return (
-    <div className="opp-filter-row" style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "8px", margin: "14px 0" }}>
+    <div
+      className="opp-filter-row"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "flex-start",
+        flexWrap: "wrap",
+        gap: "12px",
+        margin: "12px 0 16px 0",
+      }}
+    >
       {/* 1. Discipline / Post Type Filter */}
       <div style={{ position: "relative", display: "inline-block" }}>
         <select

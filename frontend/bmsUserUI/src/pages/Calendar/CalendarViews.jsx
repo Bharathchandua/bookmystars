@@ -1,4 +1,4 @@
-import { CALENDAR_EVENTS } from "./calendarData.js";
+import PagesButton from "../common/PagesButton";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i); // 0–23
 
@@ -21,12 +21,14 @@ function getWeekDates(date) {
 }
 
 function toMinutes(timeStr) {
-  // "10:00 AM" or "2:00 PM"
-  const [time, period] = timeStr.split(" ");
+  if (!timeStr) return 9 * 60;
+  const parts = String(timeStr).split(" ");
+  if (parts.length < 2) return 9 * 60;
+  const [time, period] = parts;
   let [h, m] = time.split(":").map(Number);
   if (period === "PM" && h !== 12) h += 12;
   if (period === "AM" && h === 12) h = 0;
-  return h * 60 + m;
+  return (h || 0) * 60 + (m || 0);
 }
 
 const CATEGORY_COLORS = {
@@ -42,14 +44,14 @@ const CATEGORY_COLORS = {
 /* ──────────────────────────────────────────
    WEEK VIEW
    ────────────────────────────────────────── */
-export function WeekView({ currentDate, onAddEvent, selectedCategory }) {
+export function WeekView({ currentDate, onAddEvent, selectedCategory = "all", events = [] }) {
   const weekDates = getWeekDates(currentDate);
   const today     = new Date();
   const DAY_ABBRS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
   // Build event map keyed by "YYYY-MM-DD"
   const eventMap = {};
-  CALENDAR_EVENTS.forEach(evt => {
+  (events || []).forEach(evt => {
     if (selectedCategory !== "all" && evt.category !== selectedCategory) return;
     if (!eventMap[evt.date]) eventMap[evt.date] = [];
     eventMap[evt.date].push(evt);
@@ -97,23 +99,26 @@ export function WeekView({ currentDate, onAddEvent, selectedCategory }) {
               {weekDates.map((dt, di) => {
                 const key    = toKey(dt);
                 const dayEvt = (eventMap[key] || []).filter(evt => {
-                  const startH = Math.floor(toMinutes(evt.time) / 60);
+                  const startH = Math.floor(toMinutes(evt.time || evt.startTime) / 60);
                   return startH === h;
                 });
 
                 return (
-                  <div key={di} className={`cal-wv-cell ${isToday(dt) ? "today-col" : ""}`}>
+                  <div key={di} className="cal-wv-cell">
                     {dayEvt.map(evt => {
                       const colors = CATEGORY_COLORS[evt.category] || CATEGORY_COLORS.other;
                       return (
                         <div
                           key={evt.id}
                           className="cal-wv-event"
-                          style={{ background: colors.bg, color: colors.text, borderLeft: `3px solid ${colors.dot}` }}
-                          title={`${evt.title} • ${evt.time}`}
+                          style={{
+                            background: colors.bg,
+                            color:      colors.text,
+                            borderLeft: `3px solid ${colors.dot}`,
+                          }}
                         >
-                          <div className="cal-wv-evt-title">{evt.title}</div>
-                          <div className="cal-wv-evt-time">{evt.time}</div>
+                          <span className="cal-wv-evt-title">{evt.title}</span>
+                          <span className="cal-wv-evt-time">{evt.time || evt.startTime}</span>
                         </div>
                       );
                     })}
@@ -131,12 +136,12 @@ export function WeekView({ currentDate, onAddEvent, selectedCategory }) {
 /* ──────────────────────────────────────────
    DAY VIEW
    ────────────────────────────────────────── */
-export function DayView({ currentDate, selectedCategory }) {
-  const today   = new Date();
+export function DayView({ currentDate, selectedCategory = "all", events = [] }) {
+  const today = new Date();
   const isToday =
     currentDate.getFullYear() === today.getFullYear() &&
-    currentDate.getMonth()    === today.getMonth() &&
-    currentDate.getDate()     === today.getDate();
+    currentDate.getMonth()   === today.getMonth() &&
+    currentDate.getDate()    === today.getDate();
 
   const DAY_NAMES   = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
   const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -149,7 +154,7 @@ export function DayView({ currentDate, selectedCategory }) {
   };
 
   const eventMap = {};
-  CALENDAR_EVENTS.forEach(evt => {
+  (events || []).forEach(evt => {
     if (selectedCategory !== "all" && evt.category !== selectedCategory) return;
     if (!eventMap[evt.date]) eventMap[evt.date] = [];
     eventMap[evt.date].push(evt);
@@ -175,7 +180,7 @@ export function DayView({ currentDate, selectedCategory }) {
         <div className="cal-dv-grid">
           {WORK_HOURS.map(h => {
             const hourEvts = dayEvents.filter(evt => {
-              const startH = Math.floor(toMinutes(evt.time) / 60);
+              const startH = Math.floor(toMinutes(evt.time || evt.startTime) / 60);
               return startH === h;
             });
 
@@ -187,9 +192,9 @@ export function DayView({ currentDate, selectedCategory }) {
                 <div className="cal-dv-cell">
                   {hourEvts.map(evt => {
                     const colors = CATEGORY_COLORS[evt.category] || CATEGORY_COLORS.other;
-                    const startMin = toMinutes(evt.time);
+                    const startMin = toMinutes(evt.time || evt.startTime);
                     const endMin   = toMinutes(evt.endTime);
-                    const duration = Math.max(endMin - startMin, 60); // min 60px
+                    const duration = Math.max(endMin - startMin, 60);
                     return (
                       <div
                         key={evt.id}
@@ -202,7 +207,7 @@ export function DayView({ currentDate, selectedCategory }) {
                         }}
                       >
                         <div className="cal-dv-evt-title">{evt.title}</div>
-                        <div className="cal-dv-evt-time">{evt.time} – {evt.endTime}</div>
+                        <div className="cal-dv-evt-time">{evt.time || evt.startTime} – {evt.endTime}</div>
                         {evt.location && <div className="cal-dv-evt-loc">📍 {evt.location}</div>}
                       </div>
                     );
@@ -220,19 +225,19 @@ export function DayView({ currentDate, selectedCategory }) {
 /* ──────────────────────────────────────────
    AGENDA VIEW  (full events list by date)
    ────────────────────────────────────────── */
-export function AgendaView({ currentDate, selectedCategory }) {
+export function AgendaView({ currentDate, selectedCategory = "all", events = [] }) {
   const MONTH_NAMES = [
     "January","February","March","April","May","June",
     "July","August","September","October","November","December"
   ];
   const DAY_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 
-  // Show events for current month + next month
   const year  = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
-  const filtered = CALENDAR_EVENTS.filter(evt => {
+  const filtered = (events || []).filter(evt => {
     if (selectedCategory !== "all" && evt.category !== selectedCategory) return false;
+    if (!evt.date) return false;
     const [ey, em] = evt.date.split("-").map(Number);
     return ey === year && em - 1 === month;
   }).sort((a, b) => a.date.localeCompare(b.date));
@@ -249,48 +254,49 @@ export function AgendaView({ currentDate, selectedCategory }) {
 
   if (filtered.length === 0) {
     return (
-      <div className="cal-agenda-view">
-        <div className="cal-agenda-view-empty">
-          <span style={{ fontSize: 32 }}>📅</span>
-          <p>No events in {MONTH_NAMES[month]} {year}</p>
-        </div>
+      <div className="cal-av-empty" style={{ padding: "48px 24px", textAlign: "center", color: "#64748b", background: "#fff", borderRadius: 12, border: "1px dashed #cbd5e1" }}>
+        No events scheduled for {MONTH_NAMES[month]} {year}.
       </div>
     );
   }
 
   return (
     <div className="cal-agenda-view">
-      {Object.entries(groups).map(([dateKey, evts]) => {
-        const dt      = new Date(dateKey + "T00:00:00");
-        const isToday = dateKey === todayKey;
-        const colors  = CATEGORY_COLORS;
+      {Object.entries(groups).map(([dateStr, dayEvts]) => {
+        const [y, m, d] = dateStr.split("-").map(Number);
+        const dt        = new Date(y, m - 1, d);
+        const isToday   = dateStr === todayKey;
+
         return (
-          <div key={dateKey} className="cal-agenda-view-group">
-            {/* Date header */}
-            <div className={`cal-agenda-view-date ${isToday ? "today" : ""}`}>
-              <span className="cal-agenda-view-day-num">{dt.getDate()}</span>
-              <div className="cal-agenda-view-day-info">
-                <span className="cal-agenda-view-weekday">{DAY_NAMES[dt.getDay()]}</span>
-                <span className="cal-agenda-view-month">{MONTH_NAMES[dt.getMonth()]} {dt.getFullYear()}</span>
-              </div>
-              {isToday && <span className="cal-agenda-view-today-tag">Today</span>}
+          <div key={dateStr} className={`cal-av-group ${isToday ? "today" : ""}`}>
+            {/* Date pill on left */}
+            <div className={`cal-av-date-header ${isToday ? "today" : ""}`}>
+              <div className="cal-av-day-name">{DAY_NAMES[dt.getDay()]}</div>
+              <div className={`cal-av-day-num ${isToday ? "today-num" : ""}`}>{d}</div>
+              <div className="cal-av-month-name">{MONTH_NAMES[m - 1].slice(0, 3)}</div>
             </div>
 
-            {/* Events for that date */}
-            <div className="cal-agenda-view-events">
-              {evts.map(evt => {
-                const c = (colors[evt.category] || colors.other);
+            {/* Event list for this day */}
+            <div className="cal-av-events-list">
+              {dayEvts.map(evt => {
+                const colors = CATEGORY_COLORS[evt.category] || CATEGORY_COLORS.other;
                 return (
-                  <div key={evt.id} className="cal-agenda-view-evt" style={{ borderLeft: `4px solid ${c.dot}` }}>
-                    <div className="cal-agenda-view-evt-dot" style={{ background: c.dot }} />
-                    <div className="cal-agenda-view-evt-info">
-                      <span className="cal-agenda-view-evt-title">{evt.title}</span>
-                      <span className="cal-agenda-view-evt-meta">
-                        {evt.time} – {evt.endTime}
-                        {evt.location && ` · ${evt.location}`}
-                      </span>
+                  <div
+                    key={evt.id}
+                    className="cal-av-event-card"
+                    style={{ borderLeft: `4px solid ${colors.dot}` }}
+                  >
+                    <div className="cal-av-card-left">
+                      <span className="cal-av-evt-title">{evt.title}</span>
+                      <span className="cal-av-evt-time">{evt.time || evt.startTime} – {evt.endTime}</span>
+                      {evt.location && (
+                        <span className="cal-av-evt-loc">📍 {evt.location}</span>
+                      )}
                     </div>
-                    <span className="cal-agenda-view-evt-badge" style={{ background: c.bg, color: c.text }}>
+                    <span
+                      className="cal-av-category-badge"
+                      style={{ background: colors.bg, color: colors.text }}
+                    >
                       {evt.category.charAt(0).toUpperCase() + evt.category.slice(1)}
                     </span>
                   </div>

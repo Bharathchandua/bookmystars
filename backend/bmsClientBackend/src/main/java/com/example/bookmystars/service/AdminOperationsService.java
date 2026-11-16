@@ -1,0 +1,849 @@
+package com.example.bookmystars.service;
+
+import com.example.bookmystars.dto.AdminCastingDto;
+import com.example.bookmystars.dto.AdminOverviewMetricsDto;
+import com.example.bookmystars.dto.AdminTalentKycDto;
+import com.example.bookmystars.model.*;
+import com.example.bookmystars.repository.*;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class AdminOperationsService {
+
+    @org.springframework.beans.factory.annotation.Value("${app.seed-demo-data:false}")
+    private boolean seedDemoData;
+
+    private final CastingCallRepository castingCallRepository;
+    private final CastingApplicationRepository castingApplicationRepository;
+    private final UserRepository userRepository;
+    private final ProfileRepository profileRepository;
+    private final AdminUserRepository adminUserRepository;
+    private final AdminRoleRepository adminRoleRepository;
+    private final BookingRequestRepository bookingRequestRepository;
+    private final PortfolioRepository portfolioRepository;
+    private final VideoRepository videoRepository;
+    private final AudioRepository audioRepository;
+    private final WorkExperienceRepository workExperienceRepository;
+    private final UserDocumentRepository userDocumentRepository;
+    private final MeasurementRepository measurementRepository;
+    private final RatePackageRepository ratePackageRepository;
+    private final AvailabilityRepository availabilityRepository;
+    private final ReviewRepository reviewRepository;
+    private final ProfileAccessRequestRepository profileAccessRequestRepository;
+    private final ClientPartnerProfileRepository clientPartnerProfileRepository;
+    private final ProfessionalProfileRepository professionalProfileRepository;
+    private final UserShortlistRepository userShortlistRepository;
+    private final com.example.bookmystars.security.AdminSecurityService adminSecurityService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    // ─── RBAC PERMISSION ENFORCEMENT GUARD ───
+
+    public AdminUser verifyAdminPermission(Authentication auth, String module, String action) {
+        if (auth == null || auth.getName() == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Administrative authentication token required.");
+        }
+
+        String adminEmail = auth.getName().trim().toLowerCase();
+        AdminUser admin = adminUserRepository.findByEmail(adminEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Admin officer account not found: " + adminEmail));
+
+        // Master Super Admin has full platform access
+        if ("ROLE_SUPER_ADMIN".equalsIgnoreCase(admin.getRoleId()) || "admin@bookmystars.com".equalsIgnoreCase(admin.getEmail())) {
+            return admin;
+        }
+
+        // Check dynamic role permissions from DB
+        AdminRole role = adminRoleRepository.findById(admin.getRoleId()).orElse(null);
+        if (role == null) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin role (" + admin.getRoleId() + ") does not exist in platform governance.");
+        }
+
+        boolean authorized = checkModuleAction(role.getPermissions(), module, action);
+        if (!authorized) {
+            log.warn("RBAC DENIAL: Admin '{}' ({}) attempted unauthorized action '{}.{}'",
+                    admin.getName(), admin.getRoleId(), module, action);
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Access Denied: Your assigned role (" + admin.getRoleId() + ") is not authorized to " + action + " in module '" + module + "'."
+            );
+        }
+
+        return admin;
+    }
+
+    private boolean checkModuleAction(String permissionsJson, String module, String action) {
+        if (permissionsJson == null || permissionsJson.isBlank()) return false;
+        try {
+            Map<String, Map<String, Object>> map = objectMapper.readValue(permissionsJson, new TypeReference<>() {});
+            Map<String, Object> modulePerms = map.get(module);
+            if (modulePerms == null) return false;
+            Object val = modulePerms.get(action);
+            return Boolean.TRUE.equals(val);
+        } catch (Exception e) {
+            log.error("Failed to parse role permissions JSON: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    // ─── CASTING SCREENING OPERATIONS ───
+
+    @Transactional
+    public List<AdminCastingDto> getCastings(String filterStatus) {
+        List<CastingCall> calls = castingCallRepository.findAll();
+
+        // Seed pending items if table has no IN_REVIEW entries so admin desk is interactive immediately
+        boolean hasPending = calls.stream().anyMatch(c -> c.getStatus() == CastingStatus.IN_REVIEW);
+        if (!hasPending && calls.isEmpty() && seedDemoData) {
+            seedInitialPendingCastings();
+            calls = castingCallRepository.findAll();
+        }
+
+        if ("IN_REVIEW".equalsIgnoreCase(filterStatus) || "PENDING".equalsIgnoreCase(filterStatus)) {
+            calls = calls.stream().filter(c -> c.getStatus() == CastingStatus.IN_REVIEW).collect(Collectors.toList());
+        } else if ("OPEN".equalsIgnoreCase(filterStatus)) {
+            calls = calls.stream().filter(c -> c.getStatus() == CastingStatus.OPEN).collect(Collectors.toList());
+        }
+
+        // Sort: IN_REVIEW first, then newest
+        return calls.stream()
+                .sorted((a, b) -> {
+                    if (a.getStatus() == CastingStatus.IN_REVIEW && b.getStatus() != CastingStatus.IN_REVIEW) return -1;
+                    if (a.getStatus() != CastingStatus.IN_REVIEW && b.getStatus() == CastingStatus.IN_REVIEW) return 1;
+                    LocalDateTime tA = a.getCreatedAt() != null ? a.getCreatedAt() : LocalDateTime.MIN;
+                    LocalDateTime tB = b.getCreatedAt() != null ? b.getCreatedAt() : LocalDateTime.MIN;
+                    return tB.compareTo(tA);
+                })
+                .map(this::mapToAdminCastingDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public AdminCastingDto approveCasting(Authentication auth, Long id) {
+        AdminUser admin = verifyAdminPermission(auth, "castings", "approve");
+
+        CastingCall call = castingCallRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Casting call not found with ID: " + id));
+
+        call.setStatus(CastingStatus.OPEN);
+        call.setUpdatedAt(LocalDateTime.now());
+        CastingCall saved = castingCallRepository.save(call);
+
+        log.info("CASTING APPROVED: Admin '{}' approved casting '{}' (ID: {}). Status is now OPEN in database.",
+                admin.getName(), saved.getTitle(), saved.getId());
+
+        return mapToAdminCastingDto(saved);
+    }
+
+    @Transactional
+    public AdminCastingDto rejectCasting(Authentication auth, Long id, String reason) {
+        AdminUser admin = verifyAdminPermission(auth, "castings", "approve");
+
+        CastingCall call = castingCallRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Casting call not found with ID: " + id));
+
+        call.setStatus(CastingStatus.CLOSED);
+        call.setUpdatedAt(LocalDateTime.now());
+        CastingCall saved = castingCallRepository.save(call);
+
+        log.info("CASTING REJECTED: Admin '{}' rejected casting '{}' (ID: {}). Reason: {}",
+                admin.getName(), saved.getTitle(), saved.getId(), reason);
+
+        return mapToAdminCastingDto(saved);
+    }
+
+    @Transactional
+    public void deleteCasting(Authentication auth, Long id) {
+        AdminUser admin = verifyAdminPermission(auth, "castings", "delete");
+
+        CastingCall call = castingCallRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Casting call not found with ID: " + id));
+
+        try {
+            castingApplicationRepository.deleteByCastingCallId(call.getId());
+        } catch (Exception e) {
+            log.warn("Could not delete applications for casting {}: {}", id, e.getMessage());
+        }
+        castingCallRepository.delete(call);
+
+        log.info("CASTING PERMANENTLY DELETED: Admin '{}' deleted casting '{}' (ID: {}) from database.",
+                admin.getName(), call.getTitle(), id);
+    }
+
+    private void seedInitialPendingCastings() {
+        User studio = userRepository.findAll().stream().findFirst().orElseGet(() -> {
+            User u = User.builder()
+                    .fullName("Dharma & Excel Productions")
+                    .email("studio@bookmystars.com")
+                    .mobileNumber("9820011223")
+                    .password("$2a$10$xyz")
+                    .accountType(AccountType.PROFESSIONAL)
+                    .location("Mumbai")
+                    .termsAccepted(true)
+                    .build();
+            return userRepository.save(u);
+        });
+
+        CastingCall call1 = CastingCall.builder()
+                .postedBy(studio)
+                .title("Urban Lifestyle Shoot")
+                .projectType("Fashion Campaign")
+                .roleType(ProfileType.MODEL)
+                .customCraft("Commercial Model")
+                .location("Mumbai")
+                .budget(new BigDecimal("95000"))
+                .posterUrl("https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=600&q=80")
+                .status(CastingStatus.IN_REVIEW)
+                .createdAt(LocalDateTime.now().minusHours(4))
+                .build();
+
+        CastingCall call2 = CastingCall.builder()
+                .postedBy(studio)
+                .title("Tech Product Commercial")
+                .projectType("Digital Advertisement")
+                .roleType(ProfileType.ACTOR)
+                .customCraft("Lead Actor")
+                .location("Bangalore")
+                .budget(new BigDecimal("145000"))
+                .posterUrl("https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=600&q=80")
+                .status(CastingStatus.IN_REVIEW)
+                .createdAt(LocalDateTime.now().minusHours(8))
+                .build();
+
+        castingCallRepository.save(call1);
+        castingCallRepository.save(call2);
+    }
+
+    private AdminCastingDto mapToAdminCastingDto(CastingCall call) {
+        long appCount = 0;
+        try {
+            appCount = castingApplicationRepository.countByCastingCallId(call.getId());
+        } catch (Exception ignored) {}
+
+        String talentName = call.getPostedBy() != null ? call.getPostedBy().getFullName() : "Production Studio";
+        String talentEmail = call.getPostedBy() != null ? call.getPostedBy().getEmail() : "";
+        String talentPhone = call.getPostedBy() != null ? call.getPostedBy().getMobileNumber() : "";
+        String craft = call.getCustomCraft() != null && !call.getCustomCraft().isBlank()
+                ? call.getCustomCraft()
+                : (call.getRoleType() != null ? call.getRoleType().name() : "Talent");
+
+        String priority = "Normal";
+        String priorityBg = "#f8fafc";
+        String priorityColor = "#64748b";
+        String priorityBorder = "#e2e8f0";
+
+        if (call.getStatus() == CastingStatus.IN_REVIEW) {
+            priority = "Pending Review";
+            priorityBg = "#fff1f8";
+            priorityColor = "#ee008f";
+            priorityBorder = "#fbcfe8";
+        } else if (call.getStatus() == CastingStatus.OPEN) {
+            priority = "Live / Open";
+            priorityBg = "#ecfdf5";
+            priorityColor = "#059669";
+            priorityBorder = "#a7f3d0";
+        } else if (call.getStatus() == CastingStatus.CLOSED) {
+            priority = "Closed";
+            priorityBg = "#fef2f2";
+            priorityColor = "#dc2626";
+            priorityBorder = "#fecaca";
+        }
+
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd MMM yyyy");
+        String submittedOn = call.getCreatedAt() != null ? call.getCreatedAt().format(dtf) : "Today";
+
+        String formattedBudget = call.getBudget() != null
+                ? "₹" + String.format("%,d", call.getBudget().longValue())
+                : "Discussable";
+
+        return AdminCastingDto.builder()
+                .id(call.getId())
+                .project(call.getTitle())
+                .category(call.getProjectType() != null ? call.getProjectType() : "Casting Call")
+                .postType(call.getPostType() != null ? call.getPostType() : (call.getRoleType() != null ? call.getRoleType().name() : "ACTING"))
+                .requiredLanguages(call.getRequiredLanguages())
+                .roleType(call.getRoleType())
+                .craft(craft)
+                .talent(talentName)
+                .talentAvatar(call.getPosterUrl() != null ? call.getPosterUrl() : "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&h=80&q=80")
+                .postedByEmail(talentEmail)
+                .postedByPhone(talentPhone)
+                .location(call.getLocation() != null ? call.getLocation() : "Pan India")
+                .budget(call.getBudget())
+                .formattedBudget(formattedBudget)
+                .thumb(call.getPosterUrl() != null ? call.getPosterUrl() : "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=80&h=80&q=80")
+                .submittedOn(submittedOn)
+                .priority(priority)
+                .priorityBg(priorityBg)
+                .priorityColor(priorityColor)
+                .priorityBorder(priorityBorder)
+                .status(call.getStatus())
+                .applicantCount(appCount)
+                .createdAt(call.getCreatedAt())
+                .description(call.getDescription())
+                .requirements(call.getRequirements())
+                .shootStartDate(call.getShootStartDate())
+                .shootEndDate(call.getShootEndDate())
+                .applicationDeadline(call.getApplicationDeadline())
+                .videoUrl(call.getVideoUrl())
+                .posterUrl(call.getPosterUrl())
+                .customCraft(call.getCustomCraft())
+                .age(call.getAge())
+                .gender(call.getGender())
+                .height(call.getHeight())
+                .weight(call.getWeight())
+                .build();
+    }
+
+    // ─── TALENTS & KYC VERIFICATION OPERATIONS ───
+
+    @Transactional
+    public List<AdminTalentKycDto> getTalentsKycList() {
+        // Strictly fetch TALENT and PROFESSIONAL users so Talent Management never mixes in Clients or Partners
+        List<User> allUsers = userRepository.findAll(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "id"))
+                .stream()
+                .filter(u -> u.getAccountType() != AccountType.CLIENT && u.getAccountType() != AccountType.PARTNER)
+                .collect(Collectors.toList());
+
+        return allUsers.stream().map(talent -> {
+            Profile profile = profileRepository.findByUser(talent).orElseGet(() -> {
+                Profile p = Profile.builder()
+                        .user(talent)
+                        .idVerified(false)
+                        .phoneVerified(talent.getMobileNumber() != null && !talent.getMobileNumber().isBlank())
+                        .emailVerified(true)
+                        .memberSince(LocalDate.now())
+                        .build();
+                return profileRepository.save(p);
+            });
+
+            String craftStr = talent.getPrimaryProfession() != null && !talent.getPrimaryProfession().isBlank()
+                    ? talent.getPrimaryProfession()
+                    : (talent.getProfileTypes() != null && !talent.getProfileTypes().isEmpty()
+                            ? talent.getProfileTypes().stream().map(Enum::name).collect(Collectors.joining(", "))
+                            : (talent.getCustomProfession() != null ? talent.getCustomProfession() : "Artist"));
+
+            boolean verified = Boolean.TRUE.equals(profile.getIdVerified());
+            String status = verified ? "VERIFIED" : "PENDING";
+            String statusBg = verified ? "#ecfdf5" : "#fffbeb";
+            String statusColor = verified ? "#059669" : "#b45309";
+            String statusBorder = verified ? "#a7f3d0" : "#fde68a";
+
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd MMM yyyy");
+            String submittedOn = profile.getMemberSince() != null
+                    ? profile.getMemberSince().format(dtf)
+                    : LocalDate.now().format(dtf);
+
+            String accTypeStr = talent.getAccountType() != null ? talent.getAccountType().name() : "TALENT";
+
+            String talentCategory = profile.getTalentCategory();
+            if (talentCategory == null || talentCategory.isBlank()) {
+                if (talent.getProfileTypes() != null && !talent.getProfileTypes().isEmpty()) {
+                    ProfileType pt = talent.getProfileTypes().iterator().next();
+                    switch (pt) {
+                        case ACTOR -> talentCategory = "ACTING";
+                        case SINGER -> talentCategory = "SINGING";
+                        case DANCER -> talentCategory = "DANCING";
+                        case MODEL -> talentCategory = "MODELING";
+                        case DIRECTOR, PRODUCER -> talentCategory = "CREW";
+                        default -> talentCategory = "ACTING";
+                    }
+                } else if (talent.getPrimaryProfession() != null) {
+                    String pLow = talent.getPrimaryProfession().toLowerCase();
+                    if (pLow.contains("sing") || pLow.contains("vocal") || pLow.contains("music")) talentCategory = "SINGING";
+                    else if (pLow.contains("danc") || pLow.contains("choreo")) talentCategory = "DANCING";
+                    else if (pLow.contains("model")) talentCategory = "MODELING";
+                    else if (pLow.contains("direct") || pLow.contains("camera") || pLow.contains("edit") || pLow.contains("producer") || pLow.contains("writer") || pLow.contains("sound")) talentCategory = "CREW";
+                    else talentCategory = "ACTING";
+                } else {
+                    talentCategory = "ACTING";
+                }
+            }
+
+            return AdminTalentKycDto.builder()
+                    .id(talent.getId())
+                    .userId(talent.getId())
+                    .talent(talent.getFullName())
+                    .stageName(talent.getStageName())
+                    .accountType(accTypeStr)
+                    .email(talent.getEmail())
+                    .phone(talent.getMobileNumber())
+                    .craft(craftStr)
+                    .primaryProfession(talent.getPrimaryProfession() != null ? talent.getPrimaryProfession() : craftStr)
+                    .profileTypes(talent.getProfileTypes() != null ? talent.getProfileTypes().stream().map(Enum::name).collect(Collectors.toList()) : List.of())
+                    .avatar(profile.getProfilePhoto() != null ? profile.getProfilePhoto() : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&h=80&q=80")
+                    .location(talent.getLocation() != null ? talent.getLocation() : "India")
+                    .submittedOn(submittedOn)
+                    .docType("Govt Photo ID")
+                    .docNumber("ID-" + (talent.getId() + 1000))
+                    .idVerified(verified)
+                    .phoneVerified(Boolean.TRUE.equals(profile.getPhoneVerified()))
+                    .emailVerified(Boolean.TRUE.equals(profile.getEmailVerified()))
+                    .status(status)
+                    .statusBg(statusBg)
+                    .statusColor(statusColor)
+                    .statusBorder(statusBorder)
+                    .memberSince(profile.getMemberSince())
+                    .bio(profile.getAbout())
+                    .gender(talent.getGender() != null ? talent.getGender().name() : null)
+                    .dateOfBirth(talent.getDateOfBirth())
+                    .yearsExperience(profile.getYearsExperience())
+                    .skills(profile.getSkills() != null ? profile.getSkills() : Collections.emptySet())
+                    .isPrivate(Boolean.TRUE.equals(profile.getIsPrivate()))
+                    .languages(profile.getLanguages())
+                    .actingLanguages(profile.getActingLanguages())
+                    .talentCategory(talentCategory)
+                    .workType(profile.getWorkType())
+                    .build();
+        }).collect(Collectors.toList());
+    }
+
+    @Transactional
+    public AdminTalentKycDto updateTalentDetails(Authentication auth, Long userId, Map<String, Object> updates) {
+        verifyAdminPermission(auth, "talents", "edit");
+
+        User talent = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Talent user not found with ID: " + userId));
+
+        Profile profile = profileRepository.findByUser(talent).orElseGet(() -> {
+            Profile p = Profile.builder().user(talent).memberSince(LocalDate.now()).build();
+            return profileRepository.save(p);
+        });
+
+        if (updates.containsKey("fullName") && updates.get("fullName") != null) {
+            talent.setFullName(updates.get("fullName").toString().trim());
+        }
+        if (updates.containsKey("stageName")) {
+            talent.setStageName(updates.get("stageName") != null ? updates.get("stageName").toString().trim() : null);
+        }
+        if (updates.containsKey("primaryProfession") && updates.get("primaryProfession") != null) {
+            String prof = updates.get("primaryProfession").toString().trim();
+            talent.setPrimaryProfession(prof);
+            profile.setPrimaryProfession(prof);
+        }
+        if (updates.containsKey("location") && updates.get("location") != null) {
+            talent.setLocation(updates.get("location").toString().trim());
+        }
+        if (updates.containsKey("phone") && updates.get("phone") != null) {
+            talent.setMobileNumber(updates.get("phone").toString().trim());
+        } else if (updates.containsKey("mobileNumber") && updates.get("mobileNumber") != null) {
+            talent.setMobileNumber(updates.get("mobileNumber").toString().trim());
+        }
+        if (updates.containsKey("bio")) {
+            profile.setAbout(updates.get("bio") != null ? updates.get("bio").toString().trim() : "");
+        }
+        if (updates.containsKey("idVerified")) {
+            profile.setIdVerified(Boolean.TRUE.equals(updates.get("idVerified")));
+        }
+        if (updates.containsKey("phoneVerified")) {
+            profile.setPhoneVerified(Boolean.TRUE.equals(updates.get("phoneVerified")));
+        }
+        if (updates.containsKey("emailVerified")) {
+            profile.setEmailVerified(Boolean.TRUE.equals(updates.get("emailVerified")));
+        }
+        if (updates.containsKey("languages")) {
+            profile.setLanguages(updates.get("languages") != null ? updates.get("languages").toString().trim() : null);
+        }
+        if (updates.containsKey("actingLanguages")) {
+            profile.setActingLanguages(updates.get("actingLanguages") != null ? updates.get("actingLanguages").toString().trim() : null);
+        }
+        if (updates.containsKey("talentCategory")) {
+            profile.setTalentCategory(updates.get("talentCategory") != null ? updates.get("talentCategory").toString().trim() : null);
+        }
+        if (updates.containsKey("workType")) {
+            profile.setWorkType(updates.get("workType") != null ? updates.get("workType").toString().trim() : null);
+        }
+
+        userRepository.save(talent);
+        profileRepository.save(profile);
+
+        log.info("ADMIN TALENT UPDATE: Admin updated talent ID={}, Name='{}'", talent.getId(), talent.getFullName());
+
+        return getTalentsKycList().stream()
+                .filter(t -> t.getUserId().equals(userId))
+                .findFirst()
+                .orElse(null);
+    }
+
+    @Transactional
+    public AdminTalentKycDto verifyTalentKyc(Authentication auth, Long userId, boolean verify) {
+        AdminUser admin = verifyAdminPermission(auth, "kyc", "approve");
+
+        User talent = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Talent user not found with ID: " + userId));
+
+        Profile profile = profileRepository.findByUser(talent).orElseGet(() -> {
+            Profile p = Profile.builder()
+                    .user(talent)
+                    .idVerified(verify)
+                    .phoneVerified(true)
+                    .emailVerified(true)
+                    .memberSince(LocalDate.now())
+                    .build();
+            return profileRepository.save(p);
+        });
+
+        profile.setIdVerified(verify);
+        Profile saved = profileRepository.save(profile);
+
+        talent.setIsApproved(verify);
+        talent.setVerificationStatus(verify ? "APPROVED" : "PENDING");
+        if (verify) {
+            talent.setApprovedAt(LocalDateTime.now());
+            talent.setRejectionReason(null);
+        }
+        userRepository.save(talent);
+
+        log.info("KYC VERIFICATION UPDATED: Admin '{}' set idVerified={} and approved={} for talent '{}' ({}) in PostgreSQL database.",
+                admin.getName(), verify, verify, talent.getFullName(), talent.getEmail());
+
+        return getTalentsKycList().stream()
+                .filter(t -> t.getUserId().equals(userId))
+                .findFirst()
+                .orElse(null);
+    }
+
+    // ─── OVERVIEW METRICS ───
+
+    public AdminOverviewMetricsDto getOverviewMetrics() {
+        org.springframework.security.core.Authentication auth =
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        return getOverviewMetrics(auth);
+    }
+
+    public AdminOverviewMetricsDto getOverviewMetrics(Authentication auth) {
+        boolean canViewEscrow = adminSecurityService != null && adminSecurityService.hasPermission(auth, "escrow", "view");
+        boolean canViewCastings = adminSecurityService == null || adminSecurityService.hasPermission(auth, "castings", "view");
+        boolean canViewKyc = adminSecurityService == null || adminSecurityService.hasPermission(auth, "kyc", "view");
+        boolean canViewMedia = adminSecurityService == null || adminSecurityService.hasPermission(auth, "media", "view");
+
+        long totalCastings = canViewCastings ? castingCallRepository.count() : 0L;
+        long openCastings = canViewCastings ? castingCallRepository.findByStatusOrderByCreatedAtDesc(CastingStatus.OPEN).size() : 0L;
+        long pendingCastings = canViewCastings ? castingCallRepository.findByStatusOrderByCreatedAtDesc(CastingStatus.IN_REVIEW).size() : 0L;
+
+        long totalTalents = userRepository.countByAccountType(AccountType.TALENT);
+        long totalPros = userRepository.countByAccountType(AccountType.PROFESSIONAL);
+
+        long verifiedTalents = 0L;
+        long kycPending = 0L;
+        if (canViewKyc) {
+            verifiedTalents = profileRepository.findAll().stream()
+                    .filter(p -> Boolean.TRUE.equals(p.getIdVerified()))
+                    .count();
+            kycPending = Math.max(0, totalTalents - verifiedTalents);
+        }
+
+        // Restrict sensitive escrow financial data unless the user possesses explicit escrow:view or is Super Admin
+        String escrowStr = "RESTRICTED";
+        if (canViewEscrow) {
+            long bookingCount = bookingRequestRepository.count();
+            long escrowCalculated = bookingCount * 25000L;
+            escrowStr = "₹" + String.format("%,d", escrowCalculated);
+        }
+
+        int healthPercent = 100;
+        if (canViewKyc && totalTalents > 0) {
+            healthPercent = (int) Math.min(100, Math.max(70, ((double) verifiedTalents / totalTalents) * 100));
+        }
+
+        long mediaQueue = canViewMedia ? (totalCastings * 3 + totalTalents * 2) : 0L;
+
+        return AdminOverviewMetricsDto.builder()
+                .pendingCastings(pendingCastings)
+                .openCastings(openCastings)
+                .totalCastings(totalCastings)
+                .totalTalents(totalTalents)
+                .totalProfessionals(totalPros)
+                .kycBadgesPending(kycPending)
+                .verifiedTalents(verifiedTalents)
+                .mediaQueueCount(mediaQueue)
+                .escrowLockedAmount(escrowStr)
+                .securityHealthPercent(healthPercent)
+                .build();
+    }
+
+    @Transactional
+    public void deleteUserAccount(Authentication auth, Long userId) {
+        AdminUser admin;
+        try {
+            admin = verifyAdminPermission(auth, "talents", "delete");
+        } catch (Exception e1) {
+            try {
+                admin = verifyAdminPermission(auth, "kyc", "delete");
+            } catch (Exception e2) {
+                admin = verifyAdminPermission(auth, "clients", "delete");
+            }
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User account not found with ID: " + userId));
+
+        log.warn("ADMIN ACCOUNT DELETION: Admin '{}' ({}) is permanently deleting user ID {}: {} ({})",
+                admin.getName(), admin.getEmail(), user.getId(), user.getFullName(), user.getEmail());
+
+        // Delete all child data linked to this user
+        try {
+            portfolioRepository.deleteAll(portfolioRepository.findByUser(user));
+        } catch (Exception e) { log.warn("Error deleting portfolio: {}", e.getMessage()); }
+
+        try {
+            videoRepository.deleteAll(videoRepository.findByUser(user));
+        } catch (Exception e) { log.warn("Error deleting videos: {}", e.getMessage()); }
+
+        try {
+            audioRepository.deleteAll(audioRepository.findByUser(user));
+        } catch (Exception e) { log.warn("Error deleting audios: {}", e.getMessage()); }
+
+        try {
+            workExperienceRepository.deleteAll(workExperienceRepository.findByUser(user));
+        } catch (Exception e) { log.warn("Error deleting work experience: {}", e.getMessage()); }
+
+        try {
+            userDocumentRepository.deleteAll(userDocumentRepository.findByUser(user));
+        } catch (Exception e) { log.warn("Error deleting documents: {}", e.getMessage()); }
+
+        try {
+            measurementRepository.findByUser(user).ifPresent(measurementRepository::delete);
+        } catch (Exception e) { log.warn("Error deleting measurement: {}", e.getMessage()); }
+
+        try {
+            ratePackageRepository.deleteAll(ratePackageRepository.findByUserIdOrderByIdAsc(userId));
+        } catch (Exception e) { log.warn("Error deleting rate packages: {}", e.getMessage()); }
+
+        try {
+            availabilityRepository.deleteAll(availabilityRepository.findByUserIdOrderByAvailabilityDateAsc(userId));
+        } catch (Exception e) { log.warn("Error deleting availability: {}", e.getMessage()); }
+
+        try {
+            reviewRepository.deleteAll(reviewRepository.findByProfileUserIdOrderByCreatedAtDesc(userId));
+        } catch (Exception e) { log.warn("Error deleting reviews: {}", e.getMessage()); }
+
+        try {
+            profileAccessRequestRepository.deleteAll(profileAccessRequestRepository.findByTalent(user));
+            profileAccessRequestRepository.deleteAll(profileAccessRequestRepository.findByRequester(user));
+        } catch (Exception e) { log.warn("Error deleting access requests: {}", e.getMessage()); }
+
+        try {
+            castingApplicationRepository.deleteAll(castingApplicationRepository.findByApplicantIdOrderByAppliedAtDesc(userId));
+        } catch (Exception e) { log.warn("Error deleting casting applications: {}", e.getMessage()); }
+
+        try {
+            clientPartnerProfileRepository.findByUser(user).ifPresent(clientPartnerProfileRepository::delete);
+        } catch (Exception e) { log.warn("Error deleting client/partner profile: {}", e.getMessage()); }
+
+        try {
+            professionalProfileRepository.findByUser(user).ifPresent(professionalProfileRepository::delete);
+        } catch (Exception e) { log.warn("Error deleting professional profile: {}", e.getMessage()); }
+
+        try {
+            bookingRequestRepository.deleteAll(bookingRequestRepository.findByTalentOrderByCreatedAtDesc(user));
+            bookingRequestRepository.deleteAll(bookingRequestRepository.findByProfessionalOrderByCreatedAtDesc(user));
+        } catch (Exception e) { log.warn("Error deleting bookings: {}", e.getMessage()); }
+
+        try {
+            userShortlistRepository.deleteAll(userShortlistRepository.findByUserOrderByCreatedAtDesc(user));
+            userShortlistRepository.deleteAll(userShortlistRepository.findByTalent(user));
+        } catch (Exception e) { log.warn("Error deleting shortlists: {}", e.getMessage()); }
+
+        try {
+            profileRepository.findByUser(user).ifPresent(profileRepository::delete);
+        } catch (Exception e) { log.warn("Error deleting profile: {}", e.getMessage()); }
+
+        // Finally, delete the User record
+        userRepository.delete(user);
+
+        log.info("ACCOUNT DELETED: User ID {} ({}) was permanently deleted from PostgreSQL database.",
+                userId, user.getEmail());
+    }
+
+    // ─── TALENT MEDIA MODERATION DESK ───
+
+    public List<com.example.bookmystars.dto.AdminTalentMediaItemDto> getPendingTalentMedia() {
+        List<com.example.bookmystars.dto.AdminTalentMediaItemDto> items = new ArrayList<>();
+
+        for (Portfolio p : portfolioRepository.findAll()) {
+            if ("PENDING".equalsIgnoreCase(p.getStatus())) {
+                items.add(mapPortfolioToAdminDto(p));
+            }
+        }
+
+        for (Video v : videoRepository.findAll()) {
+            if ("PENDING".equalsIgnoreCase(v.getStatus())) {
+                items.add(mapVideoToAdminDto(v));
+            }
+        }
+
+        for (Audio a : audioRepository.findAll()) {
+            if ("PENDING".equalsIgnoreCase(a.getStatus())) {
+                items.add(mapAudioToAdminDto(a));
+            }
+        }
+
+        items.sort(Comparator.comparing(com.example.bookmystars.dto.AdminTalentMediaItemDto::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())));
+        return items;
+    }
+
+    public List<com.example.bookmystars.dto.AdminTalentMediaItemDto> getTalentMediaByUserId(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        List<com.example.bookmystars.dto.AdminTalentMediaItemDto> items = new ArrayList<>();
+        for (Portfolio p : portfolioRepository.findByUser(user)) {
+            items.add(mapPortfolioToAdminDto(p));
+        }
+        for (Video v : videoRepository.findByUser(user)) {
+            items.add(mapVideoToAdminDto(v));
+        }
+        for (Audio a : audioRepository.findByUser(user)) {
+            items.add(mapAudioToAdminDto(a));
+        }
+
+        items.sort(Comparator.comparing(com.example.bookmystars.dto.AdminTalentMediaItemDto::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())));
+        return items;
+    }
+
+    @Transactional
+    public com.example.bookmystars.dto.AdminTalentMediaItemDto reviewTalentMedia(
+            Authentication auth,
+            String mediaType,
+            Long id,
+            com.example.bookmystars.dto.ReviewMediaRequest request) {
+
+        String reviewer = (auth != null && auth.getName() != null) ? auth.getName().trim() : "Super Admin";
+        String status = (request != null && request.getStatus() != null && !request.getStatus().isBlank())
+                ? request.getStatus().trim().toUpperCase()
+                : "APPROVED";
+        String reason = (request != null) ? request.getRejectionReason() : null;
+
+        if ("photo".equalsIgnoreCase(mediaType) || "portfolio".equalsIgnoreCase(mediaType)) {
+            Portfolio photo = portfolioRepository.findById(id)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Portfolio photo not found: " + id));
+            photo.setStatus(status);
+            photo.setRejectionReason("REJECTED".equalsIgnoreCase(status) ? reason : null);
+            photo.setReviewedBy(reviewer);
+            photo.setReviewedAt(LocalDateTime.now());
+            Portfolio saved = portfolioRepository.save(photo);
+            log.info("Admin {} set photo id {} status to {}", reviewer, id, status);
+            return mapPortfolioToAdminDto(saved);
+        } else if ("video".equalsIgnoreCase(mediaType)) {
+            Video video = videoRepository.findById(id)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Video reel not found: " + id));
+            video.setStatus(status);
+            video.setRejectionReason("REJECTED".equalsIgnoreCase(status) ? reason : null);
+            video.setReviewedBy(reviewer);
+            video.setReviewedAt(LocalDateTime.now());
+            Video saved = videoRepository.save(video);
+            log.info("Admin {} set video id {} status to {}", reviewer, id, status);
+            return mapVideoToAdminDto(saved);
+        } else if ("audio".equalsIgnoreCase(mediaType)) {
+            Audio audio = audioRepository.findById(id)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Audio clip not found: " + id));
+            audio.setStatus(status);
+            audio.setRejectionReason("REJECTED".equalsIgnoreCase(status) ? reason : null);
+            audio.setReviewedBy(reviewer);
+            audio.setReviewedAt(LocalDateTime.now());
+            Audio saved = audioRepository.save(audio);
+            log.info("Admin {} set audio id {} status to {}", reviewer, id, status);
+            return mapAudioToAdminDto(saved);
+        } else {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown media type: " + mediaType);
+        }
+    }
+
+    private com.example.bookmystars.dto.AdminTalentMediaItemDto mapPortfolioToAdminDto(Portfolio p) {
+        User u = p.getUser();
+        Profile prof = (u != null) ? profileRepository.findByUser(u).orElse(null) : null;
+        boolean isApproved = (u != null) && (Boolean.TRUE.equals(u.getIsApproved()) || "APPROVED".equalsIgnoreCase(u.getVerificationStatus()));
+        return com.example.bookmystars.dto.AdminTalentMediaItemDto.builder()
+                .id(p.getId())
+                .userId(u != null ? u.getId() : null)
+                .talentName(u != null ? u.getFullName() : "Unknown Artist")
+                .talentEmail(u != null ? u.getEmail() : null)
+                .talentStageName(u != null ? u.getStageName() : null)
+                .talentAvatar(prof != null ? prof.getProfilePhoto() : null)
+                .craft(u != null && u.getPrimaryProfession() != null ? u.getPrimaryProfession() : "Talent")
+                .isUserApproved(isApproved)
+                .mediaType("PHOTO")
+                .title(p.getTitle() != null ? p.getTitle() : "Portfolio Photo")
+                .category(p.getCategory() != null ? p.getCategory() : "Fashion")
+                .mediaUrl(p.getImageUrl())
+                .thumbnailUrl(p.getImageUrl())
+                .status(p.getStatus() != null ? p.getStatus() : "APPROVED")
+                .rejectionReason(p.getRejectionReason())
+                .reviewedBy(p.getReviewedBy())
+                .reviewedAt(p.getReviewedAt())
+                .createdAt(p.getCreatedAt())
+                .build();
+    }
+
+    private com.example.bookmystars.dto.AdminTalentMediaItemDto mapVideoToAdminDto(Video v) {
+        User u = v.getUser();
+        Profile prof = (u != null) ? profileRepository.findByUser(u).orElse(null) : null;
+        boolean isApproved = (u != null) && (Boolean.TRUE.equals(u.getIsApproved()) || "APPROVED".equalsIgnoreCase(u.getVerificationStatus()));
+        return com.example.bookmystars.dto.AdminTalentMediaItemDto.builder()
+                .id(v.getId())
+                .userId(u != null ? u.getId() : null)
+                .talentName(u != null ? u.getFullName() : "Unknown Artist")
+                .talentEmail(u != null ? u.getEmail() : null)
+                .talentStageName(u != null ? u.getStageName() : null)
+                .talentAvatar(prof != null ? prof.getProfilePhoto() : null)
+                .craft(u != null && u.getPrimaryProfession() != null ? u.getPrimaryProfession() : "Talent")
+                .isUserApproved(isApproved)
+                .mediaType("VIDEO")
+                .title(v.getTitle() != null ? v.getTitle() : "Audition Video Reel")
+                .category(v.getCategory() != null ? v.getCategory() : "Audition Reel")
+                .mediaUrl(v.getVideoUrl())
+                .thumbnailUrl(v.getThumbnailUrl())
+                .duration(v.getDuration())
+                .status(v.getStatus() != null ? v.getStatus() : "APPROVED")
+                .rejectionReason(v.getRejectionReason())
+                .reviewedBy(v.getReviewedBy())
+                .reviewedAt(v.getReviewedAt())
+                .createdAt(v.getCreatedAt())
+                .build();
+    }
+
+    private com.example.bookmystars.dto.AdminTalentMediaItemDto mapAudioToAdminDto(Audio a) {
+        User u = a.getUser();
+        Profile prof = (u != null) ? profileRepository.findByUser(u).orElse(null) : null;
+        boolean isApproved = (u != null) && (Boolean.TRUE.equals(u.getIsApproved()) || "APPROVED".equalsIgnoreCase(u.getVerificationStatus()));
+        return com.example.bookmystars.dto.AdminTalentMediaItemDto.builder()
+                .id(a.getId())
+                .userId(u != null ? u.getId() : null)
+                .talentName(u != null ? u.getFullName() : "Unknown Artist")
+                .talentEmail(u != null ? u.getEmail() : null)
+                .talentStageName(u != null ? u.getStageName() : null)
+                .talentAvatar(prof != null ? prof.getProfilePhoto() : null)
+                .craft(u != null && u.getPrimaryProfession() != null ? u.getPrimaryProfession() : "Talent")
+                .isUserApproved(isApproved)
+                .mediaType("AUDIO")
+                .title(a.getTitle() != null ? a.getTitle() : "Voice Track")
+                .category(a.getCategory() != null ? a.getCategory() : "Voice Sample")
+                .mediaUrl(a.getAudioUrl())
+                .format(a.getFormat())
+                .duration(a.getDuration())
+                .sizeStr(a.getSizeStr())
+                .status(a.getStatus() != null ? a.getStatus() : "APPROVED")
+                .rejectionReason(a.getRejectionReason())
+                .reviewedBy(a.getReviewedBy())
+                .reviewedAt(a.getReviewedAt())
+                .createdAt(a.getCreatedAt())
+                .build();
+    }
+}

@@ -11,7 +11,7 @@ import { emitLiveSync } from "../../shared/utils/liveSync";
 import EditOpportunityModal from "./EditOpportunityModal";
 import "./opportunities.css";
 
-export default function OpportunityDetailModal({ opp, onClose, onUpdateBookingStatus }) {
+export default function OpportunityDetailModal({ opp, onClose, onUpdateBookingStatus, onOpenCompanyDossier }) {
   const navigate = useNavigate();
   const storedUser = getStoredUser();
   const [currentOpp, setCurrentOpp] = useState(opp);
@@ -27,7 +27,7 @@ export default function OpportunityDetailModal({ opp, onClose, onUpdateBookingSt
 
   const rawBanner = currentOpp.banner || currentOpp.posterUrl;
   const isBlob = typeof rawBanner === "string" && rawBanner.startsWith("blob:");
-  const bannerImg = (rawBanner && !isBlob)
+  const bannerImg = (typeof rawBanner === "string" && !isBlob && rawBanner.trim().length > 0)
     ? (rawBanner.startsWith("http") ? rawBanner : getFullImageUrl(rawBanner))
     : "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=800&auto=format&fit=crop&q=80";
 
@@ -127,10 +127,31 @@ export default function OpportunityDetailModal({ opp, onClose, onUpdateBookingSt
                   {currentOpp.postType === "SINGING" ? "🎤 Singing" : currentOpp.postType === "DANCING" ? "💃 Dancing" : currentOpp.postType === "MODELING" ? "✨ Modeling" : currentOpp.postType === "CREW" ? "🎬 Crew" : "🎭 Acting"}
                 </span>
               )}
-              {currentOpp.directorName && (
-                <span style={{ fontSize: "11px", fontWeight: "700", color: "#7c3aed", background: "#f5f3ff", border: "1px solid #ddd6fe", padding: "2px 8px", borderRadius: "6px" }}>
-                  🎬 From: {currentOpp.directorName}
-                </span>
+              {(currentOpp.companyName || currentOpp.directorName) && (
+                <button
+                  type="button"
+                  onClick={() => onOpenCompanyDossier?.(currentOpp.postedByUserId, currentOpp.companyName || currentOpp.directorName)}
+                  style={{
+                    fontSize: "11.5px",
+                    fontWeight: "800",
+                    color: "#be185d",
+                    background: "#fdf2f8",
+                    border: "1px solid #fbcfe8",
+                    padding: "3px 10px",
+                    borderRadius: "6px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    cursor: "pointer",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.04)"
+                  }}
+                  title="Click to view full company profile and approved showcase works"
+                >
+                  <span>🏢 {currentOpp.companyName || currentOpp.directorName}</span>
+                  <span style={{ fontSize: "9.5px", background: "#f472b6", color: "#ffffff", padding: "1px 6px", borderRadius: "4px", fontWeight: "900" }}>
+                    View Works ↗
+                  </span>
+                </button>
               )}
               {currentOpp.customCraft && (
                 <span style={{ fontSize: "11px", fontWeight: "700", color: "#64748b", background: "#f1f5f9", padding: "2px 8px", borderRadius: "6px" }}>

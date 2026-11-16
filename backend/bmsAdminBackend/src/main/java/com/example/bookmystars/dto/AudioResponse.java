@@ -25,5 +25,13 @@ public class AudioResponse {
 
     private String sizeStr;
 
+    private String status;
+
+    private String rejectionReason;
+
+    private String reviewedBy;
+
+    private LocalDateTime reviewedAt;
+
     private LocalDateTime createdAt;
 }

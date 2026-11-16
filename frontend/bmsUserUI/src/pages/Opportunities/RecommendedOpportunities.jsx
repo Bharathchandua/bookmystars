@@ -32,9 +32,11 @@ export default function RecommendedOpportunities({ opportunities: propOpps = nul
       typeClass = "badge-short-film";
     }
 
-    const imgUrl = item.posterUrl
-      ? (item.posterUrl.startsWith("http") ? item.posterUrl : getFullImageUrl(item.posterUrl))
-      : (item.banner ? (item.banner.startsWith("http") ? item.banner : getFullImageUrl(item.banner)) : "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&h=260&fit=crop&q=80");
+    const rawPoster = item.posterUrl || item.banner;
+    const isBlob = typeof rawPoster === "string" && rawPoster.startsWith("blob:");
+    const imgUrl = (typeof rawPoster === "string" && !isBlob && rawPoster.trim().length > 0)
+      ? (rawPoster.startsWith("http") ? rawPoster : getFullImageUrl(rawPoster))
+      : "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&h=260&fit=crop&q=80";
 
     const budgetStr = typeof item.budget === "number"
       ? `Budget: ₹ ${item.budget.toLocaleString("en-IN")}`

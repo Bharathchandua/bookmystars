@@ -3,6 +3,7 @@ package com.example.bookmystars.service;
 import com.example.bookmystars.dto.AdminRoleDto;
 import com.example.bookmystars.dto.AdminUserDto;
 import com.example.bookmystars.dto.CreateAdminStaffRequest;
+import com.example.bookmystars.dto.UpdateAdminStaffRequest;
 import com.example.bookmystars.model.AdminRole;
 import com.example.bookmystars.model.AdminUser;
 import com.example.bookmystars.repository.AdminRoleRepository;
@@ -51,6 +52,11 @@ public class AdminManagementService {
         return email != null && rootAdminEmail != null && email.trim().equalsIgnoreCase(rootAdminEmail.trim());
     }
 
+    private boolean isRootAdmin(AdminUser user) {
+        return user != null && user.getEmail() != null && rootAdminEmail != null &&
+                user.getEmail().trim().equalsIgnoreCase(rootAdminEmail.trim());
+    }
+
     public List<AdminUserDto> getAllStaff() {
         return adminUserRepository.findAll().stream()
                 .map(adminAuthService::convertToDto)
@@ -90,6 +96,75 @@ public class AdminManagementService {
                 .build();
 
         AdminUser saved = adminUserRepository.save(newAdmin);
+        return adminAuthService.convertToDto(saved);
+    }
+
+    @Transactional
+    public AdminUserDto updateStaff(Long staffId, UpdateAdminStaffRequest request) {
+        AdminUser adminUser = adminUserRepository.findById(staffId)
+                .orElseThrow(() -> new RuntimeException("Staff member not found with ID: " + staffId));
+
+        String newEmail = request.getEmail().trim().toLowerCase();
+        // If email is changing, check uniqueness and root admin protection
+        if (!newEmail.equalsIgnoreCase(adminUser.getEmail())) {
+            if (isRootAdmin(adminUser)) {
+                throw new IllegalArgumentException("The Root Super Admin email address cannot be changed.");
+            }
+            if (adminUserRepository.existsByEmail(newEmail)) {
+                throw new IllegalArgumentException("An administrator with corporate email " + newEmail + " already exists.");
+            }
+            adminUser.setEmail(newEmail);
+        }
+
+        String newRoleId = request.getRoleId();
+        boolean isCurrentSuperAdmin = "ROLE_SUPER_ADMIN".equalsIgnoreCase(adminUser.getRoleId()) ||
+                                      "SUPER_ADMIN".equalsIgnoreCase(adminUser.getRoleId());
+        boolean isNewSuperAdmin = newRoleId != null && ("ROLE_SUPER_ADMIN".equalsIgnoreCase(newRoleId) ||
+                                  "SUPER_ADMIN".equalsIgnoreCase(newRoleId));
+
+        // Safety Invariant 1: Root Super Admin account role cannot be modified
+        if (isRootAdmin(adminUser) && !isNewSuperAdmin) {
+            throw new IllegalArgumentException("The Root Super Admin account role cannot be modified.");
+        }
+
+        // Safety Invariant 2: Cannot demote the last remaining active Super Admin
+        if (isCurrentSuperAdmin && !isNewSuperAdmin) {
+            long superAdminCount = adminUserRepository.countByRoleId("ROLE_SUPER_ADMIN");
+            if (superAdminCount <= 1) {
+                throw new IllegalStateException("Platform safety violation: Cannot demote the last remaining active Super Admin account.");
+            }
+        }
+
+        // Safety Invariant 3: Prevent non-Super Admins from granting Super Admin privileges
+        if (isNewSuperAdmin && !isCallerSuperAdmin()) {
+            throw new AccessDeniedException("Privilege escalation rejected: Only Super Admins can grant Super Admin privileges.");
+        }
+
+        // Safety Invariant 4: Root Super Admin status cannot be deactivated
+        String newStatus = request.getStatus();
+        if (newStatus != null && !newStatus.trim().isEmpty()) {
+            String upperStatus = newStatus.trim().toUpperCase();
+            if (isRootAdmin(adminUser) && !"ACTIVE".equalsIgnoreCase(upperStatus)) {
+                throw new IllegalArgumentException("The Root Super Admin account must remain ACTIVE.");
+            }
+            if (isCurrentSuperAdmin && !"ACTIVE".equalsIgnoreCase(upperStatus)) {
+                long superAdminCount = adminUserRepository.countByRoleId("ROLE_SUPER_ADMIN");
+                if (superAdminCount <= 1) {
+                    throw new IllegalStateException("Platform safety violation: Cannot deactivate the last remaining active Super Admin account.");
+                }
+            }
+            adminUser.setStatus(upperStatus);
+        }
+
+        adminUser.setName(request.getName().trim());
+        if (request.getDepartment() != null) {
+            adminUser.setDepartment(request.getDepartment().trim());
+        }
+        if (newRoleId != null && !newRoleId.trim().isEmpty()) {
+            adminUser.setRoleId(newRoleId.trim());
+        }
+
+        AdminUser saved = adminUserRepository.save(adminUser);
         return adminAuthService.convertToDto(saved);
     }
 
@@ -243,6 +318,11 @@ public class AdminManagementService {
 
         if (Boolean.TRUE.equals(role.getIsSystem())) {
             throw new IllegalArgumentException("System default roles cannot be deleted!");
+        }
+
+        long assignedCount = adminUserRepository.countByRoleId(roleId);
+        if (assignedCount > 0) {
+            throw new IllegalArgumentException("Cannot delete role: " + assignedCount + " staff member(s) are currently assigned to this role. Please reassign them first.");
         }
 
         adminRoleRepository.delete(role);

@@ -24,4 +24,5 @@ export * from "./admin/adminApi";
 export * from "./skills/skillsApi";
 export * from "./clients/clientApi";
 export * from "./partners/partnerApi";
+export * from "./contacts/contactsApi";
 export * from "./apiHelpers";

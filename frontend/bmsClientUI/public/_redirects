@@ -1,0 +1,4 @@
+/api/*  https://kwinwsproducts.cloudjiffy.net/bmsclient/api/:splat  200!
+/uploads/*  https://kwinwsproducts.cloudjiffy.net/bmsclient/uploads/:splat  200!
+/banners/*  https://kwinwsproducts.cloudjiffy.net/bmsclient/banners/:splat  200!
+/*  /index.html  200

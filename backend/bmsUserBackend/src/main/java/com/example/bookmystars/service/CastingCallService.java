@@ -33,10 +33,12 @@ public class CastingCallService {
     private final CastingApplicationRepository castingApplicationRepository;
     private final ProfessionalProfileRepository professionalProfileRepository;
     private final UserRepository userRepository;
+    private final Path oppUploadDirectory = Paths.get("uploads/opportunities");
+
     public String uploadOpportunityMedia(Authentication authentication, MultipartFile file) throws IOException {
         User user = getAuthenticatedUser(authentication);
         String fileExtension = com.example.bookmystars.util.FileValidationUtil.validateMedia(file);
-        Path oppUploadDirectory = com.example.bookmystars.util.UploadStorageUtil.getCategoryUploadDir("opportunities");
+        Files.createDirectories(oppUploadDirectory);
         String fileName = "opp_" + user.getId() + "_" + UUID.randomUUID().toString().substring(0, 8) + fileExtension;
         Path filePath = oppUploadDirectory.resolve(fileName);
         Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
@@ -154,7 +156,12 @@ public class CastingCallService {
             call.setWeight(request.getWeight());
         }
         if (request.getStatus() != null) {
-            call.setStatus(request.getStatus());
+            // A client or partner cannot self-publish to OPEN; any new posting or self-publication requires Admin approval
+            if (request.getStatus() == CastingStatus.OPEN && call.getStatus() != CastingStatus.OPEN) {
+                call.setStatus(CastingStatus.IN_REVIEW);
+            } else {
+                call.setStatus(request.getStatus());
+            }
         }
 
         CastingCall updated = castingCallRepository.save(call);

@@ -9,9 +9,29 @@ import { confirmDelete, showSuccess, showError } from "../../shared/utils/alert"
 import { emitLiveSync } from "../../shared/utils/liveSync";
 
 
+// Safe render helpers
+const formatSafeOppDate = (d) => {
+  if (!d) return "Open";
+  if (Array.isArray(d)) return `${d[2] || d[0]}/${d[1]}/${d[0] || d[2]}`;
+  if (typeof d === "object") return "Open";
+  return String(d);
+};
+
+const formatSafeBudget = (b) => {
+  if (typeof b === "number") return `₹ ${b.toLocaleString("en-IN")}`;
+  if (typeof b === "string" && b.trim().length > 0) return b;
+  return "Negotiable";
+};
+
+const resolveSafeBanner = (rawBanner) => {
+  if (typeof rawBanner !== "string" || !rawBanner.trim() || rawBanner.startsWith("blob:")) {
+    return "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=400&auto=format&fit=crop&q=80";
+  }
+  return rawBanner.startsWith("http") ? rawBanner : getFullImageUrl(rawBanner);
+};
+
 // ─── Single List Card ──────────────────────
-// ─── Single List Card ──────────────────────
-function OpportunityListCard({ opp, onOpen, onUpdateBookingStatus }) {
+function OpportunityListCard({ opp, onOpen, onUpdateBookingStatus, onOpenCompanyDossier }) {
   const [saved, setSaved] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [updating, setUpdating] = useState(false);
@@ -50,11 +70,7 @@ function OpportunityListCard({ opp, onOpen, onUpdateBookingStatus }) {
     }
   };
 
-  const rawBanner = opp.banner || opp.posterUrl;
-  const isBlob = typeof rawBanner === "string" && rawBanner.startsWith("blob:");
-  const bannerImg = (rawBanner && !isBlob)
-    ? (rawBanner.startsWith("http") ? rawBanner : getFullImageUrl(rawBanner))
-    : "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=400&auto=format&fit=crop&q=80";
+  const bannerImg = resolveSafeBanner(opp.banner || opp.posterUrl);
 
   const isDirect = Boolean(opp.isDirectTargeted);
 
@@ -62,13 +78,19 @@ function OpportunityListCard({ opp, onOpen, onUpdateBookingStatus }) {
     <PagesCard
       className={`opp-list-card ${isDirect ? "opp-direct-highlight" : ""}`}
       onClick={() => onOpen(opp)}
-      style={isDirect ? {
-        border: "2px solid #f472b6",
-        background: "linear-gradient(to right, #ffffff, #fffafd)",
-        boxShadow: "0 6px 20px rgba(238, 0, 143, 0.08)"
-      } : {}}
+      style={{
+        ...(isDirect ? {
+          border: "2px solid #f472b6",
+          background: "linear-gradient(to right, #ffffff, #fffafd)",
+          boxShadow: "0 6px 20px rgba(238, 0, 143, 0.08)"
+        } : {}),
+        ...(opp.isExpired ? {
+          filter: "grayscale(100%)",
+          opacity: 0.82
+        } : {})
+      }}
     >
-      {/* Thumbnail with Video Badge / Direct Badge */}
+      {/* Thumbnail with Video Badge / Direct Badge / Expired Badge */}
       <div className="opp-list-thumb" style={{ position: "relative", overflow: "hidden" }}>
         <img src={bannerImg} alt={opp.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         
@@ -94,7 +116,38 @@ function OpportunityListCard({ opp, onOpen, onUpdateBookingStatus }) {
           </div>
         )}
 
-        {isDirect && (
+        {/* Expired / Over Badge */}
+        {opp.isExpired ? (
+          <div style={{
+            position: "absolute",
+            top: "8px",
+            left: "8px",
+            background: "#334155",
+            color: "#ffffff",
+            fontSize: "9px",
+            fontWeight: "900",
+            padding: "3px 7px",
+            borderRadius: "5px",
+            letterSpacing: "0.5px"
+          }}>
+            EXPIRED / OVER
+          </div>
+        ) : opp.isApplication ? (
+          <div style={{
+            position: "absolute",
+            top: "8px",
+            left: "8px",
+            background: "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)",
+            color: "#ffffff",
+            fontSize: "9px",
+            fontWeight: "900",
+            padding: "3px 7px",
+            borderRadius: "5px",
+            letterSpacing: "0.5px"
+          }}>
+            📋 APPLIED
+          </div>
+        ) : isDirect ? (
           <div style={{
             position: "absolute",
             top: "8px",
@@ -109,9 +162,7 @@ function OpportunityListCard({ opp, onOpen, onUpdateBookingStatus }) {
           }}>
             🎯 FOR YOU
           </div>
-        )}
-
-        {opp.isMyPost && !isDirect && (
+        ) : opp.isMyPost ? (
           <div style={{
             position: "absolute",
             top: "8px",
@@ -126,7 +177,7 @@ function OpportunityListCard({ opp, onOpen, onUpdateBookingStatus }) {
           }}>
             {opp.status === "CLOSED" ? "MY POST • CLOSED" : opp.status === "IN_REVIEW" ? "MY POST • UNDER REVIEW" : "MY POST • OPEN"}
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* Body */}
@@ -178,25 +229,68 @@ function OpportunityListCard({ opp, onOpen, onUpdateBookingStatus }) {
           )}
 
           {/* Status Badge */}
-          {opp.status === "CLOSED" && (
-            <span style={{ fontSize: "11px", fontWeight: "800", color: "#dc2626", background: "#fef2f2", border: "1px solid #fecaca", padding: "2px 8px", borderRadius: "6px" }}>
-              ● Closed
+          {opp.isExpired ? (
+            <span style={{ fontSize: "11px", fontWeight: "800", color: "#475569", background: "#f1f5f9", border: "1px solid #cbd5e1", padding: "2px 8px", borderRadius: "6px" }}>
+              ⌛ Audition Closed / Over
             </span>
+          ) : opp.isApplication ? (
+            <span style={{
+              fontSize: "11px",
+              fontWeight: "800",
+              color: opp.applicationStatus === "SHORTLISTED" ? "#16a34a" : opp.applicationStatus === "SELECTED" ? "#be185d" : opp.applicationStatus === "REJECTED" ? "#dc2626" : "#d97706",
+              background: opp.applicationStatus === "SHORTLISTED" ? "#dcfce7" : opp.applicationStatus === "SELECTED" ? "#fce7f3" : opp.applicationStatus === "REJECTED" ? "#fee2e2" : "#fef3c7",
+              border: `1px solid ${opp.applicationStatus === "SHORTLISTED" ? "#bbf7d0" : opp.applicationStatus === "SELECTED" ? "#fbcfe8" : opp.applicationStatus === "REJECTED" ? "#fecaca" : "#fde68a"}`,
+              padding: "2px 8px",
+              borderRadius: "6px"
+            }}>
+              {opp.applicationStatus === "SHORTLISTED" ? "⭐ Shortlisted" : opp.applicationStatus === "SELECTED" ? "🎉 Selected" : opp.applicationStatus === "REJECTED" ? "❌ Declined" : "⏳ Application In Review"}
+            </span>
+          ) : (
+            <>
+              {opp.status === "CLOSED" && (
+                <span style={{ fontSize: "11px", fontWeight: "800", color: "#dc2626", background: "#fef2f2", border: "1px solid #fecaca", padding: "2px 8px", borderRadius: "6px" }}>
+                  ● Closed
+                </span>
+              )}
+              {(opp.status === "IN_REVIEW" || opp.status === "PENDING") && !isDirect && (
+                <span style={{ fontSize: "11px", fontWeight: "800", color: "#d97706", background: "#fffbeb", border: "1px solid #fde68a", padding: "2px 8px", borderRadius: "6px" }}>
+                  ⏳ Under Review
+                </span>
+              )}
+              {(opp.status === "OPEN" || !opp.status) && !isDirect && (
+                <span style={{ fontSize: "11px", fontWeight: "800", color: "#059669", background: "#ecfdf5", border: "1px solid #a7f3d0", padding: "2px 8px", borderRadius: "6px" }}>
+                  ● Accepting Auditions
+                </span>
+              )}
+            </>
           )}
-          {(opp.status === "IN_REVIEW" || opp.status === "PENDING") && !isDirect && (
-            <span style={{ fontSize: "11px", fontWeight: "800", color: "#d97706", background: "#fffbeb", border: "1px solid #fde68a", padding: "2px 8px", borderRadius: "6px" }}>
-              ⏳ Under Review
-            </span>
-          )}
-          {(opp.status === "OPEN" || !opp.status) && !isDirect && (
-            <span style={{ fontSize: "11px", fontWeight: "800", color: "#059669", background: "#ecfdf5", border: "1px solid #a7f3d0", padding: "2px 8px", borderRadius: "6px" }}>
-              ● Accepting Auditions
-            </span>
-          )}
-          {opp.directorName && (
-            <span style={{ fontSize: "11px", fontWeight: "700", color: "#7c3aed", background: "#f5f3ff", border: "1px solid #ddd6fe", padding: "2px 8px", borderRadius: "6px" }}>
-              🎬 From: {opp.directorName}
-            </span>
+          {(opp.companyName || opp.directorName) && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenCompanyDossier?.(opp.postedByUserId, opp.companyName || opp.directorName);
+              }}
+              style={{
+                fontSize: "11px",
+                fontWeight: "800",
+                color: "#be185d",
+                background: "#fdf2f8",
+                border: "1px solid #fbcfe8",
+                padding: "2px 8px",
+                borderRadius: "6px",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "4px",
+                cursor: "pointer"
+              }}
+              title="Click to view company profile, verified details, and approved showcase works"
+            >
+              <span>🏢</span> {opp.companyName || opp.directorName}
+              <span style={{ fontSize: "9px", background: "#f472b6", color: "#ffffff", padding: "1px 5px", borderRadius: "4px", fontWeight: "900" }}>
+                Works ↗
+              </span>
+            </button>
           )}
           {opp.customCraft && (
             <span style={{ fontSize: "11px", fontWeight: "700", color: "#64748b", background: "#f1f5f9", padding: "2px 8px", borderRadius: "6px" }}>
@@ -224,7 +318,7 @@ function OpportunityListCard({ opp, onOpen, onUpdateBookingStatus }) {
             <CalendarDays size={14} color="#ee008f" />
             <div>
               <span className="meta-label">{isDirect ? "Shoot Date" : "Audition Date"}</span>
-              <span className="meta-val">{opp.auditionDate || opp.applicationDeadline || "Open"}</span>
+              <span className="meta-val">{formatSafeOppDate(opp.auditionDate || opp.applicationDeadline)}</span>
             </div>
           </div>
 
@@ -234,7 +328,7 @@ function OpportunityListCard({ opp, onOpen, onUpdateBookingStatus }) {
             <div>
               <span className="meta-label">Budget</span>
               <span className="meta-val" style={{ color: "#16a34a", fontWeight: "800" }}>
-                {typeof opp.budget === "number" ? `₹ ${opp.budget.toLocaleString("en-IN")}` : (opp.budget || "Negotiable")}
+                {formatSafeBudget(opp.budget)}
               </span>
             </div>
           </div>
@@ -369,17 +463,32 @@ function OpportunityListCard({ opp, onOpen, onUpdateBookingStatus }) {
                 </>
               )}
 
-              <PagesButton
-                className="opp-view-details-btn"
-                onClick={(e) => { e.stopPropagation(); onOpen(opp); }}
-                style={opp.status === "CLOSED" && !opp.isMyPost ? {
-                  background: "#f1f5f9",
-                  color: "#64748b",
-                  border: "1px solid #cbd5e1"
-                } : {}}
-              >
-                {opp.isMyPost ? "Manage Call" : opp.status === "CLOSED" ? "Closed • View" : "View Details"}
-              </PagesButton>
+              {opp.isApplication ? (
+                <PagesButton
+                  className="opp-view-details-btn"
+                  onClick={(e) => { e.stopPropagation(); onOpen(opp); }}
+                  style={{
+                    background: "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)",
+                    color: "#ffffff",
+                    border: "none",
+                    boxShadow: "0 2px 8px rgba(2, 132, 199, 0.3)"
+                  }}
+                >
+                  View Application Details
+                </PagesButton>
+              ) : (
+                <PagesButton
+                  className="opp-view-details-btn"
+                  onClick={(e) => { e.stopPropagation(); onOpen(opp); }}
+                  style={(opp.status === "CLOSED" || opp.isExpired) && !opp.isMyPost ? {
+                    background: "#f1f5f9",
+                    color: "#64748b",
+                    border: "1px solid #cbd5e1"
+                  } : {}}
+                >
+                  {opp.isMyPost ? (opp.isExpired ? "Manage Expired Call" : "Manage Call") : (opp.status === "CLOSED" || opp.isExpired) ? "Closed • View" : "View Details"}
+                </PagesButton>
+              )}
             </>
           )}
         </div>
@@ -389,7 +498,7 @@ function OpportunityListCard({ opp, onOpen, onUpdateBookingStatus }) {
 }
 
 // ─── Single Grid Card ──────────────────────
-function OpportunityGridCard({ opp, onOpen, onUpdateBookingStatus }) {
+function OpportunityGridCard({ opp, onOpen, onUpdateBookingStatus, onOpenCompanyDossier }) {
   const [saved, setSaved] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [updating, setUpdating] = useState(false);
@@ -415,11 +524,7 @@ function OpportunityGridCard({ opp, onOpen, onUpdateBookingStatus }) {
     }
   };
 
-  const rawBanner = opp.banner || opp.posterUrl;
-  const isBlob = typeof rawBanner === "string" && rawBanner.startsWith("blob:");
-  const bannerImg = (rawBanner && !isBlob)
-    ? (rawBanner.startsWith("http") ? rawBanner : getFullImageUrl(rawBanner))
-    : "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=400&auto=format&fit=crop&q=80";
+  const bannerImg = resolveSafeBanner(opp.banner || opp.posterUrl);
 
   const isDirect = Boolean(opp.isDirectTargeted);
 
@@ -436,7 +541,9 @@ function OpportunityGridCard({ opp, onOpen, onUpdateBookingStatus }) {
         boxShadow: isDirect ? "0 8px 24px rgba(238, 0, 143, 0.1)" : "0 1px 3px rgba(0,0,0,0.04)",
         cursor: "pointer",
         transition: "transform 0.15s ease, box-shadow 0.15s ease",
-        position: "relative"
+        position: "relative",
+        filter: opp.isExpired ? "grayscale(100%)" : "none",
+        opacity: opp.isExpired ? 0.82 : 1
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.transform = "translateY(-3px)";
@@ -476,7 +583,36 @@ function OpportunityGridCard({ opp, onOpen, onUpdateBookingStatus }) {
           </div>
         )}
 
-        {isDirect && (
+        {/* Expired / Over Badge */}
+        {opp.isExpired ? (
+          <div style={{
+            position: "absolute",
+            top: "8px",
+            left: "8px",
+            background: "#334155",
+            color: "#ffffff",
+            fontSize: "9px",
+            fontWeight: "900",
+            padding: "3px 7px",
+            borderRadius: "5px"
+          }}>
+            EXPIRED / OVER
+          </div>
+        ) : opp.isApplication ? (
+          <div style={{
+            position: "absolute",
+            top: "8px",
+            left: "8px",
+            background: "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)",
+            color: "#ffffff",
+            fontSize: "9px",
+            fontWeight: "900",
+            padding: "3px 7px",
+            borderRadius: "5px"
+          }}>
+            📋 APPLIED
+          </div>
+        ) : isDirect ? (
           <div style={{
             position: "absolute",
             top: "8px",
@@ -490,9 +626,7 @@ function OpportunityGridCard({ opp, onOpen, onUpdateBookingStatus }) {
           }}>
             🎯 FOR YOU
           </div>
-        )}
-
-        {opp.isMyPost && !isDirect && (
+        ) : opp.isMyPost ? (
           <div style={{
             position: "absolute",
             top: "8px",
@@ -506,7 +640,7 @@ function OpportunityGridCard({ opp, onOpen, onUpdateBookingStatus }) {
           }}>
             {opp.status === "CLOSED" ? "CLOSED" : opp.status === "IN_REVIEW" ? "IN REVIEW" : "MY POST"}
           </div>
-        )}
+        ) : null}
 
         {/* Bookmark top right */}
         <button
@@ -558,11 +692,50 @@ function OpportunityGridCard({ opp, onOpen, onUpdateBookingStatus }) {
               <span>🌐</span> {opp.requiredLanguages}
             </span>
           )}
-          {opp.directorName && (
-            <span style={{ fontSize: "10.5px", fontWeight: "700", color: "#7c3aed" }}>
-              🎬 {opp.directorName}
-            </span>
+          {(opp.companyName || opp.directorName) && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenCompanyDossier?.(opp.postedByUserId, opp.companyName || opp.directorName);
+              }}
+              style={{
+                fontSize: "10.5px",
+                fontWeight: "800",
+                color: "#be185d",
+                background: "#fdf2f8",
+                border: "1px solid #fbcfe8",
+                padding: "2px 6px",
+                borderRadius: "5px",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "3px",
+                cursor: "pointer"
+              }}
+              title="Click to view company profile, verified details, and approved showcase works"
+            >
+              <span>🏢</span> {opp.companyName || opp.directorName}
+            </button>
           )}
+
+          {/* Status Badge in Grid Card */}
+          {opp.isExpired ? (
+            <span style={{ fontSize: "10px", fontWeight: "800", color: "#475569", background: "#f1f5f9", border: "1px solid #cbd5e1", padding: "2px 6px", borderRadius: "5px" }}>
+              ⌛ Audition Over
+            </span>
+          ) : opp.isApplication ? (
+            <span style={{
+              fontSize: "10px",
+              fontWeight: "800",
+              color: opp.applicationStatus === "SHORTLISTED" ? "#16a34a" : opp.applicationStatus === "SELECTED" ? "#be185d" : opp.applicationStatus === "REJECTED" ? "#dc2626" : "#d97706",
+              background: opp.applicationStatus === "SHORTLISTED" ? "#dcfce7" : opp.applicationStatus === "SELECTED" ? "#fce7f3" : opp.applicationStatus === "REJECTED" ? "#fee2e2" : "#fef3c7",
+              border: `1px solid ${opp.applicationStatus === "SHORTLISTED" ? "#bbf7d0" : opp.applicationStatus === "SELECTED" ? "#fbcfe8" : opp.applicationStatus === "REJECTED" ? "#fecaca" : "#fde68a"}`,
+              padding: "2px 6px",
+              borderRadius: "5px"
+            }}>
+              {opp.applicationStatus === "SHORTLISTED" ? "⭐ Shortlisted" : opp.applicationStatus === "SELECTED" ? "🎉 Selected" : opp.applicationStatus === "REJECTED" ? "❌ Declined" : "⏳ In Review"}
+            </span>
+          ) : null}
         </div>
 
         <h3 style={{ fontSize: "14px", fontWeight: "800", color: "#0f172a", margin: 0, lineHeight: 1.3 }}>
@@ -589,12 +762,12 @@ function OpportunityGridCard({ opp, onOpen, onUpdateBookingStatus }) {
               <MapPin size={12} color="#ee008f" /> {opp.location || "Location TBD"}
             </span>
             <span style={{ fontWeight: "800", color: "#16a34a", fontSize: "12px" }}>
-              {typeof opp.budget === "number" ? `₹ ${opp.budget.toLocaleString("en-IN")}` : (opp.budget || "Negotiable")}
+              {formatSafeBudget(opp.budget)}
             </span>
           </div>
 
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "10.5px", color: "#94a3b8" }}>
-            <span>{opp.auditionDate ? `Audition: ${opp.auditionDate}` : "Open Auditions"}</span>
+            <span>{opp.auditionDate ? `Audition: ${formatSafeOppDate(opp.auditionDate)}` : "Open Auditions"}</span>
             {opp.isMyPost && !isDirect && (
               <span style={{ fontWeight: "800", color: "#4f46e5" }}>👥 {opp.applicantCount || 0} Applied</span>
             )}
@@ -617,15 +790,15 @@ function OpportunityGridCard({ opp, onOpen, onUpdateBookingStatus }) {
           style={{
             padding: "5px 12px",
             borderRadius: "7px",
-            backgroundColor: "#ffffff",
-            color: "#0f172a",
-            border: "1px solid #cbd5e1",
+            backgroundColor: opp.isApplication ? "#0284c7" : "#ffffff",
+            color: opp.isApplication ? "#ffffff" : "#0f172a",
+            border: opp.isApplication ? "none" : "1px solid #cbd5e1",
             fontSize: "11px",
             fontWeight: "800",
             cursor: "pointer"
           }}
         >
-          View Details
+          {opp.isApplication ? "View Application" : opp.isMyPost ? (opp.isExpired ? "Manage Expired" : "Manage Call") : (opp.status === "CLOSED" || opp.isExpired) ? "Closed • View" : "View Details"}
         </button>
 
         {opp.isMyPost && (
@@ -652,7 +825,7 @@ function OpportunityGridCard({ opp, onOpen, onUpdateBookingStatus }) {
 }
 
 // ─── Exported Cards List ───────────────────
-export default function OpportunityCards({ items = [], onOpenDetail, onUpdateBookingStatus, viewMode = "list" }) {
+export default function OpportunityCards({ items = [], onOpenDetail, onUpdateBookingStatus, onOpenCompanyDossier, viewMode = "list" }) {
   if (!items || items.length === 0) {
     return (
       <div style={{
@@ -682,6 +855,7 @@ export default function OpportunityCards({ items = [], onOpenDetail, onUpdateBoo
             opp={opp}
             onOpen={onOpenDetail}
             onUpdateBookingStatus={onUpdateBookingStatus}
+            onOpenCompanyDossier={onOpenCompanyDossier}
           />
         ))}
       </div>
@@ -696,6 +870,7 @@ export default function OpportunityCards({ items = [], onOpenDetail, onUpdateBoo
           opp={opp}
           onOpen={onOpenDetail}
           onUpdateBookingStatus={onUpdateBookingStatus}
+          onOpenCompanyDossier={onOpenCompanyDossier}
         />
       ))}
     </div>

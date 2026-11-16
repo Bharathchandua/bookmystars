@@ -23,44 +23,54 @@ import {
 import { showSuccess, showError } from "../../shared/utils/alert";
 import { InputField, TextArea, Button, Badge } from "../../shared/common";
 import { partnerProfileApi } from "../../features/bms/api/partners/partnerProfileApi";
+import LocationMiniMap from "../../components/common/LocationMiniMap";
+import SocialChannelsSection from "../../components/common/SocialChannelsSection";
 
 export default function PartnerProfile({ currentUser, onProfileUpdate }) {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const [profileData, setProfileData] = useState(() => {
-    const saved = localStorage.getItem(`bms_partner_profile_${currentUser?.userId || "guest"}`);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {}
-    }
-    return {
-      academyName: currentUser?.fullName || "Rajajinagar Dance & Performing Arts Academy",
-      category: currentUser?.customProfession || "Dance Academy & Casting Partner",
-      tagline: "Premier center for Bharatanatyam, Kathak, Contemporary & Commercial Dance",
-      directorName: "Guru Radhika Swaminathan",
-      designation: "Founding Director & Chief Choreographer",
-      email: currentUser?.email || "admissions@rajajinagardance.com",
-      phone: "+91 98450 12345",
-      city: "Bengaluru, Karnataka",
-      address: "#42, 2nd Main, 3rd Block, Rajajinagar, Bengaluru - 560010",
-      website: "https://www.rajajinagardance.com",
-      instagram: "rajajinagar_dance_academy",
-      youtube: "https://youtube.com/@RajajinagarDanceStudio",
-      establishedYear: "2012",
-      activeStudents: "450+ Enrolled Students",
-      trainingBatches: ["Weekend Classical Bharatanatyam", "Advanced Contemporary", "Bollywood Commercial", "Kids Stage Prep"],
-      studioFacilities: "3,000 sq.ft Sprung Wooden Floor Studio, Professional Mirrors, Sound Acoustics & Dressing Rooms",
-      bio: "Founded in 2012, Rajajinagar Dance Academy is one of Bengaluru's premier training institutes for classical and contemporary arts. Our students regularly perform on prestigious state stages, festive television broadcasts, and commercial ad shoots. We collaborate with BookMyStars to provide casting calls, stage opportunities, and targeted ad promotions for our batches.",
-      logoUrl: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?auto=format&fit=crop&w=300&q=80",
-      verified: true
-    };
-  });
+  // Clean up any deprecated bloated localStorage keys on load
+  useEffect(() => {
+    try {
+      if (currentUser?.userId) {
+        localStorage.removeItem(`bms_partner_profile_${currentUser.userId}`);
+      }
+      localStorage.removeItem("bms_partner_profile_guest");
+    } catch (_) {}
+  }, [currentUser?.userId]);
 
-  const [editForm, setEditForm] = useState(profileData);
+  const defaultProfile = {
+    academyName: currentUser?.fullName || "Rajajinagar Dance & Performing Arts Academy",
+    category: currentUser?.customProfession || "Dance Academy & Casting Partner",
+    tagline: "Premier center for Bharatanatyam, Kathak, Contemporary & Commercial Dance",
+    directorName: "Guru Radhika Swaminathan",
+    designation: "Founding Director & Chief Choreographer",
+    email: currentUser?.email || "admissions@rajajinagardance.com",
+    phone: "+91 98450 12345",
+    city: "Bengaluru, Karnataka",
+    address: "#42, 2nd Main, 3rd Block, Rajajinagar, Bengaluru - 560010",
+    website: "https://www.rajajinagardance.com",
+    instagram: "rajajinagar_dance_academy",
+    linkedin: "",
+    youtube: "https://youtube.com/@RajajinagarDanceStudio",
+    facebook: "",
+    twitter: "",
+    whatsapp: "+91 98450 12345",
+    socialVisibility: {},
+    establishedYear: "2012",
+    activeStudents: "450+ Enrolled Students",
+    trainingBatches: ["Weekend Classical Bharatanatyam", "Advanced Contemporary", "Bollywood Commercial", "Kids Stage Prep"],
+    studioFacilities: "3,000 sq.ft Sprung Wooden Floor Studio, Professional Mirrors, Sound Acoustics & Dressing Rooms",
+    bio: "Founded in 2012, Rajajinagar Dance Academy is one of Bengaluru's premier training institutes for classical and contemporary arts. Our students regularly perform on prestigious state stages, festive television broadcasts, and commercial ad shoots. We collaborate with BookMyStars to provide casting calls, stage opportunities, and targeted ad promotions for our batches.",
+    logoUrl: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?auto=format&fit=crop&w=300&q=80",
+    verified: true
+  };
 
-  // Load live partner academy profile from PostgreSQL database on mount
+  const [profileData, setProfileData] = useState(defaultProfile);
+  const [editForm, setEditForm] = useState(defaultProfile);
+
+  // Load live partner academy profile directly from PostgreSQL database on mount
   useEffect(() => {
     let isMounted = true;
     async function fetchServerProfile() {
@@ -75,15 +85,11 @@ export default function PartnerProfile({ currentUser, onProfileUpdate }) {
                 ? remote.trainingBatches
                 : prev.trainingBatches
             };
-            localStorage.setItem(
-              `bms_partner_profile_${currentUser?.userId || "guest"}`,
-              JSON.stringify(merged)
-            );
             return merged;
           });
         }
       } catch (err) {
-        console.warn("Could not fetch remote partner profile:", err);
+        console.warn("Could not fetch remote partner profile from database:", err);
       }
     }
     fetchServerProfile();
@@ -102,27 +108,30 @@ export default function PartnerProfile({ currentUser, onProfileUpdate }) {
   const handleSave = async (e) => {
     if (e) e.preventDefault();
     setIsSaving(true);
-    setProfileData(editForm);
-    localStorage.setItem(
-      `bms_partner_profile_${currentUser?.userId || "guest"}`,
-      JSON.stringify(editForm)
-    );
 
     try {
       const updated = await partnerProfileApi.updatePartnerProfile(editForm);
       if (updated) {
-        setProfileData(prev => ({
-          ...prev,
+        const merged = {
+          ...editForm,
           ...updated,
           trainingBatches: Array.isArray(updated.trainingBatches) && updated.trainingBatches.length > 0
             ? updated.trainingBatches
-            : prev.trainingBatches
-        }));
+            : editForm.trainingBatches
+        };
+        setProfileData(merged);
+        setEditForm(merged);
+        if (onProfileUpdate) {
+          onProfileUpdate(merged);
+        }
+        showSuccess("Academy Profile Updated", "Your official partner academy profile has been updated in database successfully!");
       }
     } catch (err) {
-      console.warn("Server partner profile update failed, cached locally:", err);
+      console.warn("Server partner profile update failed:", err);
+      showError("Update Failed", err.response?.data?.message || err.message || "Failed to save profile to database.");
     } finally {
       setIsSaving(false);
+      setIsEditing(false);
     }
 
     const storedUser = sessionStorage.getItem("bms_user") || localStorage.getItem("bms_user");
@@ -134,13 +143,6 @@ export default function PartnerProfile({ currentUser, onProfileUpdate }) {
         sessionStorage.setItem("bms_user", JSON.stringify(parsed));
       } catch (err) {}
     }
-
-    if (onProfileUpdate) {
-      onProfileUpdate(editForm);
-    }
-
-    setIsEditing(false);
-    showSuccess("Academy Profile Updated", "Your official partner academy profile has been updated in database successfully!");
   };
 
   const handleCancel = () => {
@@ -148,31 +150,47 @@ export default function PartnerProfile({ currentUser, onProfileUpdate }) {
     setIsEditing(false);
   };
 
-  const handleLogoUpload = (e) => {
+  const handleLogoUpload = async (e) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = async (ev) => {
-        const newLogo = ev.target.result;
-        setEditForm(prev => ({ ...prev, logoUrl: newLogo }));
-        setProfileData(prev => {
-          const updated = { ...prev, logoUrl: newLogo };
-          localStorage.setItem(
-            `bms_partner_profile_${currentUser?.userId || "guest"}`,
-            JSON.stringify(updated)
-          );
-          return updated;
-        });
+    if (!file) return;
 
-        try {
-          await partnerProfileApi.updatePartnerProfile({ ...editForm, logoUrl: newLogo });
-        } catch (err) {
-          console.warn("Server logo sync failed:", err);
-        }
+    // Show immediate local preview while uploading
+    const previewUrl = URL.createObjectURL(file);
+    setProfileData(prev => ({ ...prev, logoUrl: previewUrl }));
+    setEditForm(prev => ({ ...prev, logoUrl: previewUrl }));
 
-        showSuccess("Logo Updated", "Academy logo updated and saved successfully!");
-      };
-      reader.readAsDataURL(file);
+    try {
+      const updated = await partnerProfileApi.uploadPartnerLogo(file);
+      if (updated && updated.logoUrl) {
+        const finalUrl = updated.logoUrl.includes("?")
+          ? updated.logoUrl
+          : `${updated.logoUrl}?t=${Date.now()}`;
+        setProfileData(prev => ({ ...prev, ...updated, logoUrl: finalUrl }));
+        setEditForm(prev => ({ ...prev, ...updated, logoUrl: finalUrl }));
+        if (onProfileUpdate) onProfileUpdate({ ...updated, logoUrl: finalUrl });
+        showSuccess("Logo Updated", "Academy logo uploaded and saved to database successfully!");
+      }
+    } catch (err) {
+      console.warn("Multipart logo upload failed, trying base64 fallback:", err);
+      try {
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+          const base64Logo = ev.target.result;
+          const updated = await partnerProfileApi.updatePartnerProfile({ ...editForm, logoUrl: base64Logo });
+          if (updated && updated.logoUrl) {
+            const finalUrl = updated.logoUrl.includes("?")
+              ? updated.logoUrl
+              : `${updated.logoUrl}?t=${Date.now()}`;
+            setProfileData(prev => ({ ...prev, ...updated, logoUrl: finalUrl }));
+            setEditForm(prev => ({ ...prev, ...updated, logoUrl: finalUrl }));
+            if (onProfileUpdate) onProfileUpdate({ ...updated, logoUrl: finalUrl });
+            showSuccess("Logo Updated", "Academy logo saved to database successfully!");
+          }
+        };
+        reader.readAsDataURL(file);
+      } catch (fallbackErr) {
+        showError("Upload Failed", err.response?.data?.message || err.message || "Failed to save logo to database.");
+      }
     }
   };
 
@@ -187,9 +205,13 @@ export default function PartnerProfile({ currentUser, onProfileUpdate }) {
             <div className="relative group">
               <div className="w-24 h-24 rounded-2xl bg-white p-2 shadow-lg overflow-hidden flex items-center justify-center border-2 border-pink-400/30">
                 <img
-                  src={profileData.logoUrl}
+                  src={profileData.logoUrl || "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?auto=format&fit=crop&w=300&q=80"}
                   alt={profileData.academyName}
                   className="w-full h-full object-cover rounded-xl"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?auto=format&fit=crop&w=300&q=80";
+                  }}
                 />
               </div>
               <label className="absolute inset-0 bg-slate-900/60 rounded-2xl opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity duration-200">
@@ -401,6 +423,11 @@ export default function PartnerProfile({ currentUser, onProfileUpdate }) {
                   <p className="text-sm font-bold text-slate-800 mt-0.5 flex items-start gap-1.5">
                     <MapPin size={14} className="text-pink-600 mt-0.5 shrink-0" /> {profileData.address}
                   </p>
+                  <LocationMiniMap
+                    address={profileData.address}
+                    locationName={profileData.academyName || "Academy Studio"}
+                    theme="purple"
+                  />
                 </div>
               </div>
             ) : (
@@ -460,85 +487,14 @@ export default function PartnerProfile({ currentUser, onProfileUpdate }) {
         {/* RIGHT COLUMN */}
         <div className="space-y-6">
           
-          {/* Social Channels */}
-          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs">
-            <h3 className="text-sm font-black text-slate-900 mb-4 flex items-center gap-2">
-              <Globe size={16} className="text-pink-600" /> Digital Studio & Socials
-            </h3>
-
-            {!isEditing ? (
-              <div className="space-y-3">
-                <a
-                  href={profileData.website}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition text-xs font-bold text-slate-800"
-                >
-                  <span className="flex items-center gap-2">
-                    <Globe size={14} className="text-pink-600" /> Official Website
-                  </span>
-                  <ExternalLink size={12} className="text-slate-400" />
-                </a>
-
-                <a
-                  href={`https://instagram.com/${profileData.instagram}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center justify-between p-3 rounded-xl bg-pink-50/50 hover:bg-pink-50 transition text-xs font-bold text-pink-900"
-                >
-                  <span className="flex items-center gap-2">
-                    <Share2 size={14} className="text-pink-600" /> @{profileData.instagram}
-                  </span>
-                  <ExternalLink size={12} className="text-pink-400" />
-                </a>
-
-                <a
-                  href={profileData.youtube}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center justify-between p-3 rounded-xl bg-rose-50/50 hover:bg-rose-50 transition text-xs font-bold text-rose-900"
-                >
-                  <span className="flex items-center gap-2">
-                    <Video size={14} className="text-rose-600" /> Stage Shows & Showcase
-                  </span>
-                  <ExternalLink size={12} className="text-rose-400" />
-                </a>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Website URL</label>
-                  <input
-                    type="url"
-                    name="website"
-                    value={editForm.website}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Instagram Handle</label>
-                  <input
-                    type="text"
-                    name="instagram"
-                    value={editForm.instagram}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">YouTube Channel URL</label>
-                  <input
-                    type="url"
-                    name="youtube"
-                    value={editForm.youtube}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 outline-none"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
+          {/* Social Channels with Official Brand Icons & Handles */}
+          <SocialChannelsSection
+            profileData={profileData}
+            isEditing={isEditing}
+            editForm={editForm}
+            onChange={handleInputChange}
+            title="Digital Studio & Socials"
+          />
 
           {/* Active Training Batches */}
           <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs">

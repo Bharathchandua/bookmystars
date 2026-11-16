@@ -1,19 +1,11 @@
-import React from "react";
-import { Play, Trophy, ArrowRight, ShieldCheck, Users, Settings } from "lucide-react";
+import React, { useState } from "react";
+import { ArrowRight, Mail, X, CheckCircle } from "lucide-react";
 import Navbar from "../../Navbar.jsx";
 import FooterAgency from "../../FooterAgency.jsx";
-import Button from "../../common/Button.jsx";
 import Card from "../../common/Card.jsx";
 
-// Import Hero Image and Posters
+// Import Hero Image
 import postProductionHero from "../../../assets/Post production_Hero.png";
-import legendsPoster from "../../../assets/legends_rise_poster.png";
-import cityPoster from "../../../assets/city_lights_poster.png";
-import rhythmPoster from "../../../assets/rhythm_unplugged_poster.png";
-import dreamPoster from "../../../assets/dreams_live_poster.png";
-import journeyPoster from "../../../assets/the_journey_poster.png";
-import silencePoster from "../../../assets/broken_silence_poster.png";
-import beyondPoster from "../../../assets/beyond_the_spotlight_poster.png";
 
 import "./postproduction.css";
 
@@ -204,7 +196,31 @@ const DeliverIcon = ({ size = 30 }) => (
 );
 
 export default function PostProduction() {
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    service: "All Services (Full Pipeline)",
+    message: ""
+  });
 
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setIsSubmitted(true);
+  };
+
+  const handleBackdropClick = (e) => {
+    if (e.target.classList.contains("post-modal-overlay")) {
+      setIsContactModalOpen(false);
+    }
+  };
 
   const services = [
     {
@@ -272,108 +288,6 @@ export default function PostProduction() {
     }
   ];
 
-  const recentWorks = [
-    {
-      title: "Action Short Film",
-      subtitle: "Editing, VFX, Sound Design",
-      img: legendsPoster
-    },
-    {
-      title: "Commercial Ad",
-      subtitle: "Editing, Color Grading",
-      img: cityPoster
-    },
-    {
-      title: "Music Video",
-      subtitle: "Editing, Color Grading, VFX",
-      img: rhythmPoster
-    },
-    {
-      title: "Brand Film",
-      subtitle: "Editing, Motion Graphics",
-      img: dreamPoster
-    },
-    {
-      title: "Documentary",
-      subtitle: "Editing, Sound Design",
-      img: beyondPoster
-    }
-  ];
-
-
-
-  const [startIndex, setStartIndex] = React.useState(0);
-  const [mobileIndex, setMobileIndex] = React.useState(0);
-
-  const handlePrev = () => {
-    let visibleCards = 4;
-    if (typeof window !== "undefined") {
-      if (window.innerWidth <= 768) {
-        visibleCards = 3;
-      } else if (window.innerWidth <= 850) {
-        visibleCards = 2;
-      } else if (window.innerWidth <= 1024) {
-        visibleCards = 3;
-      }
-    }
-    setStartIndex((prev) => (prev > 0 ? prev - 1 : recentWorks.length - visibleCards));
-  };
-
-  const handleNext = () => {
-    let visibleCards = 4;
-    if (typeof window !== "undefined") {
-      if (window.innerWidth <= 768) {
-        visibleCards = 3;
-      } else if (window.innerWidth <= 850) {
-        visibleCards = 2;
-      } else if (window.innerWidth <= 1024) {
-        visibleCards = 3;
-      }
-    }
-    setStartIndex((prev) => (prev < recentWorks.length - visibleCards ? prev + 1 : 0));
-  };
-
-  const handleMobilePrev = () => {
-    setMobileIndex((prev) => (prev > 0 ? prev - 1 : recentWorks.length - 1));
-  };
-
-  const handleMobileNext = () => {
-    setMobileIndex((prev) => (prev < recentWorks.length - 1 ? prev + 1 : 0));
-  };
-
-  // Touch event hooks for swipe gesture on mobile
-  const touchStartX = React.useRef(0);
-  const touchStartY = React.useRef(0);
-  const touchEndX = React.useRef(0);
-  const touchEndY = React.useRef(0);
-
-  const handleTouchStart = (e) => {
-    touchStartX.current = e.targetTouches[0].clientX;
-    touchStartY.current = e.targetTouches[0].clientY;
-    touchEndX.current = e.targetTouches[0].clientX;
-    touchEndY.current = e.targetTouches[0].clientY;
-  };
-
-  const handleTouchMove = (e) => {
-    touchEndX.current = e.targetTouches[0].clientX;
-    touchEndY.current = e.targetTouches[0].clientY;
-  };
-
-  const handleTouchEnd = () => {
-    const diffX = touchStartX.current - touchEndX.current;
-    const diffY = touchStartY.current - touchEndY.current;
-    
-    // Check if swipe is mostly horizontal
-    if (Math.abs(diffX) > Math.abs(diffY)) {
-      const swipeThreshold = 50;
-      if (diffX > swipeThreshold) {
-        handleMobileNext();
-      } else if (diffX < -swipeThreshold) {
-        handleMobilePrev();
-      }
-    }
-  };
-
   return (
     <div className="post-prod-page-wrapper">
       <Navbar />
@@ -433,17 +347,14 @@ export default function PostProduction() {
               </div>
 
               <div className="post-prod-hero-buttons">
-                <a href="#connect" className="btn-post-connect-gradient">
-                  <Users size={18} />
-                  <span>Connect Now</span>
-                </a>
-                <a href="#work" className="btn-post-work">
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="play-icon-purple" style={{ color: "var(--post-purple)" }}>
-                    <circle cx="12" cy="12" r="10" />
-                    <polygon points="10 8 16 12 10 16 10 8" fill="none" />
-                  </svg>
-                  <span>View Our Work</span>
-                </a>
+                <button
+                  type="button"
+                  className="btn-post-contact-gradient"
+                  onClick={() => setIsContactModalOpen(true)}
+                >
+                  <Mail size={18} />
+                  <span>Contact Us</span>
+                </button>
               </div>
             </div>
 
@@ -528,164 +439,130 @@ export default function PostProduction() {
           </div>
         </section>
 
-        {/* =============================================
-           4. WHY CHOOSE SECTION
-           ============================================= */}
-        <section className="post-prod-choose-section">
-          <div className="post-prod-choose-container">
-            <h2 className="post-prod-choose-title">Why Choose BookMyStars for Post Production?</h2>
-            
-            <div className="post-prod-choose-grid">
-              <div className="post-prod-choose-item">
-                <div className="post-prod-choose-icon-wrap">
-                  <Trophy size={30} />
-                </div>
-                <div className="post-prod-choose-text">
-                  <span className="post-prod-choose-lbl">Industry Expertise</span>
-                  <span className="post-prod-choose-desc">Experienced professionals with years of industry expertise.</span>
-                </div>
-              </div>
-
-              <div className="post-prod-choose-item">
-                <div className="post-prod-choose-icon-wrap">
-                  <Settings size={30} />
-                </div>
-                <div className="post-prod-choose-text">
-                  <span className="post-prod-choose-lbl">Advanced Technology</span>
-                  <span className="post-prod-choose-desc">We use the latest tools and software for world-class results.</span>
-                </div>
-              </div>
-
-              <div className="post-prod-choose-item">
-                <div className="post-prod-choose-icon-wrap">
-                  <Users size={30} />
-                </div>
-                <div className="post-prod-choose-text">
-                  <span className="post-prod-choose-lbl">Creative Excellence</span>
-                  <span className="post-prod-choose-desc">Creative approach that enhances your story and connects with audiences.</span>
-                </div>
-              </div>
-
-              <div className="post-prod-choose-item">
-                <div className="post-prod-choose-icon-wrap">
-                  <ShieldCheck size={30} />
-                </div>
-                <div className="post-prod-choose-text">
-                  <span className="post-prod-choose-lbl">Confidential & Secure</span>
-                  <span className="post-prod-choose-desc">Your content is safe with us. We value your privacy and trust.</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* =============================================
-           5. OUR RECENT WORK SECTION (Grid / Slider)
-           ============================================= */}
-        <section className="post-prod-work-section" id="work">
-          <div className="post-prod-section-header">
-            <h2 className="post-prod-section-title">Our Recent Work</h2>
-            <p className="post-prod-section-subtitle">
-              A glimpse of stories we've brought to life.
-            </p>
-          </div>
-
-          {/* ── DESKTOP CAROUSEL (hidden on mobile via CSS) ── */}
-          <div className="post-prod-carousel-container post-prod-carousel-desktop">
-            <Button className="post-prod-carousel-btn prev-btn" onClick={handlePrev}>
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
-            </Button>
-
-            <div className="post-prod-work-grid-wrapper">
-              <div className="post-prod-work-grid" style={{ "--promo-slide-index": String(startIndex) }}>
-                {recentWorks.map((work, idx) => (
-                  <Card className="post-prod-work-card" key={idx}>
-                    <div className="post-prod-work-img-wrap">
-                      <img src={work.img} alt={work.title} />
-                      <div className="play-button-overlay">
-                        <Play size={20} fill="currentColor" style={{ marginLeft: "2px" }} />
-                      </div>
-                    </div>
-                    <div className="post-prod-work-body">
-                      <h3 className="post-prod-work-title">{work.title}</h3>
-                      <span className="post-prod-work-subtitle">{work.subtitle}</span>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </div>
-
-            <Button className="post-prod-carousel-btn next-btn" onClick={handleNext}>
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
-            </Button>
-          </div>
-
-          {/* ── MOBILE CAROUSEL — one card at a time (hidden on desktop via CSS) ── */}
-          <div className="post-prod-carousel-mobile-container">
-            <Button className="post-prod-mobile-side-btn prev-btn" onClick={handleMobilePrev}>
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
-            </Button>
-            
-            <div 
-              className="post-prod-mobile-card-wrap"
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
-            >
-              {(() => {
-                const work = recentWorks[mobileIndex];
-                return (
-                  <Card className="post-prod-work-card post-prod-mobile-card">
-                    <div className="post-prod-work-img-wrap">
-                      <img src={work.img} alt={work.title} />
-                      <div className="play-button-overlay">
-                        <Play size={20} fill="currentColor" style={{ marginLeft: "2px" }} />
-                      </div>
-                    </div>
-                    <div className="post-prod-work-body">
-                      <h3 className="post-prod-work-title">{work.title}</h3>
-                      <span className="post-prod-work-subtitle">{work.subtitle}</span>
-                    </div>
-                  </Card>
-                );
-              })()}
-            </div>
-
-            <Button className="post-prod-mobile-side-btn next-btn" onClick={handleMobileNext}>
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
-            </Button>
-
-            <div className="post-prod-mobile-dots">
-              {recentWorks.map((_, idx) => (
-                <Button
-                  key={idx}
-                  className={`post-prod-mobile-dot ${idx === mobileIndex ? 'active' : ''}`}
-                  onClick={() => setMobileIndex(idx)}
-                  aria-label={`Go to slide ${idx + 1}`}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="post-prod-more-btn-wrap">
-            <a href="#more" className="btn-post-work" style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
-              <span>View More Work</span>
-              <ArrowRight size={16} />
-            </a>
-          </div>
-        </section>
-
-
-
       </main>
+
+      {/* Direct Contact Modal */}
+      {isContactModalOpen && (
+        <div className="post-modal-overlay" onClick={handleBackdropClick}>
+          <div className="post-modal-content">
+            <button
+              type="button"
+              className="post-modal-close"
+              onClick={() => setIsContactModalOpen(false)}
+              aria-label="Close modal"
+            >
+              <X size={20} />
+            </button>
+
+            {!isSubmitted ? (
+              <>
+                <div className="post-modal-header">
+                  <span className="post-modal-badge">Direct Inquiry</span>
+                  <h3 className="post-modal-title">Contact Post Production Team</h3>
+                  <p className="post-modal-subtitle">
+                    Share your project details with our post supervisors. We will get back to you promptly.
+                  </p>
+                </div>
+
+                <form onSubmit={handleSubmit} className="post-modal-form">
+                  <div className="post-form-group">
+                    <label htmlFor="post-name">Full Name *</label>
+                    <input
+                      id="post-name"
+                      type="text"
+                      name="name"
+                      required
+                      placeholder="e.g. Rahul Sharma"
+                      value={formData.name}
+                      onChange={handleChange}
+                    />
+                  </div>
+
+                  <div className="post-form-row">
+                    <div className="post-form-group">
+                      <label htmlFor="post-email">Email Address *</label>
+                      <input
+                        id="post-email"
+                        type="email"
+                        name="email"
+                        required
+                        placeholder="you@company.com"
+                        value={formData.email}
+                        onChange={handleChange}
+                      />
+                    </div>
+                    <div className="post-form-group">
+                      <label htmlFor="post-phone">Phone Number *</label>
+                      <input
+                        id="post-phone"
+                        type="tel"
+                        name="phone"
+                        required
+                        placeholder="+91 98765 43210"
+                        value={formData.phone}
+                        onChange={handleChange}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="post-form-group">
+                    <label htmlFor="post-service">Required Service *</label>
+                    <select
+                      id="post-service"
+                      name="service"
+                      value={formData.service}
+                      onChange={handleChange}
+                    >
+                      <option value="All Services (Full Pipeline)">All Services (Full Pipeline)</option>
+                      <option value="Video Editing">Video Editing</option>
+                      <option value="Color Grading (DaVinci Resolve)">Color Grading (DaVinci Resolve)</option>
+                      <option value="Sound Design & Dolby Audio">Sound Design & Dolby Audio</option>
+                      <option value="Visual Effects (VFX)">Visual Effects (VFX)</option>
+                      <option value="Motion Graphics & Titles">Motion Graphics & Titles</option>
+                      <option value="Finishing & Mastering">Finishing & Mastering</option>
+                    </select>
+                  </div>
+
+                  <div className="post-form-group">
+                    <label htmlFor="post-message">Project Specifications</label>
+                    <textarea
+                      id="post-message"
+                      name="message"
+                      rows={3}
+                      placeholder="Tell us about the footage format, expected runtime, and target delivery dates..."
+                      value={formData.message}
+                      onChange={handleChange}
+                    />
+                  </div>
+
+                  <button type="submit" className="post-modal-submit-btn">
+                    <span>Submit Inquiry</span>
+                    <Mail size={16} />
+                  </button>
+                </form>
+              </>
+            ) : (
+              <div className="post-modal-success">
+                <CheckCircle size={56} className="post-success-icon" />
+                <h3>Inquiry Submitted!</h3>
+                <p>
+                  Thank you, <strong>{formData.name}</strong>. Our post production team has received your inquiry and will contact you promptly.
+                </p>
+                <button
+                  type="button"
+                  className="post-modal-close-action"
+                  onClick={() => {
+                    setIsContactModalOpen(false);
+                    setIsSubmitted(false);
+                  }}
+                >
+                  Done
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <FooterAgency />
     </div>

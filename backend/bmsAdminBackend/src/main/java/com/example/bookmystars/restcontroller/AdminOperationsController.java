@@ -133,4 +133,33 @@ public class AdminOperationsController {
         adminOperationsService.deleteUserAccount(authentication, id);
         return ResponseEntity.ok(Map.of("message", "Talent user account permanently deleted."));
     }
+
+    // ─── TALENT MEDIA MODERATION DESK ───
+
+    @GetMapping("/talent-media/pending")
+    @PreAuthorize("@rbac.hasPermission(authentication, 'kyc', 'view')")
+    @Operation(summary = "Get all pending talent media (photos, videos, audios) awaiting admin moderation")
+    public ResponseEntity<List<com.example.bookmystars.dto.AdminTalentMediaItemDto>> getPendingTalentMedia() {
+        return ResponseEntity.ok(adminOperationsService.getPendingTalentMedia());
+    }
+
+    @GetMapping("/talent-media/user/{userId}")
+    @PreAuthorize("@rbac.hasPermission(authentication, 'kyc', 'view')")
+    @Operation(summary = "Get all media items (photos, videos, audios) for a specific talent user")
+    public ResponseEntity<List<com.example.bookmystars.dto.AdminTalentMediaItemDto>> getTalentMediaByUser(
+            @PathVariable Long userId) {
+        return ResponseEntity.ok(adminOperationsService.getTalentMediaByUserId(userId));
+    }
+
+    @PutMapping("/talent-media/{mediaType}/{id}/review")
+    @PreAuthorize("@rbac.hasPermission(authentication, 'kyc', 'approve')")
+    @Operation(summary = "Review talent media (photo, video, audio): approve or reject with reason")
+    public ResponseEntity<com.example.bookmystars.dto.AdminTalentMediaItemDto> reviewTalentMedia(
+            Authentication authentication,
+            @PathVariable String mediaType,
+            @PathVariable Long id,
+            @RequestBody(required = false) com.example.bookmystars.dto.ReviewMediaRequest request) {
+        com.example.bookmystars.dto.AdminTalentMediaItemDto reviewed = adminOperationsService.reviewTalentMedia(authentication, mediaType, id, request);
+        return ResponseEntity.ok(reviewed);
+    }
 }

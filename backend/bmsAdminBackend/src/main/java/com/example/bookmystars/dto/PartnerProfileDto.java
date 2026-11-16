@@ -24,6 +24,12 @@ public class PartnerProfileDto {
     private String website;
     private String instagram;
     private String youtube;
+    private String linkedin;
+    private String facebook;
+    private String twitter;
+    private String whatsapp;
+    private String socialVisibility;
+    private String mapCoordinates;
     private String establishedYear;
     private String activeStudents;
     private List<String> trainingBatches;

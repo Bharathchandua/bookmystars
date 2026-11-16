@@ -33,7 +33,8 @@ import {
   Play,
   Video,
   Pencil,
-  Trash2
+  Trash2,
+  Send
 } from "lucide-react";
 import { getStoredUser, logoutUser } from "../../features/bms/api/auth/authApi";
 import { opportunitiesApi } from "../../features/bms/api/opportunities/opportunitiesApi";
@@ -48,6 +49,8 @@ import PartnerPostRequirementModal from "./PartnerPostRequirementModal";
 import ApplicantReviewModal from "../common/ApplicantReviewModal";
 import WorkspaceHeroBanner from "../common/WorkspaceHeroBanner";
 import { StatCard, FilterPills, Button, Badge } from "../../shared/common";
+import { BACKEND_SERVER_URL } from "../../shared/services/BaseUrl";
+import bannerDancePartner from "../../assets/banner_dance_partner.png";
 
 // Mini Sparkline SVG wave component for stat cards
 function SparklineWave({ color = "#ec4899", gradientId = "pinkGrad" }) {
@@ -177,14 +180,17 @@ export default function PartnerDashboard() {
               description: item.description && item.description.trim().length > 0
                 ? item.description
                 : `Auditions open for ${item.title}. Verified casting production registered on BookMyStars.`,
-              status: item.status === "OPEN" ? "Active & Promoted" : item.status,
+              status: item.status === "OPEN" ? "Active & Promoted" : (item.status === "IN_REVIEW" ? "Under Admin Review" : (item.status || "Under Admin Review")),
+              adminStatus: item.status || "IN_REVIEW",
               deadline: item.applicationDeadline
                 ? `Applications open till ${item.applicationDeadline}`
                 : "Applications open",
               location: item.location || "Bengaluru, Karnataka",
               applicationsCount: item.applicantCount || 0,
               shortlistedCount: 0,
-              image: item.posterUrl || "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?auto=format&fit=crop&w=400&q=80",
+              image: (item.posterUrl && !item.posterUrl.includes("banner_dance_partner.png"))
+                ? (item.posterUrl.startsWith("http") ? item.posterUrl : `${BACKEND_SERVER_URL}${item.posterUrl.startsWith("/") ? "" : "/"}${item.posterUrl}`)
+                : bannerDancePartner,
               createdAt: item.createdAt ? String(item.createdAt).split("T")[0] : "2026-10-25"
             }));
             setRequirementsList(mapped);
@@ -840,9 +846,13 @@ export default function PartnerDashboard() {
                             </>
                           ) : (
                             <img
-                              src={req.image}
+                              src={req.image || bannerDancePartner}
                               alt={req.title}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              onError={(e) => {
+                                e.currentTarget.onerror = null;
+                                e.currentTarget.src = bannerDancePartner;
+                              }}
                             />
                           )}
                         </div>
@@ -852,8 +862,12 @@ export default function PartnerDashboard() {
                             <span className="px-2.5 py-0.5 rounded-md bg-purple-50 text-purple-700 text-[10px] font-black uppercase">
                               {req.category}
                             </span>
-                            <span className="px-2.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-bold">
-                              {req.status}
+                            <span className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold ${
+                              (req.status || "").includes("Review") || req.adminStatus === "IN_REVIEW"
+                                ? "bg-amber-50 text-amber-700 border border-amber-200"
+                                : "bg-emerald-50 text-emerald-700"
+                            }`}>
+                              {(req.status || "").includes("Review") || req.adminStatus === "IN_REVIEW" ? "Under Admin Review" : req.status}
                             </span>
                           </div>
 
@@ -956,11 +970,12 @@ export default function PartnerDashboard() {
                           >
                             <div className="flex items-center gap-2.5 min-w-0">
                               <img
-                                src={applicant.applicantPhoto || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80"}
+                                src={applicant.applicantPhoto ? (applicant.applicantPhoto.startsWith("http") ? applicant.applicantPhoto : `${BACKEND_SERVER_URL}${applicant.applicantPhoto.startsWith("/") ? "" : "/"}${applicant.applicantPhoto}`) : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80"}
                                 alt={applicant.applicantName}
                                 className="w-10 h-10 rounded-full object-cover shrink-0 border border-slate-200"
                                 onError={(e) => {
-                                  e.target.src = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80";
+                                  e.currentTarget.onerror = null;
+                                  e.currentTarget.src = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80";
                                 }}
                               />
                               <div className="min-w-0">

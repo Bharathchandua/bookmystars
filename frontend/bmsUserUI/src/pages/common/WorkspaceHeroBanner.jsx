@@ -1,18 +1,20 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Camera, Image as ImageIcon, RotateCcw, Sparkles, ChevronRight, Upload, Check, X, Info } from "lucide-react";
 import { showSuccess, showWarning } from "../../shared/utils/alert";
+import bannerDancePartner from "../../assets/banner_dance_partner.png";
+import bannerClientJewelry from "../../assets/banner_client_jewelry.png";
 
 // Default industry/academy banner images
 export const DEFAULT_BANNERS = {
   // Partner Category Banners
-  DANCE: "/banners/banner_dance_partner.png",
+  DANCE: bannerDancePartner,
   ACTING: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1800&q=85",
   MUSIC: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=1800&q=85",
   MODELING: "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=1800&q=85",
 
   // Client Industry Banners
-  JEWELRY: "/banners/banner_client_jewelry.png?v=2",
-  FASHION: "/banners/banner_client_jewelry.png?v=2",
+  JEWELRY: bannerClientJewelry,
+  FASHION: bannerClientJewelry,
   FILM_MEDIA: "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1800&q=85",
   CORPORATE: "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1800&q=85"
 };
@@ -81,9 +83,13 @@ export default function WorkspaceHeroBanner({
   // Calculate the default banner based on category or industry
   const defaultBannerUrl = getDefaultBanner(portalType, categoryOrIndustry);
 
-  // Custom banner stored in localStorage
+  // Custom banner stored safely (sessionStorage for large data, localStorage for URLs)
   const [customBanner, setCustomBanner] = useState(() => {
-    return localStorage.getItem(storageKey) || null;
+    try {
+      return sessionStorage.getItem(storageKey) || localStorage.getItem(storageKey) || null;
+    } catch (_) {
+      return null;
+    }
   });
 
   // Floating desk card dismiss state
@@ -92,8 +98,8 @@ export default function WorkspaceHeroBanner({
     return localStorage.getItem(deskStorageKey) === "true";
   });
 
-  // Current active banner (custom overrides default, with automatic cache refresh for default jewelry asset)
-  const activeBannerUrl = (customBanner && !customBanner.includes("banner_client_jewelry.png"))
+  // Current active banner (custom overrides default, with automatic cache refresh for default banner assets)
+  const activeBannerUrl = (customBanner && !customBanner.includes("banner_client_jewelry.png") && !customBanner.includes("banner_dance_partner.png"))
     ? customBanner
     : defaultBannerUrl;
 
@@ -117,10 +123,15 @@ export default function WorkspaceHeroBanner({
       if (base64Data) {
         setCustomBanner(base64Data);
         try {
-          localStorage.setItem(storageKey, base64Data);
+          sessionStorage.setItem(storageKey, base64Data);
+          if (base64Data.length < 50000) {
+            localStorage.setItem(storageKey, base64Data);
+          } else {
+            localStorage.removeItem(storageKey);
+          }
           showSuccess("Banner Updated", "Your custom banner photo has been saved successfully!");
         } catch (err) {
-          console.warn("Could not save to localStorage (quota exceeded)", err);
+          console.warn("Storage notice:", err);
           showSuccess("Banner Applied", "Banner preview updated for this session.");
         }
       }
@@ -175,14 +186,14 @@ export default function WorkspaceHeroBanner({
       
       {/* Dynamic Background Image Confined Strictly to the Right - Never Overlapping Left Text */}
       <div 
-        className="absolute top-0 bottom-0 right-0 w-full sm:w-1/2 lg:w-5/12 overflow-hidden pointer-events-none select-none z-0 opacity-20 sm:opacity-100"
+        className="absolute top-0 bottom-0 right-0 w-full sm:w-1/2 lg:w-5/12 overflow-hidden pointer-events-none select-none z-0 opacity-40 sm:opacity-100"
         style={{
-          WebkitMaskImage: "linear-gradient(to right, transparent 0%, rgba(0, 0, 0, 0.5) 15%, rgba(0, 0, 0, 1) 40%)",
-          maskImage: "linear-gradient(to right, transparent 0%, rgba(0, 0, 0, 0.5) 15%, rgba(0, 0, 0, 1) 40%)",
+          WebkitMaskImage: "linear-gradient(to right, transparent 0%, rgba(0, 0, 0, 0.3) 15%, rgba(0, 0, 0, 1) 40%)",
+          maskImage: "linear-gradient(to right, transparent 0%, rgba(0, 0, 0, 0.3) 15%, rgba(0, 0, 0, 1) 40%)",
         }}
       >
         <img
-          src={activeBannerUrl}
+          src={activeBannerUrl || (portalType === "CLIENT" ? bannerClientJewelry : bannerDancePartner)}
           alt="Workspace Banner"
           className="w-full h-full object-cover object-center transform transition-transform duration-700 ease-out group-hover:scale-105"
           onError={(e) => {
@@ -190,6 +201,8 @@ export default function WorkspaceHeroBanner({
               setCustomBanner(null);
               localStorage.removeItem(storageKey);
             }
+            e.currentTarget.onerror = null;
+            e.currentTarget.src = portalType === "CLIENT" ? bannerClientJewelry : bannerDancePartner;
           }}
         />
         {/* Soft edge blend overlay */}

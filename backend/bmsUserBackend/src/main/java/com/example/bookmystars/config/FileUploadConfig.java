@@ -42,9 +42,24 @@ public class FileUploadConfig implements WebMvcConfigurer {
         registry.addResourceHandler("/uploads/work-experience/**")
                 .addResourceLocations(fileLocationUri + "work-experience/");
 
+        // Public client and partner showcase works (photos, commercials, showreels)
+        registry.addResourceHandler("/uploads/showcase/**")
+                .addResourceLocations(fileLocationUri + "showcase/");
+
         // Generic fallback for all uploads
         registry.addResourceHandler("/uploads/**")
                 .addResourceLocations(fileLocationUri);
+
+        // Public static banners (dance, jewelry, etc.)
+        try {
+            Path bannersDir = baseDir.getParent().resolve("frontend/bmsUserUI/public/banners/");
+            if (bannersDir.toFile().exists()) {
+                String bannerUri = bannersDir.toUri().toString();
+                if (!bannerUri.endsWith("/")) bannerUri += "/";
+                registry.addResourceHandler("/banners/**")
+                        .addResourceLocations(bannerUri);
+            }
+        } catch (Exception ignored) {}
 
         // NOTE: /uploads/documents/** is intentionally OMITTED from public registry!
         // Private KYC documents, ID proofs, and contracts are served strictly

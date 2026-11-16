@@ -1,30 +1,16 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useState } from "react";
 import { 
-  Megaphone, Play, Users, FileText, Calendar, 
-  ClipboardList, Lightbulb, Video, Activity, Trophy, 
-  ArrowRight, Share2, Eye, Link2, CheckCircle2, Globe, Heart, Hash, Sparkles, Rocket 
+  Users, ClipboardList, Lightbulb, Video, Megaphone, 
+  Activity, Trophy, ArrowRight, Share2, Heart, Rocket, 
+  Mail, X, CheckCircle 
 } from "lucide-react";
-import { 
-  FaYoutube, FaInstagram, FaFacebook, FaLinkedin, 
-  FaWhatsapp, FaGoogle, FaEnvelope 
-} from "react-icons/fa6";
+import { FaYoutube, FaInstagram, FaFacebook } from "react-icons/fa6";
 import Navbar from "../../Navbar.jsx";
 import FooterAgency from "../../FooterAgency.jsx";
-import Button from "../../common/Button";
 import Card from "../../common/Card.jsx";
 
-// Import Hero Image and Campaign Posters
+// Import Hero Image
 import promotionHero from "../../../assets/promotion_Hero.png";
-import shadowPoster from "../../../assets/broken_silence_poster.png";
-import dreamPoster from "../../../assets/dreams_live_poster.png";
-import soundPoster from "../../../assets/legends_rise_poster.png";
-import glowPoster from "../../../assets/beyond_the_spotlight_poster.png";
-import cityPoster from "../../../assets/city_lights_poster.png";
-import journeyPoster from "../../../assets/the_journey_poster.png";
-import rhythmPoster from "../../../assets/rhythm_unplugged_poster.png";
-import beyondSpotlight from "../../../assets/beyond_spotlight.png";
-import cityNew from "../../../assets/city_lights_new.png";
 
 import "./promotion.css";
 
@@ -306,199 +292,31 @@ export default function Promotion() {
     }
   ];
 
-  const channels = [
-    { name: "YouTube", icon: <YouTubeLogo />, className: "youtube" },
-    { name: "Instagram", icon: <InstagramLogo />, className: "instagram" },
-    { name: "Facebook", icon: <FacebookLogo />, className: "facebook" },
-    { name: "X (Twitter)", icon: <XLogo />, className: "x" },
-    { name: "LinkedIn", icon: <LinkedInLogo />, className: "linkedin" },
-    { name: "WhatsApp", icon: <WhatsAppLogo />, className: "whatsapp" },
-    { name: "Google Ads", icon: <GoogleAdsLogo />, className: "googleads" },
-    { name: "Influencers", icon: <InfluencersLogo />, className: "influencers" },
-    { name: "Email Marketing", icon: <EmailMarketingLogo />, className: "email" }
-  ];
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    campaignType: "Film Theatrical Release Campaign",
+    message: ""
+  });
 
-  const campaigns = [
-    {
-      title: "SHADOWS",
-      subtitle: "Film Promotion",
-      campaignType: "Theatrical Release Campaign",
-      img: shadowPoster,
-      stats: [
-        { label: "Reach", val: "12M+" },
-        { label: "Engagement", val: "4.8M+" },
-        { label: "Link Clicks", val: "230K+" }
-      ]
-    },
-    {
-      title: "BEHIND THE DREAM",
-      subtitle: "Web Series Promotion",
-      campaignType: "Digital Campaign",
-      img: dreamPoster,
-      stats: [
-        { label: "Reach", val: "8.6M+" },
-        { label: "Engagement", val: "3.2M+" },
-        { label: "Video Views", val: "160K+" }
-      ]
-    },
-    {
-      title: "SOUND OF LIFE",
-      subtitle: "Music Video Promotion",
-      campaignType: "Social Media Campaign",
-      img: soundPoster,
-      stats: [
-        { label: "Reach", val: "6.4M+" },
-        { label: "Engagement", val: "2.7M+" },
-        { label: "Shares", val: "95K+" }
-      ]
-    },
-    {
-      title: "Glow Naturally",
-      subtitle: "Brand Campaign",
-      campaignType: "Digital & Influencer Campaign",
-      img: glowPoster,
-      stats: [
-        { label: "Reach", val: "5.1M+" },
-        { label: "Engagement", val: "1.9M+" },
-        { label: "Leads", val: "120K+" }
-      ]
-    },
-    {
-      title: "City Lights",
-      subtitle: "Short Film Promotion",
-      campaignType: "Social Media Campaign",
-      img: cityPoster,
-      stats: [
-        { label: "Reach", val: "4.2M+" },
-        { label: "Engagement", val: "1.8M+" },
-        { label: "Link Clicks", val: "85K+" }
-      ]
-    },
-    {
-      title: "The Journey",
-      subtitle: "Documentary Promotion",
-      campaignType: "PR & Media Campaign",
-      img: journeyPoster,
-      stats: [
-        { label: "Reach", val: "3.5M+" },
-        { label: "Engagement", val: "1.2M+" },
-        { label: "Views", val: "90K+" }
-      ]
-    },
-    {
-      title: "Rhythm Unplugged",
-      subtitle: "Live Concert Promotion",
-      campaignType: "Event Ticket Sales",
-      img: rhythmPoster,
-      stats: [
-        { label: "Reach", val: "5.8M+" },
-        { label: "Engagement", val: "2.1M+" },
-        { label: "Leads", val: "140K+" }
-      ]
-    },
-    {
-      title: "BEYOND SPOTLIGHT",
-      subtitle: "Talk Show Promotion",
-      campaignType: "YouTube & Spotify Campaign",
-      img: beyondSpotlight,
-      stats: [
-        { label: "Reach", val: "8.2M+" },
-        { label: "Engagement", val: "3.5M+" },
-        { label: "Listeners", val: "110K+" }
-      ]
-    },
-    {
-      title: "METROPOLIS",
-      subtitle: "Web Series Launch",
-      campaignType: "Influencer Marketing",
-      img: cityNew,
-      stats: [
-        { label: "Reach", val: "9.5M+" },
-        { label: "Engagement", val: "4.1M+" },
-        { label: "Subscribers", val: "180K+" }
-      ]
-    }
-  ];
-
-  const [startIndex, setStartIndex] = React.useState(0);
-  const [mobileIndex, setMobileIndex] = React.useState(0);
-
-  const handlePrev = () => {
-    let visibleCards = 4;
-    if (typeof window !== "undefined") {
-      if (window.innerWidth <= 768) {
-        visibleCards = 3;
-      } else if (window.innerWidth <= 850) {
-        visibleCards = 2;
-      } else if (window.innerWidth <= 1024) {
-        visibleCards = 3;
-      }
-    }
-    setStartIndex((prev) => (prev > 0 ? prev - 1 : campaigns.length - visibleCards));
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleNext = () => {
-    let visibleCards = 4;
-    if (typeof window !== "undefined") {
-      if (window.innerWidth <= 768) {
-        visibleCards = 3;
-      } else if (window.innerWidth <= 850) {
-        visibleCards = 2;
-      } else if (window.innerWidth <= 1024) {
-        visibleCards = 3;
-      }
-    }
-    setStartIndex((prev) => (prev < campaigns.length - visibleCards ? prev + 1 : 0));
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setIsSubmitted(true);
   };
 
-  const handleMobilePrev = () => {
-    setMobileIndex((prev) => (prev > 0 ? prev - 1 : campaigns.length - 1));
-  };
-
-  const handleMobileNext = () => {
-    setMobileIndex((prev) => (prev < campaigns.length - 1 ? prev + 1 : 0));
-  };
-
-  // Touch handlers for mobile swipe navigation
-  const touchStartX = React.useRef(0);
-  const touchStartY = React.useRef(0);
-  const touchEndX = React.useRef(0);
-  const touchEndY = React.useRef(0);
-
-  const handleTouchStart = (e) => {
-    touchStartX.current = e.targetTouches[0].clientX;
-    touchStartY.current = e.targetTouches[0].clientY;
-    touchEndX.current = e.targetTouches[0].clientX;
-    touchEndY.current = e.targetTouches[0].clientY;
-  };
-
-  const handleTouchMove = (e) => {
-    touchEndX.current = e.targetTouches[0].clientX;
-    touchEndY.current = e.targetTouches[0].clientY;
-  };
-
-  const handleTouchEnd = () => {
-    const diffX = touchStartX.current - touchEndX.current;
-    const diffY = touchStartY.current - touchEndY.current;
-    
-    // Check if swipe is mostly horizontal
-    if (Math.abs(diffX) > Math.abs(diffY)) {
-      const swipeThreshold = 50;
-      if (diffX > swipeThreshold) {
-        handleMobileNext();
-      } else if (diffX < -swipeThreshold) {
-        handleMobilePrev();
-      }
+  const handleBackdropClick = (e) => {
+    if (e.target.classList.contains("promo-modal-overlay")) {
+      setIsContactModalOpen(false);
     }
   };
-
-  const statsData = [
-    { val: "500+", lbl: "Campaigns Delivered", icon: <CampaignsDeliveredIcon size={38} /> },
-    { val: "200+", lbl: "Happy Clients", icon: <HappyClientsIcon size={38} /> },
-    { val: "50M+", lbl: "People Reached", icon: <PeopleReachedIcon size={38} /> },
-    { val: "15+", lbl: "Platforms Covered", icon: <PlatformsCoveredIcon size={38} /> },
-    { val: "100%", lbl: "Result Focused", icon: <ResultFocusedIcon size={38} /> }
-  ];
 
   return (
     <div className="promotion-page-wrapper">
@@ -551,13 +369,14 @@ export default function Promotion() {
               </div>
 
               <div className="promotion-hero-buttons">
-                <a href="#connect" className="btn-promo-connect">
-                  Connect With Us
-                </a>
-                <a href="#work" className="btn-promo-work">
-                  <Play size={15} fill="currentColor" style={{ marginRight: "4px" }} />
-                  View Our Work
-                </a>
+                <button
+                  type="button"
+                  className="btn-promo-contact-gradient"
+                  onClick={() => setIsContactModalOpen(true)}
+                >
+                  <Mail size={18} />
+                  <span>Contact Us</span>
+                </button>
               </div>
             </div>
 
@@ -666,156 +485,7 @@ export default function Promotion() {
           </div>
         </section>
 
-        {/* =============================================
-           4. PROMOTION CHANNELS WE LEVERAGE SECTION
-           ============================================= */}
-        <section className="promo-channels-section">
-          <div className="promo-section-header" style={{ marginBottom: "36px" }}>
-            <h2 className="promo-section-title" style={{ fontSize: "28px" }}>Promotion Channels We Leverage</h2>
-          </div>
 
-          <div className="promo-channels-grid">
-            {channels.map((chan, idx) => (
-              <div className={`promo-channel-badge ${chan.className}`} key={idx}>
-                {chan.icon}
-                <span>{chan.name}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* =============================================
-           5. CAMPAIGNS THAT CREATED BUZZ SECTION
-           ============================================= */}
-          <section className="promo-campaigns-section" id="work">
-            <div className="promo-section-header">
-              <h2 className="promo-section-title">Campaigns That Created Buzz</h2>
-              <p className="promo-section-subtitle">
-                Real projects. Real impact.
-              </p>
-            </div>
-
-            {/* ── DESKTOP CAROUSEL (hidden on mobile via CSS) ── */}
-            <div className="promo-carousel-container promo-carousel-desktop">
-              <Button className="promo-carousel-btn prev-btn" onClick={handlePrev}>
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="15 18 9 12 15 6" />
-                </svg>
-              </Button>
-
-              <div className="promo-campaigns-grid-wrapper">
-                <div className="promo-campaigns-grid" style={{ '--promo-slide-index': String(startIndex) }}>
-                  {campaigns.map((camp, idx) => (
-                    <Card className="promo-campaign-card" key={idx}>
-                      <div className="promo-campaign-img-wrap">
-                        <img src={camp.img} alt={camp.title} />
-                      </div>
-                      <div className="promo-campaign-body">
-                        <h3 className="promo-campaign-title">{camp.subtitle}</h3>
-                        <span className="promo-campaign-subtitle">{camp.campaignType}</span>
-                        <div className="promo-campaign-stats">
-                          {camp.stats.map((st, sIdx) => (
-                            <div className="promo-campaign-stat-col" key={sIdx}>
-                              <span className="promo-campaign-stat-val">{st.val}</span>
-                              <span className="promo-campaign-stat-lbl">{st.label}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-
-              <Button className="promo-carousel-btn next-btn" onClick={handleNext}>
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-              </Button>
-            </div>
-
-            {/* ── MOBILE CAROUSEL — one card at a time (hidden on desktop via CSS) ── */}
-            <div className="promo-carousel-mobile-container">
-              <Button className="promo-mobile-side-btn prev-btn" onClick={handleMobilePrev}>
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="15 18 9 12 15 6" />
-                </svg>
-              </Button>
-              
-              <div 
-                className="promo-mobile-card-wrap"
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
-              >
-                {(() => {
-                  const camp = campaigns[mobileIndex];
-                  return (
-                    <Card className="promo-campaign-card promo-mobile-card">
-                      <div className="promo-campaign-img-wrap">
-                        <img src={camp.img} alt={camp.title} />
-                      </div>
-                      <div className="promo-campaign-body">
-                        <h3 className="promo-campaign-title">{camp.subtitle}</h3>
-                        <span className="promo-campaign-subtitle">{camp.campaignType}</span>
-                        <div className="promo-campaign-stats">
-                          {camp.stats.map((st, sIdx) => (
-                            <div className="promo-campaign-stat-col" key={sIdx}>
-                              <span className="promo-campaign-stat-val">{st.val}</span>
-                              <span className="promo-campaign-stat-lbl">{st.label}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </Card>
-                  );
-                })()}
-              </div>
-
-              <Button className="promo-mobile-side-btn next-btn" onClick={handleMobileNext}>
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-              </Button>
-
-              <div className="promo-mobile-dots">
-                {campaigns.map((_, idx) => (
-                  <Button
-                    key={idx}
-                    className={`promo-mobile-dot ${idx === mobileIndex ? 'active' : ''}`}
-                    onClick={() => setMobileIndex(idx)}
-                    aria-label={`Go to slide ${idx + 1}`}
-                  />
-                ))}
-              </div>
-            </div>
-
-            <div className="promo-more-btn-wrap">
-              <a href="#more" className="btn-promo-work" style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
-                <span>View More Work</span>
-                <ArrowRight size={16} />
-              </a>
-            </div>
-          </section>
-
-        {/* =============================================
-           6. STATS BAR SECTION
-           ============================================= */}
-        <section className="promo-stats-bar-section">
-          <div className="promo-stats-bar-container">
-            {statsData.map((st, idx) => (
-              <div className="promo-stat-bar-item" key={idx}>
-                <div className="promo-stat-bar-icon-wrap">
-                  {st.icon}
-                </div>
-                <div className="promo-stat-bar-text">
-                  <span className="promo-stat-bar-val">{st.val}</span>
-                  <span className="promo-stat-bar-lbl">{st.lbl}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
 
         {/* =============================================
            7. FOOTER CALL-TO-ACTION (CTA) SECTION
@@ -836,15 +506,141 @@ export default function Promotion() {
               </div>
             </div>
             <div className="promo-cta-right">
-              <a href="#contact" className="btn-promo-connect-gradient">
+              <button
+                type="button"
+                className="btn-promo-connect-gradient"
+                onClick={() => setIsContactModalOpen(true)}
+              >
                 <span>Connect With Us</span>
                 <ArrowRight size={16} />
-              </a>
+              </button>
             </div>
           </div>
         </section>
 
       </main>
+
+      {/* Direct Contact Modal */}
+      {isContactModalOpen && (
+        <div className="promo-modal-overlay" onClick={handleBackdropClick}>
+          <div className="promo-modal-content">
+            <button
+              type="button"
+              className="promo-modal-close"
+              onClick={() => setIsContactModalOpen(false)}
+              aria-label="Close modal"
+            >
+              <X size={20} />
+            </button>
+
+            {!isSubmitted ? (
+              <>
+                <div className="promo-modal-header">
+                  <span className="promo-modal-badge">Direct Inquiry</span>
+                  <h3 className="promo-modal-title">Contact Promotion Team</h3>
+                  <p className="promo-modal-subtitle">
+                    Share your campaign goals and release timeline. Our team will get back to you promptly.
+                  </p>
+                </div>
+
+                <form onSubmit={handleSubmit} className="promo-modal-form">
+                  <div className="promo-form-group">
+                    <label htmlFor="promo-name">Full Name *</label>
+                    <input
+                      id="promo-name"
+                      type="text"
+                      name="name"
+                      required
+                      placeholder="e.g. Vikram Verma"
+                      value={formData.name}
+                      onChange={handleChange}
+                    />
+                  </div>
+
+                  <div className="promo-form-row">
+                    <div className="promo-form-group">
+                      <label htmlFor="promo-email">Email Address *</label>
+                      <input
+                        id="promo-email"
+                        type="email"
+                        name="email"
+                        required
+                        placeholder="you@company.com"
+                        value={formData.email}
+                        onChange={handleChange}
+                      />
+                    </div>
+                    <div className="promo-form-group">
+                      <label htmlFor="promo-phone">Phone Number *</label>
+                      <input
+                        id="promo-phone"
+                        type="tel"
+                        name="phone"
+                        required
+                        placeholder="+91 98765 43210"
+                        value={formData.phone}
+                        onChange={handleChange}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="promo-form-group">
+                    <label htmlFor="promo-type">Campaign Type *</label>
+                    <select
+                      id="promo-type"
+                      name="campaignType"
+                      value={formData.campaignType}
+                      onChange={handleChange}
+                    >
+                      <option value="Film Theatrical Release Campaign">Film Theatrical Release Campaign</option>
+                      <option value="Web Series / OTT Digital Launch">Web Series / OTT Digital Launch</option>
+                      <option value="Music Video & Audio Promotion">Music Video & Audio Promotion</option>
+                      <option value="Influencer Marketing & Brand Tie-ups">Influencer Marketing & Brand Tie-ups</option>
+                      <option value="PR & Mainstream Media Coverage">PR & Mainstream Media Coverage</option>
+                      <option value="Event & Launch Marketing">Event & Launch Marketing</option>
+                    </select>
+                  </div>
+
+                  <div className="promo-form-group">
+                    <label htmlFor="promo-message">Project Specifications</label>
+                    <textarea
+                      id="promo-message"
+                      name="message"
+                      rows={3}
+                      placeholder="Tell us about the project, target audience, release dates, and goals..."
+                      value={formData.message}
+                      onChange={handleChange}
+                    />
+                  </div>
+
+                  <button type="submit" className="promo-modal-submit-btn">
+                    <span>Submit Inquiry</span>
+                    <Mail size={16} />
+                  </button>
+                </form>
+              </>
+            ) : (
+              <div className="promo-modal-success">
+                <CheckCircle size={56} className="promo-success-icon" />
+                <h3>Inquiry Submitted!</h3>
+                <p>
+                  Thank you, <strong>{formData.name}</strong>. Our promotion team has received your inquiry and will contact you promptly.
+                </p>
+                <button
+                  type="button"
+                  className="promo-modal-close-action"
+                  onClick={() => {
+                    setIsContactModalOpen(false);
+                    setIsSubmitted(false);
+                  }}
+                >
+                  Done
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <FooterAgency />
     </div>

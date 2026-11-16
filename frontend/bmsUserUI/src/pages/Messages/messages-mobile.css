@@ -3,14 +3,23 @@
    ─────────────────────────────────────────────────────── */
 @media (max-width: 1200px) {
   .msg-grid-layout {
+    grid-template-columns: 280px 1fr 280px;
+  }
+  .msg-grid-layout.hide-sidebar {
     grid-template-columns: 280px 1fr;
   }
-  .msg-chat-sidebar-panel {
-    display: none; /* Hide third column on smaller desktops/laptops */
+  .msg-grid-layout.hide-chatlist {
+    grid-template-columns: 1fr 280px;
+  }
+  .msg-grid-layout.hide-chatlist.hide-sidebar {
+    grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 768px) {
+  .msg-header-panel-toggle-btn {
+    display: none !important;
+  }
   .msg-back-btn {
     display: flex;
   }

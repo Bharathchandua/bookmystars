@@ -175,16 +175,19 @@ public class ProfileService {
 
         // Full public or approved view
         List<PortfolioResponse> portfolio = portfolioRepository.findByUser(user).stream()
+                .filter(p -> p.getStatus() == null || "APPROVED".equalsIgnoreCase(p.getStatus()))
                 .map(p -> PortfolioResponse.builder()
                         .id(p.getId())
                         .imageUrl(p.getImageUrl())
                         .title(p.getTitle())
                         .category(p.getCategory())
+                        .status(p.getStatus() != null ? p.getStatus() : "APPROVED")
                         .createdAt(p.getCreatedAt())
                         .build())
                 .collect(Collectors.toList());
 
         List<VideoResponse> videos = videoRepository.findByUser(user).stream()
+                .filter(v -> v.getStatus() == null || "APPROVED".equalsIgnoreCase(v.getStatus()))
                 .map(v -> VideoResponse.builder()
                         .id(v.getId())
                         .title(v.getTitle())
@@ -194,6 +197,8 @@ public class ProfileService {
                         .duration(v.getDuration())
                         .year(v.getYear())
                         .views(v.getViews())
+                        .status(v.getStatus() != null ? v.getStatus() : "APPROVED")
+                        .createdAt(v.getCreatedAt())
                         .build())
                 .collect(Collectors.toList());
 
@@ -227,6 +232,7 @@ public class ProfileService {
                 .orElse(null);
 
         List<AudioResponse> audios = audioRepository.findByUser(user).stream()
+                .filter(a -> a.getStatus() == null || "APPROVED".equalsIgnoreCase(a.getStatus()))
                 .map(a -> AudioResponse.builder()
                         .id(a.getId())
                         .title(a.getTitle())
@@ -235,6 +241,7 @@ public class ProfileService {
                         .format(a.getFormat())
                         .duration(a.getDuration())
                         .sizeStr(a.getSizeStr())
+                        .status(a.getStatus() != null ? a.getStatus() : "APPROVED")
                         .createdAt(a.getCreatedAt())
                         .build())
                 .collect(Collectors.toList());

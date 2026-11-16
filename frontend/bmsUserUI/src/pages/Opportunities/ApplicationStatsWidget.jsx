@@ -3,7 +3,7 @@ import PagesButton from "../common/PagesButton";
 import { getMyCastingApplications } from "../../features/bms/api/opportunities/castingApplicationsApi";
 
 // Dynamic Application Status widget — renders live counts from DB applications
-export default function ApplicationStatsWidget({ applications: propApps = null }) {
+export default function ApplicationStatsWidget({ applications: propApps = null, onSelectTab }) {
   const [apps, setApps] = useState(propApps || []);
 
   const fetchApplications = async () => {
@@ -116,12 +116,24 @@ export default function ApplicationStatsWidget({ applications: propApps = null }
     <div className="opp-widget opp-status-widget">
       <div className="opp-widget-head">
         <span className="opp-widget-head-title">Application Status</span>
-        <PagesButton className="opp-widget-view-all">View All</PagesButton>
+        <PagesButton
+          className="opp-widget-view-all"
+          onClick={() => onSelectTab && onSelectTab("Applied")}
+          style={{ cursor: "pointer" }}
+        >
+          View All
+        </PagesButton>
       </div>
 
       <div className="opp-app-status-list">
         {STATUS_ROWS.map((row) => (
-          <div key={row.label} className="opp-app-status-row">
+          <div
+            key={row.label}
+            className="opp-app-status-row"
+            onClick={() => onSelectTab && onSelectTab("Applied")}
+            style={{ cursor: "pointer" }}
+            title={`View ${row.label} applications`}
+          >
             <div
               className="opp-status-icon"
               style={{ background: row.iconBg }}

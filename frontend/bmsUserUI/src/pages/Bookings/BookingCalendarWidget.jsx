@@ -1,15 +1,6 @@
 import PagesButton from "../common/PagesButton";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-
-const BOOKING_DOTS = {
-  "2024-05-18": "confirmed",
-  "2024-05-20": "shoot",
-  "2024-05-22": "confirmed",
-  "2024-05-25": "confirmed",
-  "2024-05-27": "pending",
-  "2024-05-30": "confirmed",
-};
 
 const MONTH_NAMES = [
   "January","February","March","April","May","June",
@@ -19,7 +10,7 @@ const MONTH_NAMES = [
 const WEEKDAYS = ["SUN","MON","TUE","WED","THU","FRI","SAT"];
 
 /* Always returns exactly 42 cells (6 rows × 7 cols) — card height never changes */
-function buildCalendarDays(year, month) {
+function buildCalendarDays(year, month, bookingDots = {}) {
   const firstDay     = new Date(year, month, 1).getDay();
   const daysInMonth  = new Date(year, month + 1, 0).getDate();
   const prevMonthEnd = new Date(year, month, 0).getDate();
@@ -30,7 +21,7 @@ function buildCalendarDays(year, month) {
 
   for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = `${year}-${String(month + 1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-    const dot     = BOOKING_DOTS[dateStr] || null;
+    const dot     = bookingDots[dateStr] || null;
     const isShoot = dot === "shoot";
     cells.push({ day: d, dot: isShoot ? null : dot, shootDay: isShoot });
   }
@@ -42,7 +33,7 @@ function buildCalendarDays(year, month) {
   return cells; // always 42
 }
 
-export default function BookingCalendarWidget() {
+export default function BookingCalendarWidget({ bookings = [] }) {
   const today = new Date();
 
   const [currentDate, setCurrentDate] = useState(
@@ -56,7 +47,22 @@ export default function BookingCalendarWidget() {
   const goToPrev = () => { setCurrentDate(new Date(year, month - 1, 1)); setActiveDay(null); };
   const goToNext = () => { setCurrentDate(new Date(year, month + 1, 1)); setActiveDay(null); };
 
-  const calendarDays = buildCalendarDays(year, month);
+  const bookingDots = useMemo(() => {
+    const map = {};
+    for (const b of bookings) {
+      const raw = b.rawStartDate || b.bookingDate;
+      if (raw) {
+        const dateStr = String(raw).split("T")[0];
+        if (b.status === "Confirmed") map[dateStr] = "shoot";
+        else if (b.status === "Pending") map[dateStr] = "pending";
+        else if (b.status === "Completed") map[dateStr] = "confirmed";
+        else map[dateStr] = "other";
+      }
+    }
+    return map;
+  }, [bookings]);
+
+  const calendarDays = buildCalendarDays(year, month, bookingDots);
 
   const todayYear  = today.getFullYear();
   const todayMonth = today.getMonth();

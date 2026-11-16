@@ -2,18 +2,49 @@
    MESSAGES PAGE — messages.css
    ═══════════════════════════════════════════════════════ */
 
+/* Lock outer window and body from scrolling when Messages page is mounted */
+body:has(.msg-page),
+html:has(.msg-page) {
+  overflow: hidden !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+}
+
+.db-layout-container:has(.msg-page) {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: hidden !important;
+}
+
+.db-main-content:has(.msg-page) {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: hidden !important;
+}
+
+/* Ensure the app header stays sticky at top: 0 and NEVER scrolls off-screen */
+.db-main-content:has(.msg-page) .db-header {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 100 !important;
+  flex-shrink: 0 !important;
+}
+
 /* Override workspace container padding only when Messages page is active */
 .db-workspace:has(.msg-page) {
   padding: 0 !important;
   overflow: hidden !important;
   height: calc(100vh - 80px) !important;
+  max-height: calc(100vh - 80px) !important;
   display: flex !important;
   flex-direction: column !important;
+  flex: 1 1 auto !important;
 }
 
 @media (max-width: 480px) {
   .db-workspace:has(.msg-page) {
     height: calc(100vh - 50px) !important;
+    max-height: calc(100vh - 50px) !important;
   }
 }
 
@@ -60,6 +91,79 @@
   border-radius: 0 !important;
   box-shadow: none !important;
   overflow: hidden;
+  transition: grid-template-columns 0.2s ease;
+}
+
+.msg-grid-layout.hide-chatlist {
+  grid-template-columns: 1fr 290px;
+}
+
+.msg-grid-layout.hide-sidebar {
+  grid-template-columns: 310px 1fr;
+}
+
+.msg-grid-layout.hide-chatlist.hide-sidebar {
+  grid-template-columns: 1fr;
+}
+
+.msg-grid-layout.hide-chatlist .msg-chat-list-panel {
+  display: none !important;
+}
+
+.msg-grid-layout.hide-sidebar .msg-chat-sidebar-panel {
+  display: none !important;
+}
+
+/* Header panel toggle buttons styling */
+.msg-header-panel-toggle-btn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  border-radius: 8px;
+  color: #64748b;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+
+.msg-header-panel-toggle-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.msg-header-panel-toggle-btn.active {
+  background: #fdf2f8;
+  border-color: #fbcfe8;
+  color: #ee008f;
+}
+
+.msg-header-btn.active-panel-toggle {
+  background: #fdf2f8 !important;
+  color: #ee008f !important;
+}
+
+.msg-sidebar-close-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.msg-sidebar-close-btn:hover {
+  background: #fee2e2;
+  color: #ef4444;
 }
 
 /* ───────────────────────────────────────────────────────
@@ -533,12 +637,13 @@
 
 /* Chat Timeline */
 .msg-chat-timeline {
-  flex: 1;
+  flex: 1 1 0% !important;
+  min-height: 0 !important;
   display: flex;
   flex-direction: column;
   background: #fafbff;
   position: relative;
-  overflow: hidden;
+  overflow: hidden !important;
 }
 
 .msg-timeline-date {
@@ -556,8 +661,11 @@
 }
 
 .msg-messages-scroll-area {
-  flex: 1;
-  overflow-y: auto;
+  flex: 1 1 0% !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  overscroll-behavior: contain !important;
   padding: 12px 0;
   display: flex;
   flex-direction: column;
@@ -1190,9 +1298,359 @@
    ─────────────────────────────────────────────────────── */
 @media (max-width: 1200px) {
   .msg-grid-layout {
+    grid-template-columns: 280px 1fr 280px;
+  }
+  .msg-grid-layout.hide-sidebar {
     grid-template-columns: 280px 1fr;
   }
-  .msg-chat-sidebar-panel {
-    display: none; /* Hide third column on smaller desktops/laptops */
+  .msg-grid-layout.hide-chatlist {
+    grid-template-columns: 1fr 280px;
   }
+  .msg-grid-layout.hide-chatlist.hide-sidebar {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   WHATSAPP MESSAGE DROPDOWN & OPTIONS
+   ═══════════════════════════════════════════════════════════════════════════ */
+.msg-bubble-wrap {
+  position: relative !important;
+}
+
+.msg-bubble-chevron-btn {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+  color: #475569;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.15s ease, background 0.15s ease, transform 0.15s ease;
+  z-index: 10;
+}
+
+.msg-bubble-row:hover .msg-bubble-chevron-btn,
+.msg-bubble-wrap:hover .msg-bubble-chevron-btn,
+.msg-bubble-chevron-btn.active {
+  opacity: 1;
+}
+
+.msg-bubble-chevron-btn:hover {
+  background: #ffffff;
+  color: #0f172a;
+  transform: scale(1.08);
+}
+
+/* WhatsApp Context Menu Container */
+.wa-context-menu-wrapper {
+  position: absolute;
+  top: 32px;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  animation: waMenuFadeIn 0.15s ease-out;
+}
+
+.msg-bubble-row.them .wa-context-menu-wrapper {
+  right: auto;
+  left: 0;
+}
+
+@keyframes waMenuFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Reaction Bar Pill (WhatsApp Style) */
+.wa-reaction-bar-pill {
+  background: #111b21;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 24px;
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  white-space: nowrap;
+}
+
+.wa-reaction-emoji-btn {
+  background: transparent;
+  border: none;
+  font-size: 19px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 3px;
+  border-radius: 8px;
+  transition: transform 0.15s ease;
+}
+
+.wa-reaction-emoji-btn:hover {
+  transform: scale(1.3);
+}
+
+.wa-reaction-plus-btn {
+  background: rgba(255, 255, 255, 0.12);
+  border: none;
+  color: #94a3b8;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 15px;
+  transition: all 0.15s ease;
+}
+
+.wa-reaction-plus-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
+/* Dropdown Menu Card (WhatsApp Dark Look) */
+.wa-dropdown-menu-card {
+  background: #233138;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.38);
+  min-width: 185px;
+  padding: 6px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.wa-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border: none;
+  background: transparent;
+  color: #e2e8f0;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  transition: background 0.12s ease;
+}
+
+.wa-dropdown-item:hover {
+  background: #182229;
+}
+
+.wa-dropdown-item.delete {
+  color: #f87171;
+}
+
+.wa-dropdown-item.delete:hover {
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.wa-dropdown-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 4px 0;
+}
+
+/* Bubble Reaction Display Pill */
+.msg-bubble-reactions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.msg-reaction-pill {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 2px 7px;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  transition: transform 0.12s ease, background 0.12s ease;
+}
+
+.msg-reaction-pill:hover {
+  background: #f8fafc;
+  transform: scale(1.05);
+}
+
+/* Reply Preview Bar above Composer */
+.msg-reply-banner {
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  animation: waMenuFadeIn 0.15s ease-out;
+}
+
+.msg-reply-preview-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+  flex: 1;
+}
+
+.msg-reply-accent-stripe {
+  width: 3.5px;
+  height: 34px;
+  background: #ec4899;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.msg-reply-sender-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #ec4899;
+}
+
+.msg-reply-snippet {
+  font-size: 12.5px;
+  color: #475569;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 480px;
+}
+
+.msg-reply-cancel-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.msg-reply-cancel-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+/* Quoted message inside bubble */
+.msg-quoted-block {
+  background: rgba(0, 0, 0, 0.04);
+  border-left: 3.5px solid #ec4899;
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+
+.msg-bubble-wrap.me .msg-quoted-block {
+  background: rgba(236, 72, 153, 0.08);
+}
+
+.msg-quoted-author {
+  font-weight: 700;
+  color: #ec4899;
+  margin-bottom: 2px;
+}
+
+.msg-quoted-snippet {
+  color: #475569;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Pinned Message Banner at top of chat timeline */
+.msg-pinned-top-banner {
+  background: #fdf2f8;
+  border-bottom: 1px solid #fbcfe8;
+  padding: 7px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: #9d174d;
+  cursor: pointer;
+  z-index: 5;
+}
+
+.msg-pinned-top-banner:hover {
+  background: #fce7f3;
+}
+
+.msg-pinned-title {
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.msg-pinned-text {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #475569;
+}
+
+/* Left list chevron button */
+.msg-conv-item {
+  position: relative !important;
+}
+
+.msg-conv-chevron-btn {
+  position: absolute;
+  top: 14px;
+  right: 12px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: opacity 0.15s ease, background 0.15s ease;
+  z-index: 5;
+}
+
+.msg-conv-item:hover .msg-conv-chevron-btn,
+.msg-conv-chevron-btn.active {
+  opacity: 1;
+}
+
+.msg-conv-chevron-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
 }

@@ -156,7 +156,12 @@ public class CastingCallService {
             call.setWeight(request.getWeight());
         }
         if (request.getStatus() != null) {
-            call.setStatus(request.getStatus());
+            // A client or partner cannot self-publish to OPEN; any new posting or self-publication requires Admin approval
+            if (request.getStatus() == CastingStatus.OPEN && call.getStatus() != CastingStatus.OPEN) {
+                call.setStatus(CastingStatus.IN_REVIEW);
+            } else {
+                call.setStatus(request.getStatus());
+            }
         }
 
         CastingCall updated = castingCallRepository.save(call);

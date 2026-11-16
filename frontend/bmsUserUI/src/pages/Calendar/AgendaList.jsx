@@ -1,16 +1,17 @@
 import PagesButton from "../common/PagesButton";
 import { Bell, MoreHorizontal, ArrowRight } from "lucide-react";
-import { TODAY_EVENTS } from "./calendarData.js";
 
-export default function AgendaList({ selectedCategory }) {
+export default function AgendaList({ selectedCategory = "all", events = [] }) {
   const today = new Date();
   const dayNames  = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
   const monthNames= ["January","February","March","April","May","June",
                      "July","August","September","October","November","December"];
 
   const dateLabel = `${dayNames[today.getDay()]}, ${today.getDate()} ${monthNames[today.getMonth()]} ${today.getFullYear()}`;
+  const todayKey  = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
-  const filteredEvents = TODAY_EVENTS.filter(evt => {
+  const filteredEvents = (events || []).filter(evt => {
+    if (evt.date !== todayKey) return false;
     if (selectedCategory !== "all" && evt.category !== selectedCategory) return false;
     return true;
   });
@@ -24,32 +25,32 @@ export default function AgendaList({ selectedCategory }) {
 
         <div className="cal-agenda-items-list">
           {filteredEvents.length === 0 ? (
-            <div className="cal-agenda-empty">
-              No events scheduled in this category for today.
+            <div className="cal-agenda-empty" style={{ padding: "24px 16px", textAlign: "center", color: "#64748b", fontSize: "13px" }}>
+              No scheduled events in this category for today.
             </div>
           ) : (
             filteredEvents.map(evt => (
               <div key={evt.id} className="cal-agenda-event-card">
                 {/* Time */}
                 <div className="cal-agenda-time-col">
-                  <span className="cal-agenda-start">{evt.startTime}</span>
-                  <span className="cal-agenda-end">{evt.endTime}</span>
+                  <span className="cal-agenda-start">{evt.startTime || evt.time}</span>
+                  <span className="cal-agenda-end">{evt.endTime || ""}</span>
                 </div>
 
                 {/* Dot */}
                 <div className="cal-agenda-dot-col">
-                  <span className={`cal-agenda-dot ${evt.category}`} />
+                  <span className={`cal-agenda-dot ${evt.category || "shooting"}`} />
                 </div>
 
                 {/* Info */}
                 <div className="cal-agenda-info">
                   <div className="cal-agenda-name">{evt.title}</div>
-                  <div className="cal-agenda-location">{evt.location}</div>
+                  <div className="cal-agenda-location">{evt.location || "Studio"}</div>
                 </div>
 
                 {/* Badge */}
-                <span className={`cal-agenda-badge ${evt.category}`}>
-                  {evt.category.charAt(0).toUpperCase() + evt.category.slice(1)}
+                <span className={`cal-agenda-badge ${evt.category || "shooting"}`}>
+                  {(evt.category ? evt.category.charAt(0).toUpperCase() + evt.category.slice(1) : "Event")}
                 </span>
 
                 {/* Actions */}

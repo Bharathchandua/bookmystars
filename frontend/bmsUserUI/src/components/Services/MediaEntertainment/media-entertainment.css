@@ -126,6 +126,39 @@
   flex-wrap: wrap;
 }
 
+/* Contact Us Button */
+.btn-me-contact {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--me-gradient);
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  padding: 16px 36px;
+  font-size: 16.5px;
+  font-weight: 800;
+  cursor: pointer;
+  letter-spacing: 0.3px;
+  box-shadow: 0 6px 20px rgba(236, 0, 140, 0.28);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-decoration: none;
+}
+
+.btn-me-contact:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(236, 0, 140, 0.42);
+}
+
+.btn-me-contact:active {
+  transform: translateY(0);
+}
+
+.btn-me-contact svg {
+  width: 18px !important;
+  height: 18px !important;
+}
+
 /* Explore btn */
 button.btn-me-explore,
 .btn-me-explore {
@@ -307,7 +340,7 @@ button.btn-me-partner:active,
 /* ── 3. INDUSTRIES ── */
 .me-industries-section {
   background: #ffffff;
-  padding: 20px 0;
+  padding: 20px 0 70px 0;
 }
 
 .me-industries-container {
@@ -885,4 +918,195 @@ button.btn-me-partner:active,
     object-fit: cover;
     object-position: center center;
   }
+}
+
+/* =============================================
+   CONTACT US MODAL OVERLAY & CARD
+   ============================================= */
+.me-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(5, 7, 45, 0.55);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.me-modal-card {
+  background-color: #ffffff;
+  border-radius: 24px;
+  width: calc(100% - 32px);
+  max-width: 640px;
+  padding: 36px;
+  box-shadow: 0 12px 36px rgba(5, 7, 45, 0.15);
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.animate-zoomIn {
+  animation: meZoomIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes meZoomIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.me-modal-card .modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--me-border);
+  padding-bottom: 16px;
+}
+
+.me-modal-card .modal-header h3 {
+  font-size: 22px;
+  font-weight: 850;
+  color: var(--me-dark);
+  margin: 0;
+}
+
+.me-modal-card .btn-close-modal {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--me-grey);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.me-modal-card .btn-close-modal:hover {
+  background-color: var(--me-light);
+  color: var(--me-pink);
+}
+
+.me-modal-card .modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.me-modal-card .form-group-row {
+  display: flex;
+  gap: 16px;
+}
+
+.me-modal-card .form-group-row .form-item {
+  flex: 1;
+}
+
+.me-modal-card .form-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.me-modal-card .form-item label {
+  font-size: 13px;
+  font-weight: 750;
+  color: var(--me-dark);
+}
+
+.me-modal-card .form-item input,
+.me-modal-card .form-item select,
+.me-modal-card .form-item textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--me-border);
+  background-color: #ffffff;
+  font-size: 13.5px;
+  color: var(--me-dark);
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.me-modal-card .form-item input:focus,
+.me-modal-card .form-item select:focus,
+.me-modal-card .form-item textarea:focus {
+  border-color: var(--me-pink);
+}
+
+.me-modal-card .form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.me-modal-card .btn-cancel {
+  background: var(--me-light);
+  border: 1px solid var(--me-border);
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--me-grey);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.me-modal-card .btn-cancel:hover {
+  background: #f1f0f5;
+  color: var(--me-dark);
+}
+
+.me-modal-card .btn-submit-form {
+  background: var(--me-gradient);
+  border: none;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(236, 0, 140, 0.25);
+  transition: all 0.2s;
+}
+
+.me-modal-card .btn-submit-form:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(236, 0, 140, 0.35);
+}
+
+.me-modal-card .modal-success-screen {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.me-modal-card .modal-success-screen .success-icon {
+  color: #10b981;
+  margin: 0 auto 16px auto;
+}
+
+.me-modal-card .modal-success-screen h4 {
+  font-size: 22px;
+  font-weight: 850;
+  color: var(--me-dark);
+  margin-bottom: 8px;
+}
+
+.me-modal-card .modal-success-screen p {
+  font-size: 14px;
+  color: var(--me-grey);
+  margin: 0;
 }

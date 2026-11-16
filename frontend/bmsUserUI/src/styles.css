@@ -1,4 +1,4 @@
-﻿@import "tailwindcss";
+@import "tailwindcss";
 @config "../tailwind.config.js";
 
 /* // 1. VARIABLES, RESET & GLOBAL STYLES // */
@@ -14,12 +14,27 @@
   box-sizing: border-box;
 }
 
+/* ─── Global Clean Invisible Scrollbars: Fully scrollable across all tabs without visible scrollbars ─── */
+html,
+body,
+* {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
 html {
   scroll-behavior: smooth;
   width: 100%;
   max-width: 100%;
   overflow-x: clip;
-  scrollbar-gutter: stable;
 }
 
 body {
@@ -543,6 +558,143 @@ a {
   }
 }
 
+
+/* // 4. MODERN FEATURE PILL BAR // */
+.home-features-pill-wrap {
+  width: 100%;
+  max-width: 1380px;
+  margin: 15px auto 35px;
+  padding: 0 40px;
+  position: relative;
+  z-index: 10;
+  box-sizing: border-box;
+}
+
+.home-features-pill {
+  background: #ffffff;
+  border: 1.5px solid #ece7f5;
+  border-radius: 20px;
+  padding: 16px 20px;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  align-items: center;
+  box-shadow: 0 10px 30px rgba(123, 44, 255, 0.06), 0 2px 8px rgba(0, 0, 0, 0.02);
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.home-features-pill:hover {
+  box-shadow: 0 14px 40px rgba(123, 44, 255, 0.1);
+  border-color: rgba(236, 0, 140, 0.3);
+}
+
+.home-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 14px;
+  position: relative;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.home-feature-item:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 15%;
+  height: 70%;
+  width: 1px;
+  background: #ede8f5;
+}
+
+.home-feature-icon-wrap {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #7b2cbf;
+  transition: transform 0.25s ease;
+}
+
+.home-feature-item:hover .home-feature-icon-wrap {
+  transform: scale(1.12);
+}
+
+.home-feature-item.accent-pink .home-feature-icon-wrap {
+  color: #ec008c;
+}
+
+.home-feature-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  min-width: 0;
+}
+
+.home-feature-text-line1 {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #0c0e2b;
+  white-space: nowrap;
+  letter-spacing: -0.2px;
+}
+
+.home-feature-text-line2 {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #0c0e2b;
+  white-space: nowrap;
+  letter-spacing: -0.2px;
+}
+
+.home-feature-item.accent-pink .home-feature-text-line1,
+.home-feature-item.accent-pink .home-feature-text-line2 {
+  color: #ec008c;
+}
+
+@media (max-width: 1200px) {
+  .home-features-pill {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px 8px;
+    padding: 18px 16px;
+  }
+  .home-feature-item:nth-child(3)::after {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .home-features-pill-wrap {
+    padding: 0 16px;
+    margin: 20px auto 25px;
+  }
+  .home-features-pill {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px 10px;
+    padding: 16px 12px;
+    border-radius: 16px;
+  }
+  .home-feature-item:not(:last-child)::after {
+    display: none;
+  }
+  .home-feature-text-line1,
+  .home-feature-text-line2 {
+    font-size: 12px;
+    white-space: normal;
+  }
+  .home-feature-icon-wrap svg {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .home-features-pill {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
 
 /* // 4. STATS BAR COMPONENT // */
 .hero-stats-wrapper {
@@ -3823,18 +3975,13 @@ div:nth-child(3) > div > .big-card a,
   scrollbar-width: none !important;
 }
 
-/* Custom smooth thin scrollbar for intentional scroll areas */
+/* Professional invisible scrollbars for all scroll containers */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 9999px;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+.custom-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
 }

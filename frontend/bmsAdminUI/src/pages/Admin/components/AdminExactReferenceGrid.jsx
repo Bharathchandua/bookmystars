@@ -60,6 +60,8 @@ import {
 } from "../../../features/bms/api/skills/skillsApi";
 import { getPublicLanguages } from "../../../features/bms/api/languages/languagesApi";
 import PostOpportunityModal from "../../Opportunities/PostOpportunityModal";
+import AdminTalentMediaModerationView from "./AdminTalentMediaModerationView";
+import { getPendingTalentMedia } from "../../../features/bms/api/admin/adminApi";
 
 export default function AdminExactReferenceGrid({ 
   onOpenRbac, 
@@ -72,6 +74,7 @@ export default function AdminExactReferenceGrid({
   const [kycSubTab, setKycSubTab] = useState(defaultKycTab || "queue");
   const [isLoadingCastings, setIsLoadingCastings] = useState(false);
   const [isLoadingKyc, setIsLoadingKyc] = useState(false);
+  const [pendingMediaCount, setPendingMediaCount] = useState(0);
   const [overviewDeskMode, setOverviewDeskMode] = useState("users"); // "users" | "castings" | "all"
 
   const adminUser = getStoredAdmin();
@@ -240,6 +243,7 @@ export default function AdminExactReferenceGrid({
   useEffect(() => {
     refreshCastings();
     refreshKyc();
+      getPendingTalentMedia().then(list => setPendingMediaCount(Array.isArray(list) ? list.length : 0)).catch(() => {});
     refreshAdminSkills();
     refreshLanguages();
 
@@ -1663,6 +1667,38 @@ export default function AdminExactReferenceGrid({
               >
                 Verified ({verifiedKycList.length})
               </button>
+            
+              <button
+                type="button"
+                onClick={() => { setKycSubTab("media"); setKycPage(1); }}
+                style={{
+                  padding: "4px 12px",
+                  borderRadius: "9999px",
+                  fontSize: "12px",
+                  fontWeight: "800",
+                  cursor: "pointer",
+                  border: "none",
+                  backgroundColor: kycSubTab === "media" ? "#fdf2f8" : "transparent",
+                  color: kycSubTab === "media" ? "#db2777" : "#64748b",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px"
+                }}
+              >
+                <span>Media Approvals</span>
+                {pendingMediaCount > 0 && (
+                  <span style={{
+                    background: "#ec4899",
+                    color: "#fff",
+                    borderRadius: "10px",
+                    padding: "1px 6px",
+                    fontSize: "10px",
+                    fontWeight: "900"
+                  }}>
+                    {pendingMediaCount}
+                  </span>
+                )}
+              </button>
             </div>
             <div style={{ display: "inline-flex", alignItems: "center", gap: "10px" }}>
               {isLoadingKyc && (
@@ -1725,7 +1761,11 @@ export default function AdminExactReferenceGrid({
 
 
 
-          {/* KYC Content - List or Grid View */}
+          {kycSubTab === "media" ? (
+            <AdminTalentMediaModerationView onCountChange={setPendingMediaCount} />
+          ) : (
+            <>
+            {/* KYC Content - List or Grid View */}
           {kycViewMode === "list" ? (
             <div className="no-scrollbar" style={{ overflowX: "auto", width: "100%", WebkitOverflowScrolling: "touch" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px", textAlign: "left" }}>
@@ -2189,6 +2229,8 @@ export default function AdminExactReferenceGrid({
               </button>
             </div>
           </div>
+          </>
+        )}
         </div>
       )}
 

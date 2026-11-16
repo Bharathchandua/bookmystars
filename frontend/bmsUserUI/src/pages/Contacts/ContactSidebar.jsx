@@ -30,7 +30,24 @@ export default function ContactSidebar({
         <div className="quick-actions-list">
           <PagesButton
             className="quick-action-row"
-            onClick={() => onSendMessageClick ? onSendMessageClick(contact) : navigate("/messages", { state: { targetUser: contact } })}
+            onClick={() => {
+              if (onSendMessageClick) {
+                onSendMessageClick(contact);
+              } else {
+                navigate("/messages", {
+                  state: {
+                    targetUser: {
+                      id: contact.userId || contact.id,
+                      name: contact.name,
+                      role: contact.role,
+                      avatar: contact.avatar,
+                      email: contact.contactInfo?.email || contact.email,
+                      mobileNumber: contact.contactInfo?.phone || contact.phone
+                    }
+                  }
+                });
+              }
+            }}
           >
             <div className="quick-action-icon-wrapper">
               <MessageSquare size={16} />

@@ -89,19 +89,22 @@ public class SecurityConfig {
                                 "/api/clients/register"
                         ).permitAll()
 
-                        // 3. Public static media uploads (Photos, Videos, Audios, Casting Flyers)
+                        // 3. Public static media uploads and banners
                         // Note: /uploads/documents/** is excluded to protect private KYC documents!
                         .requestMatchers(
+                                "/banners/**",
                                 "/uploads/portfolio/**",
                                 "/uploads/profile/**",
                                 "/uploads/opportunities/**",
                                 "/uploads/videos/**",
                                 "/uploads/audios/**",
-                                "/uploads/work-experience/**"
+                                "/uploads/work-experience/**",
+                                "/uploads/**"
                         ).permitAll()
 
                         // 4. Public discovery, master metadata, and Swagger documentation
                         .requestMatchers(
+                                "/api/public/**",
                                 "/api/profile/public/**",
                                 "/api/profile/access-request/**",
                                 "/api/professional/castings/public",

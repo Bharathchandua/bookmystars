@@ -32,7 +32,9 @@ public class PortfolioService {
     private final UserRepository userRepository;
     private final ProfileRepository profileRepository;
 
-    private final Path uploadDirectory = Paths.get("uploads/portfolio");
+    private Path getUploadDirectory() {
+        return com.example.bookmystars.util.UploadStorageUtil.getCategoryUploadDir("portfolio");
+    }
 
     // =========================
     // UPLOAD PHOTO
@@ -50,7 +52,7 @@ public class PortfolioService {
         // Validate image format, MIME, and sanitize path
         String fileExtension = FileValidationUtil.validateImage(file);
 
-        Files.createDirectories(uploadDirectory);
+        Path uploadDirectory = getUploadDirectory();
 
         String fileName = UUID.randomUUID() + fileExtension;
         Path filePath = uploadDirectory.resolve(fileName);
@@ -63,22 +65,35 @@ public class PortfolioService {
 
         log.info("Portfolio image uploaded by user id {}: {}", user.getId(), fileName);
 
+        boolean isUserVerified = (user.getIsApproved() != null && user.getIsApproved()) ||
+                "APPROVED".equalsIgnoreCase(user.getVerificationStatus());
+        String initialStatus = isUserVerified ? "APPROVED" : "PENDING";
+
         Portfolio portfolio = Portfolio.builder()
                 .user(user)
                 .imageUrl("/uploads/portfolio/" + fileName)
                 .title(title != null ? title.trim() : null)
                 .category(category != null ? category.trim() : null)
+                .status(initialStatus)
                 .createdAt(LocalDateTime.now())
                 .build();
 
         Portfolio savedPortfolio = portfolioRepository.save(portfolio);
 
+        return mapToResponse(savedPortfolio);
+    }
+
+    private PortfolioResponse mapToResponse(Portfolio portfolio) {
         return PortfolioResponse.builder()
-                .id(savedPortfolio.getId())
-                .imageUrl(savedPortfolio.getImageUrl())
-                .title(savedPortfolio.getTitle())
-                .category(savedPortfolio.getCategory())
-                .createdAt(savedPortfolio.getCreatedAt())
+                .id(portfolio.getId())
+                .imageUrl(portfolio.getImageUrl())
+                .title(portfolio.getTitle())
+                .category(portfolio.getCategory())
+                .status(portfolio.getStatus() != null ? portfolio.getStatus() : "APPROVED")
+                .rejectionReason(portfolio.getRejectionReason())
+                .reviewedBy(portfolio.getReviewedBy())
+                .reviewedAt(portfolio.getReviewedAt())
+                .createdAt(portfolio.getCreatedAt())
                 .build();
     }
 
@@ -113,10 +128,10 @@ public class PortfolioService {
 
         if (file != null && !file.isEmpty()) {
             String fileExtension = FileValidationUtil.validateImage(file);
-            Files.createDirectories(uploadDirectory);
+            Path uploadDirectory = getUploadDirectory();
 
             String fileName = UUID.randomUUID() + fileExtension;
-            Path filePath = uploadDirectory.resolve(fileName);
+            Path filePath = getUploadDirectory().resolve(fileName);
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
             // Delete old file if present
@@ -126,18 +141,21 @@ public class PortfolioService {
             }
 
             portfolio.setImageUrl("/uploads/portfolio/" + fileName);
+
+            // Re-check verification: unverified users go back to PENDING on new upload
+            boolean isUserVerified = (user.getIsApproved() != null && user.getIsApproved()) ||
+                    "APPROVED".equalsIgnoreCase(user.getVerificationStatus());
+            portfolio.setStatus(isUserVerified ? "APPROVED" : "PENDING");
+            portfolio.setRejectionReason(null);
+            portfolio.setReviewedBy(null);
+            portfolio.setReviewedAt(null);
+
             log.info("Portfolio image updated by user id {}: {}", user.getId(), fileName);
         }
 
         Portfolio savedPortfolio = portfolioRepository.save(portfolio);
 
-        return PortfolioResponse.builder()
-                .id(savedPortfolio.getId())
-                .imageUrl(savedPortfolio.getImageUrl())
-                .title(savedPortfolio.getTitle())
-                .category(savedPortfolio.getCategory())
-                .createdAt(savedPortfolio.getCreatedAt())
-                .build();
+        return mapToResponse(savedPortfolio);
     }
 
     // =========================
@@ -155,29 +173,28 @@ public class PortfolioService {
             if (profile.getProfilePhoto() != null && !profile.getProfilePhoto().isBlank()) {
                 boolean exists = list.stream().anyMatch(p -> profile.getProfilePhoto().equals(p.getImageUrl()));
                 if (!exists) {
-                    Portfolio headshot = Portfolio.builder()
-                            .user(user)
-                            .imageUrl(profile.getProfilePhoto())
-                            .title("Profile Headshot")
-                            .category("Headshot")
-                            .createdAt(LocalDateTime.now())
-                            .build();
-                    portfolioRepository.save(headshot);
-                    list.add(0, headshot);
+                    try {
+                        boolean isUserVerified = (user.getIsApproved() != null && user.getIsApproved()) ||
+                                "APPROVED".equalsIgnoreCase(user.getVerificationStatus());
+                        Portfolio headshot = Portfolio.builder()
+                                .user(user)
+                                .imageUrl(profile.getProfilePhoto())
+                                .title("Profile Headshot")
+                                .category("Headshot")
+                                .status(isUserVerified ? "APPROVED" : "PENDING")
+                                .createdAt(LocalDateTime.now())
+                                .build();
+                        Portfolio saved = portfolioRepository.save(headshot);
+                        list.add(0, saved);
+                    } catch (Exception ex) {
+                        log.warn("Could not automatically save profile headshot to portfolio: {}", ex.getMessage());
+                    }
                 }
             }
         });
 
         return list.stream()
-                .map(portfolio ->
-                        PortfolioResponse.builder()
-                                .id(portfolio.getId())
-                                .imageUrl(portfolio.getImageUrl())
-                                .title(portfolio.getTitle())
-                                .category(portfolio.getCategory())
-                                .createdAt(portfolio.getCreatedAt())
-                                .build()
-                )
+                .map(this::mapToResponse)
                 .toList();
     }
 
@@ -200,7 +217,7 @@ public class PortfolioService {
         String imageUrl = portfolio.getImageUrl();
         if (imageUrl != null) {
             String fileName = imageUrl.substring(imageUrl.lastIndexOf("/") + 1);
-            Path filePath = uploadDirectory.resolve(fileName);
+            Path filePath = getUploadDirectory().resolve(fileName);
             Files.deleteIfExists(filePath);
         }
 

@@ -68,3 +68,45 @@ export const deleteUserAccount = async (userId) => {
     throw new Error(msg);
   }
 };
+
+/**
+ * Get all pending talent media (photos, videos, audios) awaiting admin review
+ */
+export const getPendingTalentMedia = async () => {
+  try {
+    const res = await apiClient.get("/admin/talent-media/pending");
+    return res.data || [];
+  } catch (err) {
+    console.warn("Failed to fetch pending talent media from backend:", err);
+    return [];
+  }
+};
+
+/**
+ * Get all media items for a specific talent user
+ */
+export const getTalentMediaByUser = async (userId) => {
+  try {
+    const res = await apiClient.get(`/admin/talent-media/user/${userId}`);
+    return res.data || [];
+  } catch (err) {
+    console.warn(`Failed to fetch media for user ${userId}:`, err);
+    return [];
+  }
+};
+
+/**
+ * Review talent media (approve or reject with reason)
+ */
+export const reviewTalentMedia = async (mediaType, id, status, rejectionReason = "") => {
+  try {
+    const res = await apiClient.put(`/admin/talent-media/${mediaType}/${id}/review`, {
+      status,
+      rejectionReason,
+    });
+    return res.data;
+  } catch (err) {
+    const msg = err.response?.data?.message || err.message;
+    throw new Error(msg);
+  }
+};

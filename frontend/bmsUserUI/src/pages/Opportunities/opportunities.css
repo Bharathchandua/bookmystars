@@ -129,11 +129,11 @@
 .opp-filter-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 12px;
   flex-wrap: wrap;
   background: transparent;
-  padding: 12px 0;
+  padding: 10px 0;
   border-bottom: none;
 }
 

@@ -10,6 +10,7 @@ import { getPublicUserProfile, requestProfileAccess } from "../../features/bms/a
 import { getStoredUser } from "../../features/bms/api/auth/authApi";
 import { getFullImageUrl } from "../../features/bms/api/media/portfolioApi";
 import { showSuccess, showError, showWarning } from "../../shared/utils/alert";
+import ConnectRequestModal from "../Talents/ConnectRequestModal.jsx";
 
 function getYoutubeThumb(url) {
   if (!url) return "";
@@ -39,6 +40,7 @@ export default function PublicProfile() {
 
   // Access request state for private profiles
   const [showRequestModal, setShowRequestModal] = useState(false);
+  const [showConnectModal, setShowConnectModal] = useState(false);
   const [requestSending, setRequestSending] = useState(false);
   const [requestSuccess, setRequestSuccess] = useState(false);
   const storedUser = getStoredUser();
@@ -74,8 +76,7 @@ export default function PublicProfile() {
   };
 
   const handleCommunicate = () => {
-    // Requirements: "if they want to communicate they should navigated back to this website home page"
-    navigate("/");
+    setShowConnectModal(true);
   };
 
   const handleSendAccessRequest = async (e) => {
@@ -880,6 +881,32 @@ export default function PublicProfile() {
             )}
           </div>
         </div>
+      )}
+
+      {/* Connect / Chat Request Modal */}
+      {data && (
+        <ConnectRequestModal
+          talent={{
+            userId: data.userId || userId,
+            fullName: data.user?.fullName || data.profile?.fullName || "Talent",
+            profilePhoto: data.profile?.profilePhoto,
+            primaryProfession: data.profile?.primaryProfession || data.profile?.customProfession
+          }}
+          isOpen={showConnectModal}
+          onClose={() => setShowConnectModal(false)}
+          onSuccess={(req) => {
+            navigate("/messages", {
+              state: {
+                targetChatId: "chatreq-" + req.id,
+                targetUser: {
+                  id: data.userId || userId,
+                  name: data.user?.fullName || "Talent",
+                  avatar: data.profile?.profilePhoto
+                }
+              }
+            });
+          }}
+        />
       )}
     </div>
   );

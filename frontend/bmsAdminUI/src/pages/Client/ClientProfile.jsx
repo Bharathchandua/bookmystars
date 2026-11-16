@@ -23,46 +23,54 @@ import {
 import { showSuccess, showError } from "../../shared/utils/alert";
 import { InputField, TextArea, Button, Badge } from "../../shared/common";
 import { clientProfileApi } from "../../features/bms/api/clients/clientProfileApi";
+import LocationMiniMap from "../../components/common/LocationMiniMap";
+import SocialChannelsSection from "../../components/common/SocialChannelsSection";
 
 export default function ClientProfile({ currentUser, onProfileUpdate }) {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Initialize profile data from localStorage or defaults
-  const [profileData, setProfileData] = useState(() => {
-    const saved = localStorage.getItem(`bms_client_profile_${currentUser?.userId || "guest"}`);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {}
-    }
-    return {
-      companyName: currentUser?.fullName || "Tanishq Fine Jewelry & Diamonds",
-      industry: currentUser?.customProfession || "Jewelry & Luxury Retail",
-      tagline: "India's premier fine jewelry, bridal temple gold & diamond house",
-      contactPerson: "Aarav Mehra",
-      designation: "Head of Brand Marketing & Visual Productions",
-      email: currentUser?.email || "brand@tanishq-jewels.com",
-      phone: "+91 98765 43210",
-      city: "Mumbai, Maharashtra",
-      address: "Prestige Tower, 14th Floor, Bandra-Kurla Complex (BKC), Mumbai - 400051",
-      website: "https://www.tanishq.co.in",
-      instagram: "tanishqjewellery",
-      linkedin: "https://linkedin.com/company/tanishq",
-      youtube: "https://youtube.com/@TanishqJewellery",
-      establishedYear: "1994",
-      annualShoots: "25+ Commercial Campaigns / Year",
-      budgetRange: "₹50,000 - ₹3,00,000 per Shoot",
-      bio: "Tanishq is a flagship brand of the Tata Group, crafting exquisite festive gold, polki, and diamond jewelry. We frequently commission high-gloss television commercials, digital video ad campaigns, and print billboards featuring top Indian models, actors, and classical dancers.",
-      preferredProfiles: ["High-Fashion Models", "Bridal Jewelry Models", "Commercial Actors", "Voiceover Artists"],
-      logoUrl: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=300&q=80",
-      verified: true
-    };
-  });
+  // Clean up any deprecated bloated localStorage keys on load
+  useEffect(() => {
+    try {
+      if (currentUser?.userId) {
+        localStorage.removeItem(`bms_client_profile_${currentUser.userId}`);
+      }
+      localStorage.removeItem("bms_client_profile_guest");
+    } catch (_) {}
+  }, [currentUser?.userId]);
 
-  const [editForm, setEditForm] = useState(profileData);
+  const defaultProfile = {
+    companyName: currentUser?.fullName || "Tanishq Fine Jewelry & Diamonds",
+    industry: currentUser?.customProfession || "Jewelry & Luxury Retail",
+    tagline: "India's premier fine jewelry, bridal temple gold & diamond house",
+    contactPerson: "Aarav Mehra",
+    designation: "Head of Brand Marketing & Visual Productions",
+    email: currentUser?.email || "brand@tanishq-jewels.com",
+    phone: "+91 98765 43210",
+    city: "Mumbai, Maharashtra",
+    address: "Prestige Tower, 14th Floor, Bandra-Kurla Complex (BKC), Mumbai - 400051",
+    website: "https://www.tanishq.co.in",
+    instagram: "tanishqjewellery",
+    linkedin: "https://linkedin.com/company/tanishq",
+    youtube: "https://youtube.com/@TanishqJewellery",
+    facebook: "https://facebook.com/Tanishq",
+    twitter: "@TanishqJewellery",
+    whatsapp: "+91 98765 43210",
+    socialVisibility: {},
+    establishedYear: "1994",
+    annualShoots: "25+ Commercial Campaigns / Year",
+    budgetRange: "₹50,000 - ₹3,00,000 per Shoot",
+    bio: "Tanishq is a flagship brand of the Tata Group, crafting exquisite festive gold, polki, and diamond jewelry. We frequently commission high-gloss television commercials, digital video ad campaigns, and print billboards featuring top Indian models, actors, and classical dancers.",
+    preferredProfiles: ["High-Fashion Models", "Bridal Jewelry Models", "Commercial Actors", "Voiceover Artists"],
+    logoUrl: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=300&q=80",
+    verified: true
+  };
 
-  // Load live profile from PostgreSQL database on mount
+  const [profileData, setProfileData] = useState(defaultProfile);
+  const [editForm, setEditForm] = useState(defaultProfile);
+
+  // Load live profile directly from PostgreSQL database on mount
   useEffect(() => {
     let isMounted = true;
     async function fetchServerProfile() {
@@ -77,15 +85,11 @@ export default function ClientProfile({ currentUser, onProfileUpdate }) {
                 ? remote.preferredProfiles
                 : prev.preferredProfiles
             };
-            localStorage.setItem(
-              `bms_client_profile_${currentUser?.userId || "guest"}`,
-              JSON.stringify(merged)
-            );
             return merged;
           });
         }
       } catch (err) {
-        console.warn("Could not fetch remote profile:", err);
+        console.warn("Could not fetch remote client profile from database:", err);
       }
     }
     fetchServerProfile();
@@ -104,30 +108,32 @@ export default function ClientProfile({ currentUser, onProfileUpdate }) {
   const handleSave = async (e) => {
     if (e) e.preventDefault();
     setIsSaving(true);
-    setProfileData(editForm);
-    localStorage.setItem(
-      `bms_client_profile_${currentUser?.userId || "guest"}`,
-      JSON.stringify(editForm)
-    );
 
     try {
       const updated = await clientProfileApi.updateClientProfile(editForm);
       if (updated) {
-        setProfileData(prev => ({
-          ...prev,
+        const merged = {
+          ...editForm,
           ...updated,
           preferredProfiles: Array.isArray(updated.preferredProfiles) && updated.preferredProfiles.length > 0
             ? updated.preferredProfiles
-            : prev.preferredProfiles
-        }));
+            : editForm.preferredProfiles
+        };
+        setProfileData(merged);
+        setEditForm(merged);
+        if (onProfileUpdate) {
+          onProfileUpdate(merged);
+        }
+        showSuccess("Profile Updated", "Your official corporate brand profile has been saved to the database successfully!");
       }
     } catch (err) {
-      console.warn("Server profile update failed, cached locally:", err);
+      console.warn("Server profile update failed:", err);
+      showError("Update Failed", err.response?.data?.message || err.message || "Failed to save profile to database.");
     } finally {
       setIsSaving(false);
+      setIsEditing(false);
     }
 
-    // Update global user object in tab session if name or profession changed
     const storedUser = sessionStorage.getItem("bms_user") || localStorage.getItem("bms_user");
     if (storedUser) {
       try {
@@ -137,13 +143,6 @@ export default function ClientProfile({ currentUser, onProfileUpdate }) {
         sessionStorage.setItem("bms_user", JSON.stringify(parsed));
       } catch (err) {}
     }
-
-    if (onProfileUpdate) {
-      onProfileUpdate(editForm);
-    }
-
-    setIsEditing(false);
-    showSuccess("Profile Updated", "Your official corporate brand profile has been saved to the database successfully!");
   };
 
   const handleCancel = () => {
@@ -151,31 +150,47 @@ export default function ClientProfile({ currentUser, onProfileUpdate }) {
     setIsEditing(false);
   };
 
-  const handleLogoUpload = (e) => {
+  const handleLogoUpload = async (e) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = async (ev) => {
-        const newLogo = ev.target.result;
-        setEditForm(prev => ({ ...prev, logoUrl: newLogo }));
-        setProfileData(prev => {
-          const updated = { ...prev, logoUrl: newLogo };
-          localStorage.setItem(
-            `bms_client_profile_${currentUser?.userId || "guest"}`,
-            JSON.stringify(updated)
-          );
-          return updated;
-        });
+    if (!file) return;
 
-        try {
-          await clientProfileApi.updateClientProfile({ ...editForm, logoUrl: newLogo });
-        } catch (err) {
-          console.warn("Server logo sync failed:", err);
-        }
+    // Show immediate local preview while uploading
+    const previewUrl = URL.createObjectURL(file);
+    setProfileData(prev => ({ ...prev, logoUrl: previewUrl }));
+    setEditForm(prev => ({ ...prev, logoUrl: previewUrl }));
 
-        showSuccess("Logo Updated", "New company logo uploaded and saved to profile!");
-      };
-      reader.readAsDataURL(file);
+    try {
+      const updated = await clientProfileApi.uploadClientLogo(file);
+      if (updated && updated.logoUrl) {
+        const finalUrl = updated.logoUrl.includes("?")
+          ? updated.logoUrl
+          : `${updated.logoUrl}?t=${Date.now()}`;
+        setProfileData(prev => ({ ...prev, ...updated, logoUrl: finalUrl }));
+        setEditForm(prev => ({ ...prev, ...updated, logoUrl: finalUrl }));
+        if (onProfileUpdate) onProfileUpdate({ ...updated, logoUrl: finalUrl });
+        showSuccess("Logo Updated", "Company logo uploaded and saved to database successfully!");
+      }
+    } catch (err) {
+      console.warn("Multipart logo upload failed, trying base64 fallback:", err);
+      try {
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+          const base64Logo = ev.target.result;
+          const updated = await clientProfileApi.updateClientProfile({ ...editForm, logoUrl: base64Logo });
+          if (updated && updated.logoUrl) {
+            const finalUrl = updated.logoUrl.includes("?")
+              ? updated.logoUrl
+              : `${updated.logoUrl}?t=${Date.now()}`;
+            setProfileData(prev => ({ ...prev, ...updated, logoUrl: finalUrl }));
+            setEditForm(prev => ({ ...prev, ...updated, logoUrl: finalUrl }));
+            if (onProfileUpdate) onProfileUpdate({ ...updated, logoUrl: finalUrl });
+            showSuccess("Logo Updated", "Company logo saved to database successfully!");
+          }
+        };
+        reader.readAsDataURL(file);
+      } catch (fallbackErr) {
+        showError("Upload Failed", err.response?.data?.message || err.message || "Failed to save logo to database.");
+      }
     }
   };
 
@@ -398,6 +413,11 @@ export default function ClientProfile({ currentUser, onProfileUpdate }) {
                   <p className="text-sm font-bold text-slate-800 mt-0.5 flex items-start gap-1.5">
                     <MapPin size={14} className="text-pink-600 mt-0.5 shrink-0" /> {profileData.address}
                   </p>
+                  <LocationMiniMap
+                    address={profileData.address}
+                    locationName={profileData.companyName || "Corporate Office"}
+                    theme="pink"
+                  />
                 </div>
               </div>
             ) : (
@@ -457,107 +477,14 @@ export default function ClientProfile({ currentUser, onProfileUpdate }) {
         {/* RIGHT COLUMN: Online Channels, Verification & Roster Preferences */}
         <div className="space-y-6">
           
-          {/* Online Channels */}
-          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs">
-            <h3 className="text-sm font-black text-slate-900 mb-4 flex items-center gap-2">
-              <Globe size={16} className="text-pink-600" /> Digital Footprint & Channels
-            </h3>
-
-            {!isEditing ? (
-              <div className="space-y-3">
-                <a
-                  href={profileData.website}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition text-xs font-bold text-slate-800"
-                >
-                  <span className="flex items-center gap-2">
-                    <Globe size={14} className="text-pink-600" /> Website
-                  </span>
-                  <ExternalLink size={12} className="text-slate-400" />
-                </a>
-
-                <a
-                  href={`https://instagram.com/${profileData.instagram}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center justify-between p-3 rounded-xl bg-pink-50/50 hover:bg-pink-50 transition text-xs font-bold text-pink-900"
-                >
-                  <span className="flex items-center gap-2">
-                    <Share2 size={14} className="text-pink-600" /> @{profileData.instagram}
-                  </span>
-                  <ExternalLink size={12} className="text-pink-400" />
-                </a>
-
-                <a
-                  href={profileData.linkedin}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center justify-between p-3 rounded-xl bg-blue-50/50 hover:bg-blue-50 transition text-xs font-bold text-blue-900"
-                >
-                  <span className="flex items-center gap-2">
-                    <Globe size={14} className="text-blue-600" /> LinkedIn Brand Page
-                  </span>
-                  <ExternalLink size={12} className="text-blue-400" />
-                </a>
-
-                <a
-                  href={profileData.youtube}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center justify-between p-3 rounded-xl bg-rose-50/50 hover:bg-rose-50 transition text-xs font-bold text-rose-900"
-                >
-                  <span className="flex items-center gap-2">
-                    <Video size={14} className="text-rose-600" /> Commercial Reel / YouTube
-                  </span>
-                  <ExternalLink size={12} className="text-rose-400" />
-                </a>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Website URL</label>
-                  <input
-                    type="url"
-                    name="website"
-                    value={editForm.website}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:border-pink-600 outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Instagram Handle</label>
-                  <input
-                    type="text"
-                    name="instagram"
-                    value={editForm.instagram}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:border-pink-600 outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">LinkedIn URL</label>
-                  <input
-                    type="url"
-                    name="linkedin"
-                    value={editForm.linkedin}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:border-pink-600 outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">YouTube / Video Reel URL</label>
-                  <input
-                    type="url"
-                    name="youtube"
-                    value={editForm.youtube}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:border-pink-600 outline-none"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
+          {/* Social Channels with Authentic Brand Icons & Handles */}
+          <SocialChannelsSection
+            profileData={profileData}
+            isEditing={isEditing}
+            editForm={editForm}
+            onChange={handleInputChange}
+            title="Digital Footprint & Channels"
+          />
 
           {/* Preferred Talent Profiles */}
           <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs">

@@ -4,13 +4,19 @@
   "private": true,
   "workspaces": [
     "bmsAdminUI",
-    "bmsUserUI"
+    "bmsUserUI",
+    "bmsClientUI",
+    "bmsPartnerUI"
   ],
   "scripts": {
-    "build": "npm run build --workspace=bmsAdminUI && npm run build --workspace=bmsUserUI",
+    "build": "npm run build --workspace=bmsAdminUI && npm run build --workspace=bmsUserUI && npm run build --workspace=bmsClientUI && npm run build --workspace=bmsPartnerUI",
     "build:admin": "npm run build --workspace=bmsAdminUI",
     "build:user": "npm run build --workspace=bmsUserUI",
+    "build:client": "npm run build --workspace=bmsClientUI",
+    "build:partner": "npm run build --workspace=bmsPartnerUI",
     "dev:admin": "npm run dev --workspace=bmsAdminUI",
-    "dev:user": "npm run dev --workspace=bmsUserUI"
+    "dev:user": "npm run dev --workspace=bmsUserUI",
+    "dev:client": "npm run dev --workspace=bmsClientUI",
+    "dev:partner": "npm run dev --workspace=bmsPartnerUI"
   }
 }

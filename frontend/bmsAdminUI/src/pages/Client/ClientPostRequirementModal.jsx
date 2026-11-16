@@ -209,7 +209,8 @@ export default function ClientPostRequirementModal({
       positionsNeeded: Number(formData.positionsNeeded) || 1,
       budget: formData.budgetPerDay,
       urgency: formData.isUrgent ? "Urgent Casting" : `${formData.shootDuration}`,
-      status: formData.isUrgent ? "Active & Urgent" : "Active Campaign",
+      status: "Submitted for Review",
+      adminStatus: "IN_REVIEW",
       deadline: `Shoot Date: ${formData.shootDate}`,
       location: formData.location,
       applicationsCount: 0,
@@ -240,8 +241,8 @@ export default function ClientPostRequirementModal({
     } else if (onSubmitBrief) {
       onSubmitBrief(newCampaign);
       showSuccess(
-        "Shoot Requirement Published",
-        `Your shoot requirement for "${formData.title}" has been published to the BookMyStars talent network!`
+        "Submitted for Admin Approval",
+        `Your shoot requirement for "${formData.title}" has been submitted to the Admin moderation desk and will go live once verified.`
       );
     }
 

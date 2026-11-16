@@ -10,6 +10,7 @@ import PerformanceChart from "./PerformanceChart.jsx";
 import MiniCalendar from "./MiniCalendar.jsx";
 import SkillManagementModal from "../../shared/common/SkillManagementModal.jsx";
 import OpportunityDetailModal from "../Opportunities/OpportunityDetailModal.jsx";
+import { getMyCastingApplications } from "../../features/bms/api/opportunities/castingApplicationsApi";
 import {
   getStoredUser,
   getCurrentUserProfile,
@@ -400,6 +401,9 @@ export default function Dashboard() {
   const [showSkillModal, setShowSkillModal] = useState(false);
   const [yearsExperience, setYearsExperience] = useState(0);
   const [workExpCount, setWorkExpCount] = useState(0);
+  const [profileViewsCount, setProfileViewsCount] = useState(0);
+  const [totalAuditionsCount, setTotalAuditionsCount] = useState(0);
+  const [totalBookingsCount, setTotalBookingsCount] = useState(0);
   const [isPendingVerification, setIsPendingVerification] = useState(false);
   const [isAutoPromoted, setIsAutoPromoted] = useState(false);
   const [myCastings, setMyCastings] = useState([]);
@@ -578,17 +582,26 @@ export default function Dashboard() {
 
   // Profile states
   const [showAllSkillsModal, setShowAllSkillsModal] = useState(false);
+  const getCachedProfile = () => {
+    try {
+      const raw = localStorage.getItem("bms_cached_profile");
+      if (raw) return JSON.parse(raw);
+    } catch (_) {}
+    return null;
+  };
+  const cachedProf = getCachedProfile();
+
   const [profile, setProfile] = useState({
-    name: storedUser?.fullName || "Your Name",
-    roles: [initialRole || "Actor"],
-    profileTypes: initialStoredType ? [initialStoredType] : [],
-    customProfession: initialCustom,
-    location: "Mumbai, Maharashtra, India",
-    languages: "Hindi, English, Punjabi",
-    age: "29",
-    birthDate: "1995-08-12",
-    about: "Passionate cinema artist exploring versatile character roles across feature films, web series, and commercials.",
-    photo: localStorage.getItem("bms_profile_photo") ? getFullImageUrl(localStorage.getItem("bms_profile_photo")) : ""
+    name: cachedProf?.fullName || storedUser?.fullName || "",
+    roles: cachedProf?.role ? [cachedProf.role] : [initialRole || "Actor"],
+    profileTypes: cachedProf?.profileTypes || (initialStoredType ? [initialStoredType] : []),
+    customProfession: cachedProf?.customProfession || initialCustom,
+    location: cachedProf?.location || "",
+    languages: cachedProf?.languages || "",
+    age: "",
+    birthDate: cachedProf?.dateOfBirth || "",
+    about: cachedProf?.about || "",
+    photo: cachedProf?.profilePhoto ? getFullImageUrl(cachedProf.profilePhoto) : (localStorage.getItem("bms_profile_photo") ? getFullImageUrl(localStorage.getItem("bms_profile_photo")) : "")
   });
 
   const handleAddSkill = (newSkill) => {
@@ -656,6 +669,21 @@ export default function Dashboard() {
           const experiences = await getMyWorkExperiences().catch(() => []);
           const totalWorks = Array.isArray(experiences) ? experiences.length : 0;
           setWorkExpCount(totalWorks);
+          if (Array.isArray(experiences) && experiences.length > 0) {
+            setProjects(experiences.map((exp, idx) => ({
+              id: exp.id || idx,
+              title: exp.company || exp.brand || "Project",
+              type: exp.category || "Production",
+              role: exp.roleTitle || "Artist",
+              year: exp.durationYears || exp.year || "Recent",
+              status: "Verified",
+              rating: "8.5",
+              img: exp.fileUrl ? getFullImageUrl(exp.fileUrl) : "https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&w=150&q=80"
+            })));
+            try { localStorage.setItem("bms_cached_experiences", JSON.stringify(experiences)); } catch (_) {}
+          } else {
+            setProjects([]);
+          }
 
           const expYears = (typeof u.yearsExperience === "number") ? u.yearsExperience : (totalWorks > 0 ? totalWorks : 0);
           setYearsExperience(expYears);
@@ -679,12 +707,41 @@ export default function Dashboard() {
 
       try {
         const requests = await getProfileAccessRequests();
-        setAccessRequests(Array.isArray(requests) ? requests : []);
+        const reqsList = Array.isArray(requests) ? requests : [];
+        setAccessRequests(reqsList);
+        const uViews = (typeof u?.profileViewsCount === "number") ? u.profileViewsCount : ((typeof u?.projectsCompleted === "number") ? u.projectsCompleted : 0);
+        setProfileViewsCount(Math.max(uViews, reqsList.length));
       } catch (err) {}
 
       try {
         const castings = await getMyCastingCalls();
         setMyCastings(Array.isArray(castings) ? castings : []);
+      } catch (err) {}
+
+      try {
+        const apps = await getMyCastingApplications();
+        const appsList = Array.isArray(apps) ? apps : [];
+        setTotalAuditionsCount(appsList.length);
+        if (appsList.length > 0) {
+          const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+          setAuditions(apps.slice(0, 4).map(app => {
+            const d = app.appliedAt ? new Date(app.appliedAt) : new Date();
+            const dateNum = isNaN(d.getTime()) ? "01" : String(d.getDate()).padStart(2, "0");
+            const monthStr = isNaN(d.getTime()) ? "MAY" : months[d.getMonth()];
+            return {
+              date: dateNum,
+              month: monthStr,
+              title: app.castingCallTitle || "Casting Audition",
+              production: app.characterRoleName ? `Role: ${app.characterRoleName}` : "Casting Call",
+              time: "Audition Application",
+              location: "Production Studio",
+              status: app.status || "In Review",
+              statusClass: (app.status === "SHORTLISTED" || app.status === "SELECTED") ? "status-confirmed" : "status-pending"
+            };
+          }));
+        } else {
+          setAuditions([]);
+        }
       } catch (err) {}
 
       try {
@@ -763,8 +820,10 @@ export default function Dashboard() {
     async function checkPendingBookings() {
       try {
         const reqs = await getIncomingBookingRequests();
-        const pending = (Array.isArray(reqs) ? reqs : []).filter(r => r.status === "PENDING").length;
+        const reqsList = Array.isArray(reqs) ? reqs : [];
+        const pending = reqsList.filter(r => r.status === "PENDING").length;
         setPendingBookingCount(pending);
+        setTotalBookingsCount(reqsList.length);
       } catch (_) {}
     }
     checkPendingBookings();
@@ -958,18 +1017,31 @@ export default function Dashboard() {
     return dateString;
   };
 
-  // Mock data for upcoming auditions
-  const auditions = [
-    { date: "24", month: "MAY", title: "Web Series - Lead Role", production: "DreamWorks", time: "11:00 AM", location: "Mumbai", status: "Confirmed", statusClass: "confirmed" },
-    { date: "28", month: "MAY", title: "Feature Film - Supporting Role", production: "Silver Screen", time: "02:00 PM", location: "Mumbai", status: "Pending", statusClass: "pending" },
-    { date: "02", month: "JUN", title: "TV Commercial - Lead", production: "Bright Ads", time: "10:30 AM", location: "Mumbai", status: "Shortlisted", statusClass: "shortlisted" }
-  ];
+  // Real user upcoming auditions
+  const [auditions, setAuditions] = useState([]);
 
-  const [projects, setProjects] = useState([
-    { id: 1, title: "Rang De Zindagi", type: "Feature Film", role: "Lead Role", year: "2023", status: "Released", rating: "8.2", img: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&w=150&q=80" },
-    { id: 2, title: "Tere Bin", type: "Web Series", role: "Lead Role", year: "2022", status: "10 Episodes", rating: "8.0", img: "https://images.unsplash.com/photo-1478720568477-152d9b164e26?auto=format&fit=crop&w=150&q=80" },
-    { id: 3, title: "Yeh Safar", type: "TV Series", role: "Lead Role", year: "2021", status: "15 Episodes", rating: "7.6", img: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=150&q=80" }
-  ]);
+  // Real user projects hydrated immediately from work experiences cache
+  const [projects, setProjects] = useState(() => {
+    try {
+      const raw = localStorage.getItem("bms_cached_experiences");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((exp, idx) => ({
+            id: exp.id || idx,
+            title: exp.company || exp.brand || "Project",
+            type: exp.category || "Production",
+            role: exp.roleTitle || "Artist",
+            year: exp.durationYears || exp.year || "Recent",
+            status: "Verified",
+            rating: "8.5",
+            img: exp.fileUrl ? getFullImageUrl(exp.fileUrl) : "https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&w=150&q=80"
+          }));
+        }
+      }
+    } catch (_) {}
+    return [];
+  });
 
   const handleRatingClick = (e, projectId) => {
     e.stopPropagation();
@@ -1577,20 +1649,23 @@ export default function Dashboard() {
                       <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                         <Users size={14} color="#64748b" />
                         <span>Requests</span>
-                        <span style={{
-                          backgroundColor: "#e11d48",
-                          color: "#ffffff",
-                          fontSize: "10px",
-                          fontWeight: "800",
-                          width: "16px",
-                          height: "16px",
-                          borderRadius: "50%",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center"
-                        }}>
-                          {accessRequests.filter(r => r.status === "PENDING").length > 0 ? accessRequests.filter(r => r.status === "PENDING").length : 2}
-                        </span>
+                        {accessRequests.filter(r => r.status === "PENDING").length > 0 && (
+                          <span style={{
+                            backgroundColor: "#e11d48",
+                            color: "#ffffff",
+                            fontSize: "10px",
+                            fontWeight: "800",
+                            minWidth: "16px",
+                            height: "16px",
+                            padding: "0 4px",
+                            borderRadius: "10px",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center"
+                          }}>
+                            {accessRequests.filter(r => r.status === "PENDING").length}
+                          </span>
+                        )}
                       </span>
                       <ArrowRight size={13} color="#94a3b8" />
                     </button>
@@ -1638,7 +1713,15 @@ export default function Dashboard() {
                       {/* Instagram */}
                       <button
                         type="button"
-                        onClick={() => window.open("https://www.instagram.com", "_blank", "noopener,noreferrer")}
+                        onClick={() => {
+                          const targetId = storedUser?.id || storedUser?.userId || profile.id || 7;
+                          const shareUrl = `${window.location.origin}/public-profile/${targetId}`;
+                          if (navigator.clipboard) {
+                            navigator.clipboard.writeText(shareUrl);
+                          }
+                          window.open("https://www.instagram.com", "_blank", "noopener,noreferrer");
+                          showSuccess("Share on Instagram", "Profile link copied to clipboard! Paste it into your bio or DM.");
+                        }}
                         title="Share on Instagram"
                         style={{
                           width: "28px",
@@ -1664,9 +1747,15 @@ export default function Dashboard() {
                       <button
                         type="button"
                         onClick={() => {
-                          const shareUrl = window.location.origin + `/public-profile/${storedUser?.userId || profile.id || 7}`;
-                          const msg = encodeURIComponent(`Check out ${profile.name}'s cinema profile on BookMyStars: ${shareUrl}`);
+                          const targetId = storedUser?.id || storedUser?.userId || profile.id || 7;
+                          const shareUrl = `${window.location.origin}/public-profile/${targetId}`;
+                          const talentName = profile.name || storedUser?.fullName || "Talent";
+                          const msg = encodeURIComponent(`Check out ${talentName}'s cinema profile on BookMyStars: ${shareUrl}`);
+                          if (navigator.clipboard) {
+                            navigator.clipboard.writeText(shareUrl);
+                          }
                           window.open(`https://api.whatsapp.com/send?text=${msg}`, "_blank", "noopener,noreferrer");
+                          showSuccess("Share via WhatsApp", "Opening WhatsApp! Profile link copied to clipboard.");
                         }}
                         title="Share via WhatsApp"
                         style={{
@@ -1691,9 +1780,28 @@ export default function Dashboard() {
                       <button
                         type="button"
                         onClick={() => {
-                          const shareUrl = window.location.origin + `/public-profile/${storedUser?.userId || profile.id || 7}`;
-                          const text = encodeURIComponent(`Check out ${profile.name}'s cinema profile on BookMyStars!`);
-                          window.open(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${text}`, "_blank", "noopener,noreferrer");
+                          const targetId = storedUser?.id || storedUser?.userId || profile.id || 7;
+                          const shareUrl = `${window.location.origin}/public-profile/${targetId}`;
+                          const talentName = profile.name || storedUser?.fullName || "Talent";
+                          const shareMsg = `Check out ${talentName}'s cinema profile on BookMyStars:\n${shareUrl}`;
+                          if (navigator.clipboard) {
+                            navigator.clipboard.writeText(shareMsg);
+                          }
+                          const tgAppUrl = `tg://msg_url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareMsg)}`;
+                          const tgWebUrl = `https://web.telegram.org/k/#?tgaddr=${encodeURIComponent(tgAppUrl)}`;
+                          // 1. Attempt native desktop/mobile Telegram protocol
+                          try {
+                            const iframe = document.createElement("iframe");
+                            iframe.style.display = "none";
+                            iframe.src = tgAppUrl;
+                            document.body.appendChild(iframe);
+                            setTimeout(() => {
+                              try { document.body.removeChild(iframe); } catch (_) {}
+                            }, 2000);
+                          } catch (_) {}
+                          // 2. Open Web Telegram (bypasses ISP connection resets on t.me domain)
+                          window.open(tgWebUrl, "_blank", "noopener,noreferrer");
+                          showSuccess("Share via Telegram", "Telegram opened & profile link copied to clipboard!");
                         }}
                         title="Share via Telegram"
                         style={{
@@ -1718,10 +1826,21 @@ export default function Dashboard() {
                       <button
                         type="button"
                         onClick={() => {
-                          const shareUrl = window.location.origin + `/public-profile/${storedUser?.userId || profile.id || 7}`;
-                          const subject = encodeURIComponent(`${profile.name} - Cinema Portfolio on BookMyStars`);
-                          const body = encodeURIComponent(`Hi,\n\nExplore ${profile.name}'s cinema profile on BookMyStars:\n${shareUrl}`);
-                          window.location.href = `mailto:?subject=${subject}&body=${body}`;
+                          const targetId = storedUser?.id || storedUser?.userId || profile.id || 7;
+                          const shareUrl = `${window.location.origin}/public-profile/${targetId}`;
+                          const talentName = profile.name || storedUser?.fullName || "Talent";
+                          const subject = encodeURIComponent(`${talentName} - Cinema Portfolio on BookMyStars`);
+                          const body = encodeURIComponent(`Hi,\n\nExplore ${talentName}'s cinema profile and showreels on BookMyStars:\n${shareUrl}`);
+                          if (navigator.clipboard) {
+                            navigator.clipboard.writeText(shareUrl);
+                          }
+                          // Prefer Gmail compose in a new tab for seamless web experience, fallback to mailto
+                          const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&tf=1&su=${subject}&body=${body}`;
+                          const win = window.open(gmailUrl, "_blank", "noopener,noreferrer");
+                          if (!win) {
+                            window.location.href = `mailto:?subject=${subject}&body=${body}`;
+                          }
+                          showSuccess("Opening Email", "Opening email composer! Profile link copied to clipboard.");
                         }}
                         title="Share via Email"
                         style={{
@@ -1872,167 +1991,194 @@ export default function Dashboard() {
               </div>
             )}
                 
-                {/* Container 1: Core Statistics Container Box */}
-                <div className="db-stats-container-box">
-                  <div className="db-stats-grid-wrapper" style={{ gap: '11px' }}>
-                    
-                    {/* Stat 1: Views */}
-                    <div
-                      className="db-stat-item-card"
-                      onClick={() => navigate("/analytics")}
-                      title="Click to view detailed visitor analytics"
-                    >
-                      <div className="db-stat-top-row">
-                        <div className="db-stat-icon-wrapper views">
-                          <Users size={22} className="text-purple-600" />
-                        </div>
-                        <div className="db-stat-data">
-                          <span className="db-stat-val">2.4M+</span>
-                          <span className="db-stat-lbl">Profile Views</span>
-                        </div>
-                      </div>
-                      <span className="db-stat-trend up whitespace-nowrap">
-                        &uarr; 18.6% <span className="text-black ml-1">this month</span>
-                      </span>
+                {/* ── Side-by-Side: Core Stats & Quick Actions with VR Divider ── */}
+                <div className="db-stats-actions-split-wrapper">
+                  {/* Container 1: Core Statistics Container Box */}
+                  <div className="db-stats-container-box">
+                    <div className="db-stats-box-header">
+                      <h4 className="db-quick-actions-title" style={{ margin: 0 }}>Core Performance</h4>
                     </div>
-
-                    {/* Stat 2: Auditions */}
-                    <div
-                      className="db-stat-item-card"
-                      onClick={() => navigate("/auditions")}
-                      title="Click to explore casting calls and auditions"
-                    >
-                      <div className="db-stat-top-row">
-                        <div className="db-stat-icon-wrapper auditions">
-                          <Star size={22} className="text-pink-500" />
+                    <div className="db-stats-grid-wrapper">
+                      
+                      {/* Stat 1: Views */}
+                      <div
+                        className="db-stat-item-card"
+                        onClick={() => navigate("/analytics")}
+                        title="Click to view detailed visitor analytics"
+                      >
+                        <div className="db-stat-top-row">
+                          <div className="db-stat-icon-wrapper views">
+                            <Users size={20} className="text-purple-600" />
+                          </div>
+                          <div className="db-stat-data">
+                            <span className="db-stat-val">
+                              {profileViewsCount > 0 ? (profileViewsCount >= 1000 ? `${(profileViewsCount / 1000).toFixed(1)}k` : profileViewsCount) : "0"}
+                            </span>
+                            <span className="db-stat-lbl">Profile Views</span>
+                          </div>
                         </div>
-                        <div className="db-stat-data">
-                          <span className="db-stat-val">128</span>
-                          <span className="db-stat-lbl">Auditions</span>
-                        </div>
+                        <span className={`db-stat-trend ${profileViewsCount > 0 ? "up" : ""} whitespace-nowrap`} style={profileViewsCount === 0 ? { color: "#64748b" } : undefined}>
+                          {profileViewsCount > 0 ? (
+                            <>&uarr; {profileViewsCount} <span className="text-black ml-1">views total</span></>
+                          ) : (
+                            <span>0 views this month</span>
+                          )}
+                        </span>
                       </div>
-                      <span className="db-stat-trend up whitespace-nowrap">
-                        &uarr; 12 <span className="text-black ml-1">this month</span>
-                      </span>
+
+                      {/* Stat 2: Auditions */}
+                      <div
+                        className="db-stat-item-card"
+                        onClick={() => navigate("/auditions")}
+                        title="Click to explore casting calls and auditions"
+                      >
+                        <div className="db-stat-top-row">
+                          <div className="db-stat-icon-wrapper auditions">
+                            <Star size={20} className="text-pink-500" />
+                          </div>
+                          <div className="db-stat-data">
+                            <span className="db-stat-val">{totalAuditionsCount}</span>
+                            <span className="db-stat-lbl">Auditions</span>
+                          </div>
+                        </div>
+                        <span className={`db-stat-trend ${totalAuditionsCount > 0 ? "up" : ""} whitespace-nowrap`} style={totalAuditionsCount === 0 ? { color: "#64748b" } : undefined}>
+                          {totalAuditionsCount > 0 ? (
+                            <>&uarr; {totalAuditionsCount} <span className="text-black ml-1">applied</span></>
+                          ) : (
+                            <span>0 applied this month</span>
+                          )}
+                        </span>
+                      </div>
+
+                      {/* Stat 3: Bookings */}
+                      <div
+                        className="db-stat-item-card"
+                        onClick={() => navigate("/bookings")}
+                        title="Click to view shoot bookings"
+                      >
+                        <div className="db-stat-top-row">
+                          <div className="db-stat-icon-wrapper bookings">
+                            <CalendarDays size={20} className="text-purple-600" />
+                          </div>
+                          <div className="db-stat-data">
+                            <span className="db-stat-val">{totalBookingsCount}</span>
+                            <span className="db-stat-lbl">Bookings</span>
+                          </div>
+                        </div>
+                        <span className={`db-stat-trend ${pendingBookingCount > 0 ? "up" : ""} whitespace-nowrap`} style={pendingBookingCount === 0 && totalBookingsCount === 0 ? { color: "#64748b" } : undefined}>
+                          {pendingBookingCount > 0 ? (
+                            <>&uarr; {pendingBookingCount} <span className="text-black ml-1">pending</span></>
+                          ) : totalBookingsCount > 0 ? (
+                            <>&uarr; {totalBookingsCount} <span className="text-black ml-1">confirmed</span></>
+                          ) : (
+                            <span>0 bookings this month</span>
+                          )}
+                        </span>
+                      </div>
+
+                      {/* Stat 4: Awards / Projects */}
+                      <div
+                        className="db-stat-item-card"
+                        onClick={() => navigate("/profile")}
+                        title="Click to view your work experience and portfolio"
+                      >
+                        <div className="db-stat-top-row">
+                          <div className="db-stat-icon-wrapper awards">
+                            <Trophy size={20} className="text-orange-500" />
+                          </div>
+                          <div className="db-stat-data">
+                            <span className="db-stat-val">{workExpCount}</span>
+                            <span className="db-stat-lbl">Projects & Works</span>
+                          </div>
+                        </div>
+                        <PagesButton
+                          className="db-stat-view-all"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate("/profile");
+                          }}
+                        >
+                          View all
+                        </PagesButton>
+                      </div>
+
                     </div>
+                  </div>
 
-                    {/* Stat 3: Bookings */}
-                    <div
-                      className="db-stat-item-card"
-                      onClick={() => navigate("/bookings")}
-                      title="Click to view shoot bookings"
-                    >
-                      <div className="db-stat-top-row">
-                        <div className="db-stat-icon-wrapper bookings">
-                          <CalendarDays size={22} className="text-purple-600" />
-                        </div>
-                        <div className="db-stat-data">
-                          <span className="db-stat-val">{pendingBookingCount > 0 ? pendingBookingCount : "24"}</span>
-                          <span className="db-stat-lbl">Bookings</span>
-                        </div>
-                      </div>
-                      <span className="db-stat-trend up whitespace-nowrap">
-                        &uarr; 14 <span className="text-black ml-1">this month</span>
-                      </span>
+                  {/* Vertical Rule (VR) Divider */}
+                  <div className="db-stats-actions-vr" role="separator" aria-orientation="vertical" title="Divider (VR)" />
+
+                  {/* Container 2: Quick Actions Container Box */}
+                  <div className="db-quick-actions-container-box">
+                    <div className="db-quick-actions-header-row">
+                      <h4 className="db-quick-actions-title" style={{ margin: 0 }}>Quick Actions</h4>
                     </div>
+                    <div className="db-quick-actions-grid-wrapper">
+                      
+                      {/* Action 1 */}
+                      <PagesButton className="db-action-item-btn" onClick={() => navigate("/my-media")}>
+                        <div className="db-action-icon-box">
+                          <Plus size={16} />
+                        </div>
+                        <span>Add New Media</span>
+                      </PagesButton>
 
-                    {/* Stat 4: Awards / Projects */}
-                    <div
-                      className="db-stat-item-card"
-                      onClick={() => navigate("/profile")}
-                      title="Click to view your work experience and portfolio"
-                    >
-                      <div className="db-stat-top-row">
-                        <div className="db-stat-icon-wrapper awards">
-                          <Trophy size={22} className="text-orange-500" />
+                      {/* Action 2 */}
+                      <PagesButton className="db-action-item-btn" onClick={() => navigate("/opportunities")}>
+                        <div className="db-action-icon-box">
+                          <Video size={16} />
                         </div>
-                        <div className="db-stat-data">
-                          <span className="db-stat-val">{workExpCount > 0 ? workExpCount : "8"}</span>
-                          <span className="db-stat-lbl">Projects & Works</span>
+                        <span>Apply for Casting</span>
+                      </PagesButton>
+
+                      {/* Action 3 */}
+                      <PagesButton className="db-action-item-btn" onClick={() => navigate("/calendar")}>
+                        <div className="db-action-icon-box">
+                          <CalendarRange size={16} />
                         </div>
-                      </div>
+                        <span>Update Availability</span>
+                      </PagesButton>
+
+                      {/* Action 4 */}
+                      <PagesButton className="db-action-item-btn" onClick={() => navigate("/profile")}>
+                        <div className="db-action-icon-box">
+                          <FolderPlus size={16} />
+                        </div>
+                        <span>Add New Project</span>
+                      </PagesButton>
+
+                      {/* Action 5 */}
                       <PagesButton
-                        className="db-stat-view-all"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate("/profile");
+                        className="db-action-item-btn"
+                        onClick={() => {
+                          const url = window.location.origin + `/public-profile/${storedUser?.userId || profile.id || 7}`;
+                          if (navigator.clipboard) {
+                            navigator.clipboard.writeText(url);
+                            showSuccess("Link Copied!", "Public profile link copied to clipboard.");
+                          } else {
+                            window.prompt("Copy profile link:", url);
+                          }
                         }}
                       >
-                        View all
+                        <div className="db-action-icon-box">
+                          <Share2 size={16} />
+                        </div>
+                        <span>Share Profile</span>
                       </PagesButton>
+
+                      {/* Action 6: Post Opportunity */}
+                      <PagesButton
+                        className="db-action-item-btn"
+                        onClick={() => navigate("/opportunities")}
+                        style={{ border: "1.5px solid #f472b6", background: "#fdf2f8" }}
+                      >
+                        <div className="db-action-icon-box" style={{ background: "linear-gradient(135deg, #ee008f, #7c3aed)", color: "#ffffff" }}>
+                          <Plus size={16} />
+                        </div>
+                        <span style={{ color: "#be185d", fontWeight: "800" }}>Post Opportunity</span>
+                      </PagesButton>
+
                     </div>
-
-                  </div>
-                </div>
-
-                {/* Container 2: Quick Actions Container Box */}
-                <div className="db-quick-actions-container-box">
-                  <h4 className="db-quick-actions-title">Quick Actions</h4>
-                  <div className="db-quick-actions-grid-wrapper gap-3">
-                    
-                    {/* Action 1 */}
-                    <PagesButton className="db-action-item-btn" onClick={() => navigate("/my-media")}>
-                      <div className="db-action-icon-box">
-                        <Plus size={16} />
-                      </div>
-                      <span>Add New Media</span>
-                    </PagesButton>
-
-                    {/* Action 2 */}
-                    <PagesButton className="db-action-item-btn" onClick={() => navigate("/opportunities")}>
-                      <div className="db-action-icon-box">
-                        <Video size={16} />
-                      </div>
-                      <span>Apply for Casting</span>
-                    </PagesButton>
-
-                    {/* Action 3 */}
-                    <PagesButton className="db-action-item-btn" onClick={() => navigate("/calendar")}>
-                      <div className="db-action-icon-box">
-                        <CalendarRange size={16} />
-                      </div>
-                      <span>Update Availability</span>
-                    </PagesButton>
-
-                    {/* Action 4 */}
-                    <PagesButton className="db-action-item-btn" onClick={() => navigate("/profile")}>
-                      <div className="db-action-icon-box">
-                        <FolderPlus size={16} />
-                      </div>
-                      <span>Add New Project</span>
-                    </PagesButton>
-
-                    {/* Action 5 */}
-                    <PagesButton
-                      className="db-action-item-btn"
-                      onClick={() => {
-                        const url = window.location.origin + `/public-profile/${storedUser?.userId || profile.id || 7}`;
-                        if (navigator.clipboard) {
-                          navigator.clipboard.writeText(url);
-                          showSuccess("Link Copied!", "Public profile link copied to clipboard.");
-                        } else {
-                          window.prompt("Copy profile link:", url);
-                        }
-                      }}
-                    >
-                      <div className="db-action-icon-box">
-                        <Share2 size={16} />
-                      </div>
-                      <span>Share Profile</span>
-                    </PagesButton>
-
-                    {/* Action 6: Post Opportunity */}
-                    <PagesButton
-                      className="db-action-item-btn"
-                      onClick={() => navigate("/opportunities")}
-                      style={{ border: "1.5px solid #f472b6", background: "#fdf2f8" }}
-                    >
-                      <div className="db-action-icon-box" style={{ background: "linear-gradient(135deg, #ee008f, #7c3aed)", color: "#ffffff" }}>
-                        <Plus size={16} />
-                      </div>
-                      <span style={{ color: "#be185d", fontWeight: "800" }}>Post Opportunity</span>
-                    </PagesButton>
-
                   </div>
                 </div>
 
@@ -2592,7 +2738,13 @@ export default function Dashboard() {
                 </div>
 
                 <div className="widget-list">
-                  {auditions.map((aud, index) => (
+                  {auditions.length === 0 ? (
+                    <div style={{ padding: "30px 16px", textAlign: "center", color: "#64748b" }}>
+                      <p style={{ fontSize: "14px", fontWeight: "600", margin: "0 0 6px 0", color: "#334155" }}>No Upcoming Auditions</p>
+                      <p style={{ fontSize: "12px", margin: "0 0 14px 0" }}>Explore opportunities to audition for films, shows and ads.</p>
+                      <PagesButton className="btn-link-db text-xs" onClick={() => navigate("/auditions")}>Browse Castings</PagesButton>
+                    </div>
+                  ) : auditions.map((aud, index) => (
                     <div
                       key={index}
                       className="audition-item"
@@ -2633,7 +2785,13 @@ export default function Dashboard() {
                 </div>
 
                 <div className="widget-list">
-                  {projects.map((proj) => (
+                  {projects.length === 0 ? (
+                    <div style={{ padding: "30px 16px", textAlign: "center", color: "#64748b" }}>
+                      <p style={{ fontSize: "14px", fontWeight: "600", margin: "0 0 6px 0", color: "#334155" }}>No Projects Added Yet</p>
+                      <p style={{ fontSize: "12px", margin: "0 0 14px 0" }}>Add your verified credits and production work in your profile.</p>
+                      <PagesButton className="btn-link-db text-xs" onClick={() => navigate("/profile?tab=work-experience")}>Add Work Experience</PagesButton>
+                    </div>
+                  ) : projects.map((proj) => (
                     <div
                       key={proj.id}
                       className="project-item"

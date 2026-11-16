@@ -65,22 +65,35 @@ public class PortfolioService {
 
         log.info("Portfolio image uploaded by user id {}: {}", user.getId(), fileName);
 
+        boolean isUserVerified = (user.getIsApproved() != null && user.getIsApproved()) ||
+                "APPROVED".equalsIgnoreCase(user.getVerificationStatus());
+        String initialStatus = isUserVerified ? "APPROVED" : "PENDING";
+
         Portfolio portfolio = Portfolio.builder()
                 .user(user)
                 .imageUrl("/uploads/portfolio/" + fileName)
                 .title(title != null ? title.trim() : null)
                 .category(category != null ? category.trim() : null)
+                .status(initialStatus)
                 .createdAt(LocalDateTime.now())
                 .build();
 
         Portfolio savedPortfolio = portfolioRepository.save(portfolio);
 
+        return mapToResponse(savedPortfolio);
+    }
+
+    private PortfolioResponse mapToResponse(Portfolio portfolio) {
         return PortfolioResponse.builder()
-                .id(savedPortfolio.getId())
-                .imageUrl(savedPortfolio.getImageUrl())
-                .title(savedPortfolio.getTitle())
-                .category(savedPortfolio.getCategory())
-                .createdAt(savedPortfolio.getCreatedAt())
+                .id(portfolio.getId())
+                .imageUrl(portfolio.getImageUrl())
+                .title(portfolio.getTitle())
+                .category(portfolio.getCategory())
+                .status(portfolio.getStatus() != null ? portfolio.getStatus() : "APPROVED")
+                .rejectionReason(portfolio.getRejectionReason())
+                .reviewedBy(portfolio.getReviewedBy())
+                .reviewedAt(portfolio.getReviewedAt())
+                .createdAt(portfolio.getCreatedAt())
                 .build();
     }
 
@@ -128,18 +141,21 @@ public class PortfolioService {
             }
 
             portfolio.setImageUrl("/uploads/portfolio/" + fileName);
+
+            // Re-check verification: unverified users go back to PENDING on new upload
+            boolean isUserVerified = (user.getIsApproved() != null && user.getIsApproved()) ||
+                    "APPROVED".equalsIgnoreCase(user.getVerificationStatus());
+            portfolio.setStatus(isUserVerified ? "APPROVED" : "PENDING");
+            portfolio.setRejectionReason(null);
+            portfolio.setReviewedBy(null);
+            portfolio.setReviewedAt(null);
+
             log.info("Portfolio image updated by user id {}: {}", user.getId(), fileName);
         }
 
         Portfolio savedPortfolio = portfolioRepository.save(portfolio);
 
-        return PortfolioResponse.builder()
-                .id(savedPortfolio.getId())
-                .imageUrl(savedPortfolio.getImageUrl())
-                .title(savedPortfolio.getTitle())
-                .category(savedPortfolio.getCategory())
-                .createdAt(savedPortfolio.getCreatedAt())
-                .build();
+        return mapToResponse(savedPortfolio);
     }
 
     // =========================
@@ -158,11 +174,14 @@ public class PortfolioService {
                 boolean exists = list.stream().anyMatch(p -> profile.getProfilePhoto().equals(p.getImageUrl()));
                 if (!exists) {
                     try {
+                        boolean isUserVerified = (user.getIsApproved() != null && user.getIsApproved()) ||
+                                "APPROVED".equalsIgnoreCase(user.getVerificationStatus());
                         Portfolio headshot = Portfolio.builder()
                                 .user(user)
                                 .imageUrl(profile.getProfilePhoto())
                                 .title("Profile Headshot")
                                 .category("Headshot")
+                                .status(isUserVerified ? "APPROVED" : "PENDING")
                                 .createdAt(LocalDateTime.now())
                                 .build();
                         Portfolio saved = portfolioRepository.save(headshot);
@@ -175,15 +194,7 @@ public class PortfolioService {
         });
 
         return list.stream()
-                .map(portfolio ->
-                        PortfolioResponse.builder()
-                                .id(portfolio.getId())
-                                .imageUrl(portfolio.getImageUrl())
-                                .title(portfolio.getTitle())
-                                .category(portfolio.getCategory())
-                                .createdAt(portfolio.getCreatedAt())
-                                .build()
-                )
+                .map(this::mapToResponse)
                 .toList();
     }
 

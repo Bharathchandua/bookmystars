@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import logo from "../assets/logo.png";
 import Button from "./common/Button";
 import { getStoredUser, logoutUser } from "../features/bms/api/auth/authApi";
+import { CLIENT_PORTAL_URL, PARTNER_PORTAL_URL, USER_PORTAL_URL } from "../services/apiConfig";
 
 export default function Navbar({ isClientPartnerPage = false }) {
   const navigate = useNavigate();
@@ -267,16 +268,16 @@ export default function Navbar({ isClientPartnerPage = false }) {
             }
             if (l === "Become a Client") {
               return (
-                <Link key={l} to="/become-client" className="nav-btn-custom">
+                <a key={l} href={CLIENT_PORTAL_URL || "/become-client"} className="nav-btn-custom">
                   {l}
-                </Link>
+                </a>
               );
             }
             if (l === "Become a Partner") {
               return (
-                <Link key={l} to="/become-partner" className="nav-btn-custom">
+                <a key={l} href={PARTNER_PORTAL_URL || "/become-partner"} className="nav-btn-custom">
                   {l}
-                </Link>
+                </a>
               );
             }
             return (
@@ -320,6 +321,10 @@ export default function Navbar({ isClientPartnerPage = false }) {
                 <Button variant="join" onClick={handleJoinClick}>
                   Join Free
                 </Button>
+              ) : USER_PORTAL_URL ? (
+                <a href={`${USER_PORTAL_URL}/join`} style={{ textDecoration: "none" }}>
+                  <Button variant="join">Join Free</Button>
+                </a>
               ) : (
                 <Link to="/join">
                   <Button variant="join">Join Free</Button>
@@ -403,26 +408,26 @@ export default function Navbar({ isClientPartnerPage = false }) {
             }
             if (l === "Become a Client") {
               return (
-                <Link
+                <a
                   key={l}
-                  to="/become-client"
+                  href={CLIENT_PORTAL_URL || "/become-client"}
                   className="nav-btn-custom mobile-btn-custom"
                   onClick={closeAll}
                 >
                   {l}
-                </Link>
+                </a>
               );
             }
             if (l === "Become a Partner") {
               return (
-                <Link
+                <a
                   key={l}
-                  to="/become-partner"
+                  href={PARTNER_PORTAL_URL || "/become-partner"}
                   className="nav-btn-custom mobile-btn-custom"
                   onClick={closeAll}
                 >
                   {l}
-                </Link>
+                </a>
               );
             }
             return (

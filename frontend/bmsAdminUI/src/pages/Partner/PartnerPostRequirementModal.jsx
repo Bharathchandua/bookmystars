@@ -186,7 +186,8 @@ export default function PartnerPostRequirementModal({
       auditionDate: formData.auditionDate,
       deadline: `Applications open till ${formData.auditionDate}`,
       location: formData.location,
-      status: "Active & Promoted",
+      status: "Submitted for Review",
+      adminStatus: "IN_REVIEW",
       image: finalMediaUrl,
       mediaUrl: finalMediaUrl,
       mediaType: mediaType,
@@ -213,8 +214,8 @@ export default function PartnerPostRequirementModal({
     } else if (onSubmitRequirement) {
       onSubmitRequirement(newReq);
       showSuccess(
-        "Audition Requirement Published",
-        `Your audition requirement for "${formData.title}" has been published and queued for BookMyStars talent promotion!`
+        "Submitted for Admin Approval",
+        `Your audition requirement for "${formData.title}" has been submitted to the Admin moderation desk and will go live once verified.`
       );
     }
 
