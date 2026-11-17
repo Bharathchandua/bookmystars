@@ -516,6 +516,30 @@ public class ProfileService {
         return buildProfileResponse(user, saved);
     }
 
+    public ProfileResponse updateAvailability(String email, Boolean available) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Profile profile = profileRepository.findByUser(user)
+                .orElseGet(() -> Profile.builder()
+                        .user(user)
+                        .about("Welcome to my profile!")
+                        .available(true)
+                        .openForNewProjects(true)
+                        .yearsExperience(0)
+                        .projectsCompleted(0)
+                        .brandsWorked(0)
+                        .magazineFeatures(0)
+                        .memberSince(user.getCreatedAt() != null ? user.getCreatedAt().toLocalDate() : LocalDate.now())
+                        .build());
+
+        boolean isAvail = Boolean.TRUE.equals(available);
+        profile.setAvailable(isAvail);
+        profile.setOpenForNewProjects(isAvail);
+        Profile saved = profileRepository.save(profile);
+        return buildProfileResponse(user, saved);
+    }
+
     public ProfileAccessRequestDto requestAccess(Long talentUserId, ProfileAccessRequestDto requestDto, org.springframework.security.core.Authentication authentication) {
         User talent = userRepository.findById(talentUserId)
                 .orElseThrow(() -> new RuntimeException("Talent not found"));

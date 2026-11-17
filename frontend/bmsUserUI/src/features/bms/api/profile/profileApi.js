@@ -3,6 +3,7 @@ import { extractError } from "../apiHelpers";
 import { getStoredUser } from "../auth/authApi";
 import {
   updateProfilePrivacy,
+  updateProfileAvailability,
   requestProfileAccess,
   getProfileAccessRequests,
   respondToProfileAccessRequest,
@@ -10,6 +11,7 @@ import {
 
 export {
   updateProfilePrivacy,
+  updateProfileAvailability,
   requestProfileAccess,
   getProfileAccessRequests,
   respondToProfileAccessRequest,
@@ -112,6 +114,7 @@ export const profileApi = {
   uploadProfilePhoto,
   getPublicUserProfile,
   updateProfilePrivacy,
+  updateProfileAvailability,
   requestProfileAccess,
   getProfileAccessRequests,
   respondToProfileAccessRequest,

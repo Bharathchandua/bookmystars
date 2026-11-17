@@ -16,6 +16,7 @@ import {
   getCurrentUserProfile,
   updateUserProfile,
   updateProfilePrivacy,
+  updateProfileAvailability,
   getProfileAccessRequests,
   respondToProfileAccessRequest,
   getFullImageUrl,
@@ -391,6 +392,8 @@ export default function Dashboard() {
   // Instagram-style Privacy & Profile View Requests State
   const [isPrivate, setIsPrivate] = useState(false);
   const [privacyToggling, setPrivacyToggling] = useState(false);
+  const [isAvailable, setIsAvailable] = useState(true);
+  const [availabilityToggling, setAvailabilityToggling] = useState(false);
   const [accessRequests, setAccessRequests] = useState([]);
   const [showRequestsModal, setShowRequestsModal] = useState(false);
   const [filterRequestStatus, setFilterRequestStatus] = useState("ALL");
@@ -687,6 +690,10 @@ export default function Dashboard() {
             setIsPrivate(Boolean(u.isPrivate));
           }
 
+          if (typeof u.available !== "undefined") {
+            setIsAvailable(Boolean(u.available));
+          }
+
           // Check experience verification & auto-reversion rules
           const experiences = await getMyWorkExperiences().catch(() => []);
           const totalWorks = Array.isArray(experiences) ? experiences.length : 0;
@@ -817,6 +824,37 @@ export default function Dashboard() {
       showError("Privacy Update Failed", err.message || "Failed to update profile privacy.");
     } finally {
       setPrivacyToggling(false);
+    }
+  };
+
+  const handleToggleAvailability = async (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (availabilityToggling) return;
+    const newStatus = !isAvailable;
+    setIsAvailable(newStatus);
+    setAvailabilityToggling(true);
+    try {
+      await updateProfileAvailability(newStatus);
+      if (storedUser) {
+        localStorage.setItem("bms_user", JSON.stringify({
+          ...storedUser,
+          available: newStatus
+        }));
+      }
+      showSuccess(
+        "Availability Updated",
+        newStatus
+          ? "You are now marked as AVAILABLE for shoots & bookings!"
+          : "You are now marked as BUSY / OFFLINE."
+      );
+    } catch (err) {
+      setIsAvailable(!newStatus); // rollback
+      showError("Availability Update Failed", err.message || "Failed to update availability.");
+    } finally {
+      setAvailabilityToggling(false);
     }
   };
 
@@ -1286,39 +1324,49 @@ export default function Dashboard() {
                       </div>
                     )}
 
-                    {/* • Available Badge */}
-                    <div style={{
-                      position: "absolute",
-                      bottom: "12px",
-                      left: "12px",
-                      zIndex: 2,
-                      background: "rgba(15, 23, 42, 0.75)",
-                      backdropFilter: "blur(4px)",
-                      border: "1px solid rgba(255, 255, 255, 0.2)",
-                      borderRadius: "20px",
-                      padding: "4px 10px",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)"
-                    }}>
+                    {/* • Available Badge (Interactive Toggle) */}
+                    <button
+                      type="button"
+                      onClick={handleToggleAvailability}
+                      disabled={availabilityToggling}
+                      title={isAvailable ? "Status: AVAILABLE (Click to set Busy / Offline)" : "Status: BUSY / OFFLINE (Click to set Available)"}
+                      style={{
+                        position: "absolute",
+                        bottom: "12px",
+                        left: "12px",
+                        zIndex: 2,
+                        background: "rgba(15, 23, 42, 0.8)",
+                        backdropFilter: "blur(6px)",
+                        border: isAvailable ? "1px solid rgba(34, 197, 94, 0.5)" : "1px solid rgba(245, 158, 11, 0.5)",
+                        borderRadius: "20px",
+                        padding: "5px 12px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.3)",
+                        cursor: availabilityToggling ? "wait" : "pointer",
+                        outline: "none",
+                        transition: "all 0.2s ease"
+                      }}
+                    >
                       <span style={{
-                        width: "6px",
-                        height: "6px",
+                        width: "7px",
+                        height: "7px",
                         borderRadius: "50%",
-                        backgroundColor: "#22c55e",
+                        backgroundColor: isAvailable ? "#22c55e" : "#f59e0b",
+                        boxShadow: isAvailable ? "0 0 6px #22c55e" : "0 0 6px #f59e0b",
                         display: "inline-block"
                       }} />
                       <span style={{
-                        fontSize: "10px",
-                        fontWeight: "750",
+                        fontSize: "10.5px",
+                        fontWeight: "800",
                         color: "#ffffff",
-                        letterSpacing: "0.4px",
+                        letterSpacing: "0.5px",
                         textTransform: "uppercase"
                       }}>
-                        Available
+                        {isAvailable ? "Available" : "Busy"}
                       </span>
-                    </div>
+                    </button>
                   </div>
 
                   {/* Name, Badges & Demographic Info Card */}

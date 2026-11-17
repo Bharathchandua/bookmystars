@@ -14,6 +14,18 @@ export async function updateProfilePrivacy(isPrivate) {
 }
 
 /**
+ * Toggle talent availability (Available vs Busy / Offline)
+ */
+export async function updateProfileAvailability(available) {
+  try {
+    const response = await apiClient.patch(`/profile/availability?available=${available}`);
+    return response.data;
+  } catch (err) {
+    throw new Error(extractError(err, "Failed to update availability"));
+  }
+}
+
+/**
  * Request access to view a private talent profile
  */
 export async function requestProfileAccess(talentUserId, requestData = {}) {
@@ -51,6 +63,7 @@ export async function respondToProfileAccessRequest(requestId, approved) {
 
 export const profileAccessApi = {
   updateProfilePrivacy,
+  updateProfileAvailability,
   requestProfileAccess,
   getProfileAccessRequests,
   respondToProfileAccessRequest,

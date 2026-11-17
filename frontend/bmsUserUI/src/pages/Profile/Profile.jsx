@@ -26,6 +26,7 @@ import {
   getCurrentUserProfile,
   updateUserProfile,
   updateProfilePrivacy,
+  updateProfileAvailability,
   uploadPortfolioPhoto,
   getMyPortfolio,
   getFullImageUrl,
@@ -949,6 +950,8 @@ export default function Profile() {
   const [shareCopied, setShareCopied] = useState(false);
   const [isPrivate, setIsPrivate] = useState(false);
   const [privacyToggling, setPrivacyToggling] = useState(false);
+  const [isAvailable, setIsAvailable] = useState(true);
+  const [availabilityToggling, setAvailabilityToggling] = useState(false);
   const fileInputRef = useRef(null);
   const moreMenuRef = useRef(null);
 
@@ -1149,6 +1152,9 @@ export default function Profile() {
           if (typeof data.isPrivate !== "undefined") {
             setIsPrivate(Boolean(data.isPrivate));
           }
+          if (typeof data.available !== "undefined") {
+            setIsAvailable(Boolean(data.available));
+          }
 
           // Sync skills from database so clearing local storage doesn't delete them
           if (data.skills && Array.isArray(data.skills)) {
@@ -1339,6 +1345,37 @@ export default function Profile() {
       showError("Privacy Update Failed", err.message || "Failed to update profile privacy.");
     } finally {
       setPrivacyToggling(false);
+    }
+  };
+
+  const handleToggleAvailability = async (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (availabilityToggling) return;
+    const newStatus = !isAvailable;
+    setIsAvailable(newStatus);
+    setAvailabilityToggling(true);
+    try {
+      await updateProfileAvailability(newStatus);
+      if (storedUser) {
+        localStorage.setItem("bms_user", JSON.stringify({
+          ...storedUser,
+          available: newStatus
+        }));
+      }
+      showSuccess(
+        "Availability Updated",
+        newStatus
+          ? "You are now marked as AVAILABLE for shoots & bookings!"
+          : "You are now marked as BUSY / OFFLINE."
+      );
+    } catch (err) {
+      setIsAvailable(!newStatus);
+      showError("Availability Update Failed", err.message || "Failed to update availability.");
+    } finally {
+      setAvailabilityToggling(false);
     }
   };
 
@@ -1644,34 +1681,41 @@ export default function Profile() {
                   )}
 
                   {/* Top-left: • Available Badge */}
-                  <div
+                  <button
+                    type="button"
+                    onClick={handleToggleAvailability}
+                    disabled={availabilityToggling}
+                    title={isAvailable ? "Status: AVAILABLE (Click to set Busy / Offline)" : "Status: BUSY / OFFLINE (Click to set Available)"}
                     style={{
                       position: "absolute",
                       top: "12px",
                       left: "12px",
                       zIndex: 4,
                       background: "#ffffff",
-                      border: "1px solid #e2e8f0",
+                      border: isAvailable ? "1px solid #a7f3d0" : "1px solid #fde68a",
                       borderRadius: "20px",
-                      padding: "3px 10px",
+                      padding: "4px 11px",
                       display: "flex",
                       alignItems: "center",
-                      gap: "5px",
+                      gap: "6px",
                       boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
                       fontSize: "11px",
                       fontWeight: "800",
-                      color: "#065f46"
+                      color: isAvailable ? "#065f46" : "#b45309",
+                      cursor: availabilityToggling ? "wait" : "pointer",
+                      outline: "none"
                     }}
                   >
                     <span style={{
                       width: "7px",
                       height: "7px",
                       borderRadius: "50%",
-                      backgroundColor: "#10b981",
+                      backgroundColor: isAvailable ? "#10b981" : "#f59e0b",
+                      boxShadow: isAvailable ? "0 0 6px #10b981" : "0 0 6px #f59e0b",
                       display: "inline-block"
                     }} />
-                    <span>Available</span>
-                  </div>
+                    <span>{isAvailable ? "Available" : "Busy"}</span>
+                  </button>
 
                   {/* Bottom: [Change] & [Crop] Buttons */}
                   <div
@@ -2326,11 +2370,16 @@ export default function Profile() {
             {/* Availability */}
             <div className="prof-sidebar-card">
               <h3 className="prof-sidebar-card-title">Availability</h3>
-              <div className="prof-avail-row">
-                <span className="prof-green-dot" />
-                <span className="prof-avail-text">Available</span>
+              <div
+                className="prof-avail-row"
+                onClick={handleToggleAvailability}
+                style={{ cursor: "pointer" }}
+                title="Click to toggle availability"
+              >
+                <span className={isAvailable ? "prof-green-dot" : "prof-amber-dot"} style={!isAvailable ? { backgroundColor: "#f59e0b" } : {}} />
+                <span className="prof-avail-text" style={!isAvailable ? { color: "#d97706" } : {}}>{isAvailable ? "Available" : "Busy / Offline"}</span>
                 <span className="prof-diamond">◆</span>
-                <span>Open for new projects</span>
+                <span>{isAvailable ? "Open for new projects" : "Not accepting bookings"}</span>
               </div>
               <div className="prof-next-avail">
                 <span className="prof-next-label">Next Available</span>

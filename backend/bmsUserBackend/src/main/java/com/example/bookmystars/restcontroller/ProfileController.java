@@ -51,6 +51,15 @@ public class ProfileController {
         return ResponseEntity.ok(profileService.updatePrivacy(email, isPrivate));
     }
 
+    @PatchMapping("/availability")
+    @Operation(summary = "Toggle talent availability (Available vs Busy / Offline)")
+    public ResponseEntity<ProfileResponse> updateAvailability(
+            Authentication authentication,
+            @RequestParam("available") Boolean available) {
+        String email = authentication.getName();
+        return ResponseEntity.ok(profileService.updateAvailability(email, available));
+    }
+
     @PostMapping("/access-request/{talentUserId}")
     @Operation(summary = "Send access request to view a private profile")
     public ResponseEntity<com.example.bookmystars.dto.ProfileAccessRequestDto> requestAccess(

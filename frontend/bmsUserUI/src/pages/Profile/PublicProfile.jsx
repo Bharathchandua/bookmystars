@@ -272,6 +272,17 @@ export default function PublicProfile() {
                 <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", backgroundColor: "#dcfce7", color: "#166534", padding: "3px 8px", borderRadius: "12px", fontSize: "12px", fontWeight: "700" }}>
                   <CheckCircle2 size={13} /> Verified
                 </span>
+                {!isLocked && (
+                  profile.available !== false ? (
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", backgroundColor: "#ecfdf5", color: "#059669", padding: "3px 8px", borderRadius: "12px", fontSize: "12px", fontWeight: "700" }}>
+                      <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: "#10b981", display: "inline-block" }} /> Available for Shoots
+                    </span>
+                  ) : (
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", backgroundColor: "#fffbeb", color: "#b45309", padding: "3px 8px", borderRadius: "12px", fontSize: "12px", fontWeight: "700" }}>
+                      <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: "#f59e0b", display: "inline-block" }} /> Busy / Offline
+                    </span>
+                  )
+                )}
                 {isLocked ? (
                   <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", backgroundColor: "#f5f3ff", color: "#7c3aed", padding: "3px 8px", borderRadius: "12px", fontSize: "12px", fontWeight: "700" }}>
                     <Lock size={12} /> Private Profile
