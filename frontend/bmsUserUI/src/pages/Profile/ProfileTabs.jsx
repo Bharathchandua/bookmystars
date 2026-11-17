@@ -24,6 +24,7 @@ import {
   Video,
   Trash2,
   ExternalLink,
+  Eye,
   Film,
   FolderPlus,
   Paperclip
@@ -132,6 +133,7 @@ function StarRating({ rating, size = 14 }) {
 const PORT_CATEGORIES = ["All", "Runway", "Editorial", "Commercial", "Fashion", "Lifestyle"];
 
 export function PortfolioTab() {
+  const [viewingPhoto, setViewingPhoto] = useState(null);
   const [items, setItems] = useState([]);
   const [activeFilter, setActiveFilter] = useState("All");
   const [showModal, setShowModal] = useState(false);
@@ -325,7 +327,7 @@ export function PortfolioTab() {
           {filtered.map(item => (
             <div
               key={item.id}
-              className="ptab-photo-card"
+              className="ptab-photo-card" onClick={() => setViewingPhoto(item)} style={{ cursor: "pointer" }}
               style={{
                 position: "relative",
                 borderRadius: "14px",
@@ -358,6 +360,28 @@ export function PortfolioTab() {
                   zIndex: 3
                 }}
               >
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setViewingPhoto(item);
+                  }}
+                  title="View Full Photo"
+                  style={{
+                    background: "rgba(15, 23, 42, 0.8)",
+                    backdropFilter: "blur(4px)",
+                    border: "none",
+                    borderRadius: "6px",
+                    padding: "6px",
+                    color: "#ffffff",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center"
+                  }}
+                >
+                  <Eye size={13} />
+                </button>
                 <button
                   type="button"
                   onClick={(e) => handleEditPhotoClick(item, e)}

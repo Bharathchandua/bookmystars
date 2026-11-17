@@ -2022,7 +2022,7 @@ export default function Profile() {
                         )}
                         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                           <Calendar size={12} color="#8b5cf6" />
-                          <span>{age ? `${age} Yrs` : "25 Yrs"}</span>
+                          <span>{age ? `${age} Yrs` : "Age not set"}</span>
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                           <Briefcase size={12} color="#64748b" />

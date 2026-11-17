@@ -604,6 +604,21 @@ export default function Dashboard() {
     photo: cachedProf?.profilePhoto ? getFullImageUrl(cachedProf.profilePhoto) : (localStorage.getItem("bms_profile_photo") ? getFullImageUrl(localStorage.getItem("bms_profile_photo")) : "")
   });
 
+  const [viewingPhotoModal, setViewingPhotoModal] = useState(null);
+
+  const calculateAge = (dob) => {
+    if (!dob) return null;
+    const birth = new Date(dob);
+    if (isNaN(birth.getTime())) return null;
+    const today = new Date();
+    let calculated = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      calculated--;
+    }
+    return calculated > 0 ? calculated : null;
+  };
+
   const handleAddSkill = (newSkill) => {
     const updated = addUserSkill(storedUser?.userId, newSkill);
     setSkills(updated);
@@ -644,6 +659,13 @@ export default function Dashboard() {
           }
           if (u.about) {
             setProfile(p => ({ ...p, about: u.about }));
+          }
+          if (u.dateOfBirth) {
+            setProfile(p => ({
+              ...p,
+              birthDate: u.dateOfBirth,
+              age: calculateAge(u.dateOfBirth)
+            }));
           }
 
           // Exact same DB profession resolution as Profile.jsx
@@ -1214,17 +1236,22 @@ export default function Dashboard() {
                   borderRight: "1px solid #f1f5f9"
                 }}>
                   {/* Square / Portrait Photo Frame (Matching Profile & Original Dashboard) */}
-                  <div style={{
-                    position: "relative",
-                    flexShrink: 0,
-                    width: "175px",
-                    height: "245px",
-                    borderRadius: "16px",
-                    overflow: "hidden",
-                    border: "2px solid #e2e8f0",
-                    boxShadow: "0 4px 14px rgba(0, 0, 0, 0.08)",
-                    background: "#0f172a"
-                  }}>
+                  <div
+                    onClick={() => profile.photo && setViewingPhotoModal({ url: profile.photo, title: `${profile.name || "Talent"}'s Profile Photo` })}
+                    style={{
+                      position: "relative",
+                      flexShrink: 0,
+                      width: "175px",
+                      height: "245px",
+                      borderRadius: "16px",
+                      overflow: "hidden",
+                      border: "2px solid #e2e8f0",
+                      boxShadow: "0 4px 14px rgba(0, 0, 0, 0.08)",
+                      background: "#0f172a",
+                      cursor: profile.photo ? "pointer" : "default"
+                    }}
+                    title={profile.photo ? "Click to view full photo" : ""}
+                  >
                     <img
                       src={profile.photo}
                       alt={profile.name}
@@ -1236,6 +1263,28 @@ export default function Dashboard() {
                         display: "block"
                       }}
                     />
+                    {profile.photo && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: "8px",
+                          right: "8px",
+                          background: "rgba(15, 23, 42, 0.75)",
+                          backdropFilter: "blur(4px)",
+                          borderRadius: "6px",
+                          padding: "3px 6px",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "4px",
+                          color: "#ffffff",
+                          fontSize: "10.5px",
+                          fontWeight: "700",
+                          zIndex: 2
+                        }}
+                      >
+                        <Eye size={11} /> View
+                      </div>
+                    )}
 
                     {/* • Available Badge */}
                     <div style={{
@@ -1372,7 +1421,15 @@ export default function Dashboard() {
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                         <CalendarDays size={13} color="#8b5cf6" />
-                        <span>Age {profile.age || "29"} • {formatBirthDate(profile.birthDate) || "12 Aug 1995"}</span>
+                        <span>
+                          {profile.birthDate ? (
+                            <>
+                              Age {calculateAge(profile.birthDate) || profile.age || ""} &bull; {formatBirthDate(profile.birthDate)}
+                            </>
+                          ) : (
+                            <span style={{ color: "#94a3b8" }}>Date of birth not set</span>
+                          )}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -3446,6 +3503,96 @@ export default function Dashboard() {
           </div>
         </div>,
         document.body
+      )}
+
+      {/* Photo Viewer Lightbox Modal */}
+      {viewingPhotoModal && (
+        <div
+          onClick={() => setViewingPhotoModal(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(15, 23, 42, 0.85)",
+            backdropFilter: "blur(6px)",
+            zIndex: 99999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px"
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "#ffffff",
+              borderRadius: "16px",
+              maxWidth: "600px",
+              width: "100%",
+              overflow: "hidden",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+              display: "flex",
+              flexDirection: "column"
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", borderBottom: "1px solid #f1f5f9" }}>
+              <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "#0f172a" }}>
+                {viewingPhotoModal.title}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setViewingPhotoModal(null)}
+                style={{
+                  background: "#f1f5f9",
+                  border: "none",
+                  borderRadius: "50%",
+                  width: "32px",
+                  height: "32px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  fontSize: "18px",
+                  color: "#64748b"
+                }}
+              >
+                &times;
+              </button>
+            </div>
+            <div style={{ padding: "16px", background: "#0b0f19", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <img
+                src={viewingPhotoModal.url}
+                alt={viewingPhotoModal.title}
+                style={{
+                  maxWidth: "100%",
+                  maxHeight: "70vh",
+                  objectFit: "contain",
+                  borderRadius: "8px"
+                }}
+              />
+            </div>
+            <div style={{ padding: "12px 20px", display: "flex", justifyContent: "flex-end", background: "#f8fafc" }}>
+              <a
+                href={viewingPhotoModal.url}
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "6px 14px",
+                  borderRadius: "8px",
+                  background: "#e91e8c",
+                  color: "#ffffff",
+                  fontSize: "12px",
+                  fontWeight: "600",
+                  textDecoration: "none"
+                }}
+              >
+                <ExternalLink size={13} /> Open Original Full-Size
+              </a>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Skill Management Modal */}
