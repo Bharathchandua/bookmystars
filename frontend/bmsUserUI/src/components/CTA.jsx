@@ -29,7 +29,7 @@ export default function CTA() {
             Create Your Profile
           </Button>
         </Link>
-        <a href={CLIENT_PORTAL_URL || "/become-client"} style={{ textDecoration: "none" }}>
+        <a href={CLIENT_PORTAL_URL} style={{ textDecoration: "none" }}>
           <Button variant="post-casting">Post a Casting Call</Button>
         </a>
       </div>

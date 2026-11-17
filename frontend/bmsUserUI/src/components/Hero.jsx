@@ -108,7 +108,7 @@ const homeFeatures = [
 
 export default function Hero() {
   const createProfileHref = USER_PORTAL_URL ? `${USER_PORTAL_URL}/join` : "/join";
-  const postCastingHref = CLIENT_PORTAL_URL || "/become-client";
+  const postCastingHref = CLIENT_PORTAL_URL;
 
   return (
     <section className="hero container-fluid px-0">
@@ -160,7 +160,7 @@ export default function Hero() {
               </Link>
             )}
 
-            <a href={CLIENT_PORTAL_URL || "/become-client"} style={{ textDecoration: "none" }}>
+            <a href={CLIENT_PORTAL_URL} style={{ textDecoration: "none" }}>
               <Button
                 variant="secondary-hero"
                 icon={<Camera size={17} />}

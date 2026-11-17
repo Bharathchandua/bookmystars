@@ -90,33 +90,10 @@ export default function Navbar({ isClientPartnerPage = false }) {
 
   const getDashboardPath = () => {
     if (!currentUser) return "/signin";
-    if (currentUser.accountType === "CLIENT") return "/client/dashboard";
-    if (currentUser.accountType === "PARTNER") return "/partner/dashboard";
-    if (currentUser.accountType === "PROFESSIONAL") return "/professional/dashboard";
     return "/dashboard";
   };
 
-  const getExternalDashboardUrl = () => {
-    if (!currentUser) return "/signin";
-    const token = sessionStorage.getItem("bms_token") || "";
-    const userJson = sessionStorage.getItem("bms_user") || "";
-    const ssoQuery = (token && userJson) ? `?sso_token=${encodeURIComponent(token)}&sso_user=${encodeURIComponent(userJson)}` : "";
-
-    if (currentUser.accountType === "CLIENT") {
-      return `${CLIENT_PORTAL_URL}/dashboard${ssoQuery}`;
-    }
-    if (currentUser.accountType === "PARTNER") {
-      return `${PARTNER_PORTAL_URL}/dashboard${ssoQuery}`;
-    }
-    return null;
-  };
-
-  const getDashboardLabel = () => {
-    if (!currentUser) return "Dashboard";
-    if (currentUser.accountType === "CLIENT") return "Client Dashboard";
-    if (currentUser.accountType === "PARTNER") return "Partner Dashboard";
-    return "Dashboard";
-  };
+  const getDashboardLabel = () => "Dashboard";
 
   const handleSignOut = () => {
     logoutUser();
@@ -279,14 +256,14 @@ export default function Navbar({ isClientPartnerPage = false }) {
             }
             if (l === "Become a Client") {
               return (
-                <a key={l} href={CLIENT_PORTAL_URL || "/become-client"} className="nav-btn-custom">
+                <a key={l} href={CLIENT_PORTAL_URL} className="nav-btn-custom">
                   {l}
                 </a>
               );
             }
             if (l === "Become a Partner") {
               return (
-                <a key={l} href={PARTNER_PORTAL_URL || "/become-partner"} className="nav-btn-custom">
+                <a key={l} href={PARTNER_PORTAL_URL} className="nav-btn-custom">
                   {l}
                 </a>
               );
@@ -421,7 +398,7 @@ export default function Navbar({ isClientPartnerPage = false }) {
               return (
                 <a
                   key={l}
-                  href={CLIENT_PORTAL_URL || "/become-client"}
+                  href={CLIENT_PORTAL_URL}
                   className="nav-btn-custom mobile-btn-custom"
                   onClick={closeAll}
                 >
@@ -433,7 +410,7 @@ export default function Navbar({ isClientPartnerPage = false }) {
               return (
                 <a
                   key={l}
-                  href={PARTNER_PORTAL_URL || "/become-partner"}
+                  href={PARTNER_PORTAL_URL}
                   className="nav-btn-custom mobile-btn-custom"
                   onClick={closeAll}
                 >

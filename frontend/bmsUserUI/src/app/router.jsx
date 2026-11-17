@@ -35,10 +35,6 @@ import Promotion from "../components/Services/Promotion/Promotion.jsx";
 import PostProduction from "../components/Services/PostProduction/PostProduction.jsx";
 import DigitalMarketing from "../components/Services/DigitalMarketing/DigitalMarketing.jsx";
 import Media from "../components/Media/Media.jsx";
-import BecomeClient from "../components/ClientPartner/BecomeClient/BecomeClient.jsx";
-import BecomePartner from "../components/ClientPartner/BecomePartner/BecomePartner.jsx";
-import ClientDashboard from "../pages/Client/ClientDashboard.jsx";
-import PartnerDashboard from "../pages/Partner/PartnerDashboard.jsx";
 
 function HomePage() {
   const { hash } = useLocation();
@@ -92,26 +88,12 @@ function ProtectedRoute({ children }) {
     return <Navigate to="/signin" replace />;
   }
   if (user.accountType === "CLIENT") {
-    return <Navigate to="/client/dashboard" replace />;
+    window.location.replace(CLIENT_PORTAL_URL);
+    return null;
   }
   if (user.accountType === "PARTNER") {
-    return <Navigate to="/partner/dashboard" replace />;
-  }
-  return children;
-}
-
-function ClientRoute({ children }) {
-  const user = getStoredUser();
-  if (!user) {
-    return <Navigate to="/signin" replace />;
-  }
-  return children;
-}
-
-function PartnerRoute({ children }) {
-  const user = getStoredUser();
-  if (!user) {
-    return <Navigate to="/signin" replace />;
+    window.location.replace(PARTNER_PORTAL_URL);
+    return null;
   }
   return children;
 }
@@ -125,19 +107,9 @@ function TalentRoute({ children }) {
 }
 
 function RedirectToClient() {
-  const location = useLocation();
   useEffect(() => {
-    const token = sessionStorage.getItem("bms_token");
-    const user = sessionStorage.getItem("bms_user");
-    const ssoParam = (token && user) ? `?sso_token=${encodeURIComponent(token)}&sso_user=${encodeURIComponent(user)}` : "";
-    let target = `${CLIENT_PORTAL_URL}${ssoParam}`;
-    if (location.pathname.includes("signin") || location.pathname.includes("login")) {
-      target = `${CLIENT_PORTAL_URL}/signin`;
-    } else if (location.pathname.includes("dashboard")) {
-      target = `${CLIENT_PORTAL_URL}/dashboard${ssoParam}`;
-    }
-    window.location.replace(target);
-  }, [location]);
+    window.location.replace(CLIENT_PORTAL_URL);
+  }, []);
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0f172a", color: "#fff" }}>
@@ -147,19 +119,9 @@ function RedirectToClient() {
 }
 
 function RedirectToPartner() {
-  const location = useLocation();
   useEffect(() => {
-    const token = sessionStorage.getItem("bms_token");
-    const user = sessionStorage.getItem("bms_user");
-    const ssoParam = (token && user) ? `?sso_token=${encodeURIComponent(token)}&sso_user=${encodeURIComponent(user)}` : "";
-    let target = `${PARTNER_PORTAL_URL}${ssoParam}`;
-    if (location.pathname.includes("signin") || location.pathname.includes("login")) {
-      target = `${PARTNER_PORTAL_URL}/signin`;
-    } else if (location.pathname.includes("dashboard")) {
-      target = `${PARTNER_PORTAL_URL}/dashboard${ssoParam}`;
-    }
-    window.location.replace(target);
-  }, [location]);
+    window.location.replace(PARTNER_PORTAL_URL);
+  }, []);
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0f172a", color: "#fff" }}>
@@ -225,12 +187,13 @@ export default function UserRouter() {
         <Route path="/media" element={<Media />} />
 
         {/* Dedicated Client & Partner Portals & Workspace Dashboards */}
-        <Route path="/become-client" element={<BecomeClient />} />
-        <Route path="/become-partner" element={<BecomePartner />} />
-        <Route path="/client/dashboard" element={<ClientRoute><ClientDashboard /></ClientRoute>} />
-        <Route path="/client" element={<Navigate to="/client/dashboard" replace />} />
-        <Route path="/partner/dashboard" element={<PartnerRoute><PartnerDashboard /></PartnerRoute>} />
-        <Route path="/partner" element={<Navigate to="/partner/dashboard" replace />} />
+        {/* Dedicated External Client & Partner Portals */}
+        <Route path="/become-client" element={<RedirectToClient />} />
+        <Route path="/become-partner" element={<RedirectToPartner />} />
+        <Route path="/client/*" element={<RedirectToClient />} />
+        <Route path="/partner/*" element={<RedirectToPartner />} />
+        <Route path="/client" element={<RedirectToClient />} />
+        <Route path="/partner" element={<RedirectToPartner />} />
         <Route path="/admin/*" element={<RedirectToAdmin />} />
         <Route path="/admin" element={<RedirectToAdmin />} />
 

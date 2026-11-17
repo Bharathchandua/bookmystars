@@ -49,11 +49,13 @@ export default function SignIn() {
       // 1. Authenticate user across any platform role (Talent, Professional, Client, Partner)
       const authData = await loginUser(email, password, null);
       if (authData?.accountType === "CLIENT") {
-        navigate("/client/dashboard");
+        window.location.href = `${CLIENT_PORTAL_URL}/dashboard?sso_token=${encodeURIComponent(authData.token)}&sso_user=${encodeURIComponent(JSON.stringify(authData))}`;
+        return;
       } else if (authData?.accountType === "PARTNER") {
-        navigate("/partner/dashboard");
+        window.location.href = `${PARTNER_PORTAL_URL}/dashboard?sso_token=${encodeURIComponent(authData.token)}&sso_user=${encodeURIComponent(JSON.stringify(authData))}`;
+        return;
       } else if (authData?.accountType === "PROFESSIONAL") {
-        navigate("/professional/dashboard");
+        navigate("/dashboard");
       } else {
         navigate("/dashboard");
       }

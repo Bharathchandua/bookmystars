@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { CLIENT_PORTAL_URL } from "../services/apiConfig";
 import {
   Clapperboard,
   Camera,
@@ -63,7 +64,7 @@ const platformCards = [
     description: "Brands, agencies and companies looking for creative talent.",
     image: cardBusiness,
     icon: Briefcase,
-    link: "/become-client",
+    link: CLIENT_PORTAL_URL,
   },
   {
     id: "learning",
@@ -125,12 +126,9 @@ export default function OpportunityCards() {
       <div className="one-platform-grid">
         {platformCards.map((card) => {
           const Icon = card.icon;
-          return (
-            <Link
-              key={card.id}
-              to={card.link}
-              className={`platform-grid-card ${card.featured ? "featured-makeover-card" : ""}`}
-            >
+          const isExternal = typeof card.link === "string" && (card.link.startsWith("http") || card.link.startsWith("//"));
+          const cardContent = (
+            <>
               <img
                 src={card.image}
                 alt={card.title}
@@ -145,6 +143,28 @@ export default function OpportunityCards() {
                 <h3 className="platform-card-heading">{card.title}</h3>
                 <p className="platform-card-text">{card.description}</p>
               </div>
+            </>
+          );
+
+          if (isExternal) {
+            return (
+              <a
+                key={card.id}
+                href={card.link}
+                className={`platform-grid-card ${card.featured ? "featured-makeover-card" : ""}`}
+              >
+                {cardContent}
+              </a>
+            );
+          }
+
+          return (
+            <Link
+              key={card.id}
+              to={card.link}
+              className={`platform-grid-card ${card.featured ? "featured-makeover-card" : ""}`}
+            >
+              {cardContent}
             </Link>
           );
         })}
