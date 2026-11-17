@@ -1,0 +1,648 @@
+/* ── professional.css ──────────────────────────────────────────
+   Modern Professional Workspace & Talent Management Portal Styles
+   Designed to match the aesthetic, cards, and polish of Talent Dashboard.
+   ────────────────────────────────────────────────────────── */
+
+.pro-dash-container {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 24px 28px 60px 28px;
+  font-family: inherit;
+  color: #0f172a;
+}
+
+/* ── Top Header Banner ─────────────────────────────────────── */
+.pro-dash-banner {
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 55%, #311042 100%);
+  border-radius: 20px;
+  padding: 28px 32px;
+  color: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.pro-dash-banner::after {
+  content: "";
+  position: absolute;
+  top: -60px;
+  right: -60px;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(236, 72, 153, 0.25) 0%, rgba(236, 72, 153, 0) 70%);
+  pointer-events: none;
+}
+
+.pro-dash-banner-left {
+  max-width: 720px;
+  position: relative;
+  z-index: 1;
+}
+
+.pro-banner-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fbcfe8;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  backdrop-filter: blur(4px);
+}
+
+.pro-dash-banner h1 {
+  font-size: 26px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.02em;
+}
+
+.pro-dash-banner p {
+  font-size: 14px;
+  color: #cbd5e1;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.pro-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+  z-index: 1;
+}
+
+.pro-banner-btn-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  backdrop-filter: blur(6px);
+}
+
+.pro-banner-btn-refresh:hover {
+  background: rgba(255, 255, 255, 0.22);
+  transform: translateY(-1px);
+}
+
+/* ── KPI Stat Cards Grid (Matching Talent Dashboard .card-widget) ── */
+.pro-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  margin-bottom: 28px;
+}
+
+@media (max-width: 1200px) {
+  .pro-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .pro-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pro-kpi-card {
+  background: #ffffff;
+  border: 1px solid #ece7f3;
+  border-radius: 16px;
+  padding: 20px 22px;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.03);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.pro-kpi-card:hover {
+  transform: translateY(-4px);
+  border-color: #ffd6ec;
+  box-shadow: 0 12px 24px -4px rgba(15, 23, 42, 0.08), 0 4px 12px -2px rgba(238, 0, 143, 0.04);
+}
+
+.pro-kpi-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.pro-kpi-card-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pro-kpi-icon-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.pro-kpi-icon-badge--blue { background: #eff6ff; color: #2563eb; }
+.pro-kpi-icon-badge--amber { background: #fef3c7; color: #d97706; }
+.pro-kpi-icon-badge--green { background: #f0fdf4; color: #16a34a; }
+.pro-kpi-icon-badge--purple { background: #fdf2f8; color: #db2777; }
+
+.pro-kpi-card-value {
+  font-size: 32px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.1;
+  margin-bottom: 4px;
+  letter-spacing: -0.02em;
+}
+
+.pro-kpi-card-hint {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+/* ── Primary Navigation Tabs ────────────────────────────────── */
+.pro-tabs-bar {
+  display: flex;
+  gap: 10px;
+  border-bottom: 2px solid #e2e8f0;
+  margin-bottom: 24px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.pro-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #64748b;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+  border-radius: 6px 6px 0 0;
+}
+
+.pro-tab-btn:hover {
+  color: #0f172a;
+  background: #f8fafc;
+}
+
+.pro-tab-btn--active {
+  color: #db2777 !important;
+  border-bottom-color: #db2777 !important;
+  background: #fff0f7 !important;
+}
+
+/* ── Talents Directory Bar & Filters ────────────────────────── */
+.talents-header-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.talents-search-row {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.talents-search-box {
+  flex: 1;
+  position: relative;
+}
+
+.talents-search-input {
+  width: 100%;
+  padding: 12px 16px 12px 42px;
+  border-radius: 12px;
+  border: 1.5px solid #cbd5e1;
+  font-size: 14px;
+  background: #ffffff;
+  color: #0f172a;
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.talents-search-input:focus {
+  outline: none;
+  border-color: #db2777;
+  box-shadow: 0 0 0 3px rgba(219, 39, 119, 0.1);
+}
+
+.talents-search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+}
+
+.talents-filter-pills {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.talent-pill {
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s;
+}
+
+.talent-pill:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.talent-pill--active {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  border-color: #0f172a !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.15);
+}
+
+/* ── Talents Split Grid Layout ──────────────────────────────── */
+.talents-split-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(380px, 0.95fr);
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 1080px) {
+  .talents-split-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Talent Roster List & Cards ────────────────────────────── */
+.talents-roster-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.talent-card-item {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
+}
+
+.talent-card-item:hover {
+  transform: translateY(-2px);
+  border-color: #ffd6ec;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+}
+
+.talent-card-item--selected {
+  border-color: #db2777 !important;
+  background: #fffbfe !important;
+  box-shadow: 0 8px 24px rgba(219, 39, 119, 0.12) !important;
+}
+
+.talent-card-top-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.talent-card-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2.5px solid #fce7f3;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.talent-card-avatar-placeholder {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fbcfe8 0%, #f472b6 100%);
+  color: #831843;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 22px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.talent-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.talent-card-name {
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.talent-stage-pill {
+  font-size: 12px;
+  font-weight: 600;
+  color: #db2777;
+  background: #fdf2f8;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.talent-card-types {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.talent-type-tag {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.talent-card-meta {
+  display: flex;
+  gap: 14px;
+  font-size: 12.5px;
+  color: #64748b;
+  font-weight: 600;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* ── 3-Day Live Strip on Talent Card ────────────────────────── */
+.talent-card-schedule-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+.schedule-mini-col {
+  text-align: center;
+}
+
+.schedule-mini-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.schedule-mini-status {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.schedule-mini-status--avail { background: #dcfce7; color: #15803d; }
+.schedule-mini-status--booked { background: #fee2e2; color: #b91c1c; }
+.schedule-mini-status--hold { background: #fef3c7; color: #b45309; }
+
+/* Card Bottom Action Bar */
+.talent-card-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 10px;
+}
+
+.btn-card-view-work {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  border: 1.5px solid #db2777;
+  color: #db2777;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-card-view-work:hover {
+  background: #db2777;
+  color: #ffffff;
+}
+
+.btn-card-book {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #0f172a;
+  border: 1.5px solid #0f172a;
+  color: #ffffff;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-card-book:hover {
+  background: #334155;
+  border-color: #334155;
+}
+
+/* ── Right Column: Detail & Schedule Panel ──────────────────── */
+.talent-schedule-panel {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04);
+  position: sticky;
+  top: 24px;
+}
+
+.schedule-panel-header {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.schedule-header-avatar {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #fce7f3;
+}
+
+.schedule-header-name {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 4px 0;
+}
+
+.schedule-header-sub {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 600;
+  display: flex;
+  gap: 12px;
+}
+
+.schedule-actions-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.btn-view-work-full {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 800;
+  background: #fdf2f8;
+  color: #db2777;
+  border: 1.5px solid #fbcfe8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.btn-view-work-full:hover {
+  background: #fce7f3;
+  border-color: #f472b6;
+}
+
+.btn-book-direct {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 800;
+  background: #db2777;
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s;
+  box-shadow: 0 4px 14px rgba(219, 39, 119, 0.25);
+}
+
+.btn-book-direct:hover {
+  background: #be185d;
+  transform: translateY(-1px);
+}
+
+/* ── Modals (TalentWorkModal & BookingRequestModal) ─────────── */
+.pro-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  padding: 20px;
+}
+
+.pro-modal-card {
+  background: #ffffff;
+  border-radius: 20px;
+  max-width: 920px;
+  width: 100%;
+  max-height: 92vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.25);
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

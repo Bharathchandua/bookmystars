@@ -37,6 +37,8 @@ import DigitalMarketing from "../components/Services/DigitalMarketing/DigitalMar
 import Media from "../components/Media/Media.jsx";
 import BecomeClient from "../components/ClientPartner/BecomeClient/BecomeClient.jsx";
 import BecomePartner from "../components/ClientPartner/BecomePartner/BecomePartner.jsx";
+import ClientDashboard from "../pages/Client/ClientDashboard.jsx";
+import PartnerDashboard from "../pages/Partner/PartnerDashboard.jsx";
 
 function HomePage() {
   const { hash } = useLocation();
@@ -89,15 +91,27 @@ function ProtectedRoute({ children }) {
   if (!user) {
     return <Navigate to="/signin" replace />;
   }
-  const token = sessionStorage.getItem("bms_token");
-  const ssoParam = (token && user) ? `?sso_token=${encodeURIComponent(token)}&sso_user=${encodeURIComponent(JSON.stringify(user))}` : "";
   if (user.accountType === "CLIENT") {
-    window.location.href = `${CLIENT_PORTAL_URL}/dashboard${ssoParam}`;
-    return null;
+    return <Navigate to="/client/dashboard" replace />;
   }
   if (user.accountType === "PARTNER") {
-    window.location.href = `${PARTNER_PORTAL_URL}/dashboard${ssoParam}`;
-    return null;
+    return <Navigate to="/partner/dashboard" replace />;
+  }
+  return children;
+}
+
+function ClientRoute({ children }) {
+  const user = getStoredUser();
+  if (!user) {
+    return <Navigate to="/signin" replace />;
+  }
+  return children;
+}
+
+function PartnerRoute({ children }) {
+  const user = getStoredUser();
+  if (!user) {
+    return <Navigate to="/signin" replace />;
   }
   return children;
 }
@@ -210,11 +224,13 @@ export default function UserRouter() {
         <Route path="/services/digital-marketing" element={<DigitalMarketing />} />
         <Route path="/media" element={<Media />} />
 
-        {/* Dedicated Client & Partner Portals */}
-        <Route path="/become-client" element={<RedirectToClient />} />
-        <Route path="/become-partner" element={<RedirectToPartner />} />
-        <Route path="/client/*" element={<RedirectToClient />} />
-        <Route path="/partner/*" element={<RedirectToPartner />} />
+        {/* Dedicated Client & Partner Portals & Workspace Dashboards */}
+        <Route path="/become-client" element={<BecomeClient />} />
+        <Route path="/become-partner" element={<BecomePartner />} />
+        <Route path="/client/dashboard" element={<ClientRoute><ClientDashboard /></ClientRoute>} />
+        <Route path="/client" element={<Navigate to="/client/dashboard" replace />} />
+        <Route path="/partner/dashboard" element={<PartnerRoute><PartnerDashboard /></PartnerRoute>} />
+        <Route path="/partner" element={<Navigate to="/partner/dashboard" replace />} />
         <Route path="/admin/*" element={<RedirectToAdmin />} />
         <Route path="/admin" element={<RedirectToAdmin />} />
 

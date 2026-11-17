@@ -307,19 +307,11 @@ export default function Navbar({ isClientPartnerPage = false }) {
         <div className="nav-actions">
           {shouldShowLoggedIn ? (
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              {currentUser.accountType === "CLIENT" || currentUser.accountType === "PARTNER" ? (
-                <a href={getExternalDashboardUrl()} style={{ textDecoration: "none" }}>
-                  <Button variant="signin" icon={<i className="bi bi-grid-fill"></i>} iconPosition="left">
-                    {getDashboardLabel()}
-                  </Button>
-                </a>
-              ) : (
-                <Link to={getDashboardPath()}>
-                  <Button variant="signin" icon={<i className="bi bi-grid-fill"></i>} iconPosition="left">
-                    {getDashboardLabel()}
-                  </Button>
-                </Link>
-              )}
+              <Link to={getDashboardPath()}>
+                <Button variant="signin" icon={<i className="bi bi-grid-fill"></i>} iconPosition="left">
+                  {getDashboardLabel()}
+                </Button>
+              </Link>
               {currentUser.accountType !== "CLIENT" && currentUser.accountType !== "PARTNER" && (
                 <Link to="/profile">
                   <Button variant="join" icon={<i className="bi bi-person-circle"></i>} iconPosition="left">
@@ -462,19 +454,11 @@ export default function Navbar({ isClientPartnerPage = false }) {
 
           {shouldShowLoggedIn ? (
             <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%", marginTop: "12px" }}>
-              {currentUser.accountType === "CLIENT" || currentUser.accountType === "PARTNER" ? (
-                <a href={getExternalDashboardUrl()} onClick={closeAll} style={{ textDecoration: "none" }}>
-                  <Button variant="signin" className="mobile-btn" icon={<i className="bi bi-grid-fill"></i>} iconPosition="left">
-                    {getDashboardLabel()}
-                  </Button>
-                </a>
-              ) : (
-                <Link to={getDashboardPath()} onClick={closeAll}>
-                  <Button variant="signin" className="mobile-btn" icon={<i className="bi bi-grid-fill"></i>} iconPosition="left">
-                    {getDashboardLabel()}
-                  </Button>
-                </Link>
-              )}
+              <Link to={getDashboardPath()} onClick={closeAll}>
+                <Button variant="signin" className="mobile-btn" icon={<i className="bi bi-grid-fill"></i>} iconPosition="left">
+                  {getDashboardLabel()}
+                </Button>
+              </Link>
               {currentUser.accountType !== "CLIENT" && currentUser.accountType !== "PARTNER" && (
                 <Link to="/profile" onClick={closeAll}>
                   <Button variant="join" className="mobile-btn" icon={<i className="bi bi-person-circle"></i>} iconPosition="left">
