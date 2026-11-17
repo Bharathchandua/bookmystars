@@ -1591,17 +1591,57 @@ export default function Profile() {
                     alignSelf: "stretch"
                   }}
                 >
-                  <img
-                    src={profile.profilePhoto || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80"}
-                    alt={profile.fullName}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                      objectPosition: "center 20%",
-                      display: "block"
-                    }}
-                  />
+                  {profile.profilePhoto ? (
+                    <img
+                      src={profile.profilePhoto}
+                      alt={profile.fullName}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        objectPosition: "center 20%",
+                        display: "block"
+                      }}
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        background: "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "10px",
+                        color: "#94a3b8"
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: "80px",
+                          height: "80px",
+                          borderRadius: "50%",
+                          background: "linear-gradient(135deg, #ee008f 0%, #7c3aed 100%)",
+                          color: "#ffffff",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "28px",
+                          fontWeight: "800",
+                          boxShadow: "0 4px 14px rgba(238, 0, 143, 0.3)"
+                        }}
+                      >
+                        {(profile.fullName || "User").substring(0, 2).toUpperCase()}
+                      </div>
+                      <span style={{ fontSize: "12px", fontWeight: "600", color: "#cbd5e1" }}>
+                        No Photo Uploaded
+                      </span>
+                    </div>
+                  )}
 
                   {/* Top-left: • Available Badge */}
                   <div
