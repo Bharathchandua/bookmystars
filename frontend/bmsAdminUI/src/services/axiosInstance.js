@@ -29,9 +29,10 @@ axiosInstance.interceptors.request.use(
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-      // Clear token if invalid session
-      if (error.response.status === 401) {
+    if (error.response && error.response.status === 401) {
+      // Only clear admin token if the unauthorized request was strictly an admin operational endpoint
+      const reqUrl = error.config?.url || "";
+      if (reqUrl.includes("/admin/")) {
         sessionStorage.removeItem("bms_admin_token");
         sessionStorage.removeItem("bms_token");
         sessionStorage.removeItem("bms_admin_user");

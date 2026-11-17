@@ -588,7 +588,17 @@ export default function Dashboard() {
   const getCachedProfile = () => {
     try {
       const raw = localStorage.getItem("bms_cached_profile");
-      if (raw) return JSON.parse(raw);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        // Ensure cached profile strictly belongs to current user to prevent cross-account bleed
+        if (storedUser?.email && parsed?.email && parsed.email.toLowerCase() !== storedUser.email.toLowerCase()) {
+          return null;
+        }
+        if (storedUser?.userId && parsed?.userId && String(parsed.userId) !== String(storedUser.userId)) {
+          return null;
+        }
+        return parsed;
+      }
     } catch (_) {}
     return null;
   };

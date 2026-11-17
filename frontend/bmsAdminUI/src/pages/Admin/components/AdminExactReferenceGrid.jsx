@@ -348,13 +348,14 @@ export default function AdminExactReferenceGrid({
 
       if (confirmed) {
         // Optimistically remove user from table immediately so it disappears before/during popup
-        setKycItems(prev => prev.filter(t => t.userId !== userId && t.id !== userId));
-        if (selectedTalentForDetails && (selectedTalentForDetails.userId === userId || selectedTalentForDetails.id === userId)) {
+        const targetIdStr = String(userId);
+        setKycItems(prev => prev.filter(t => String(t.userId || t.id) !== targetIdStr && String(t.id) !== targetIdStr));
+        if (selectedTalentForDetails && (String(selectedTalentForDetails.userId || selectedTalentForDetails.id) === targetIdStr)) {
           setSelectedTalentForDetails(null);
         }
         await deleteUserAccount(userId);
-        showSuccess("Account Deleted", `The account for "${talentName}" has been permanently deleted from database.`);
         await refreshKyc();
+        showSuccess("Account Deleted", `The account for "${talentName}" has been permanently deleted from database.`);
       }
     } catch (err) {
       await refreshKyc();

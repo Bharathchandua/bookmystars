@@ -66,6 +66,8 @@ export function logoutUser() {
   localStorage.removeItem("bms_token");
   localStorage.removeItem("bms_user");
   localStorage.removeItem("bms_profile_photo");
+  localStorage.removeItem("bms_cached_profile");
+  localStorage.removeItem("bms_cached_experiences");
   emitLiveSync("auth_changed", { action: "logout" });
 }
 

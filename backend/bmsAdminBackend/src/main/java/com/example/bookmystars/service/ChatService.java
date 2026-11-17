@@ -26,6 +26,8 @@ public class ChatService {
     private final BookingRequestRepository bookingRequestRepository;
     private final ProfileAccessRequestRepository profileAccessRequestRepository;
     private final CastingCallRepository castingCallRepository;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     @Transactional(readOnly = true)
     public List<ChatMessageDTO> getMessagesForBooking(Long bookingId) {
@@ -300,7 +302,19 @@ public class ChatService {
     public void recordHeartbeat(String userEmail) {
         User user = userRepository.findByEmail(userEmail).orElse(null);
         if (user != null) {
-            onlineHeartbeats.put(user.getId(), System.currentTimeMillis());
+            long now = System.currentTimeMillis();
+            onlineHeartbeats.put(user.getId(), now);
+            if (jdbcTemplate != null) {
+                try {
+                    jdbcTemplate.update(
+                        "INSERT INTO user_presence (user_id, last_heartbeat) VALUES (?, ?) " +
+                        "ON CONFLICT (user_id) DO UPDATE SET last_heartbeat = EXCLUDED.last_heartbeat",
+                        user.getId(), now
+                    );
+                } catch (Exception e) {
+                    log.warn("Failed to persist heartbeat in user_presence: {}", e.getMessage());
+                }
+            }
         }
     }
 
@@ -308,27 +322,74 @@ public class ChatService {
         User user = userRepository.findByEmail(userEmail).orElse(null);
         if (user != null) {
             onlineHeartbeats.remove(user.getId());
+            if (jdbcTemplate != null) {
+                try {
+                    jdbcTemplate.update("UPDATE user_presence SET last_heartbeat = 0 WHERE user_id = ?", user.getId());
+                } catch (Exception e) {
+                    log.warn("Failed to update offline in user_presence: {}", e.getMessage());
+                }
+            }
         }
     }
 
     public boolean isUserOnline(Long userId) {
         if (userId == null) return false;
-        Long lastSeen = onlineHeartbeats.get(userId);
-        if (lastSeen == null) return false;
-        return (System.currentTimeMillis() - lastSeen) < ONLINE_TIMEOUT_MS;
+        long now = System.currentTimeMillis();
+        Long localLastSeen = onlineHeartbeats.get(userId);
+        if (localLastSeen != null && (now - localLastSeen) < ONLINE_TIMEOUT_MS) {
+            return true;
+        }
+        if (jdbcTemplate != null) {
+            try {
+                List<Long> rows = jdbcTemplate.query(
+                    "SELECT last_heartbeat FROM user_presence WHERE user_id = ?",
+                    (rs, rowNum) -> rs.getLong("last_heartbeat"),
+                    userId
+                );
+                if (!rows.isEmpty()) {
+                    long dbLastSeen = rows.get(0);
+                    return (now - dbLastSeen) < ONLINE_TIMEOUT_MS;
+                }
+            } catch (Exception e) {
+                log.warn("Failed to query user_presence: {}", e.getMessage());
+            }
+        }
+        return false;
     }
 
     public Map<Long, Boolean> getBatchUserOnlineStatus(List<Long> userIds) {
         Map<Long, Boolean> result = new HashMap<>();
+        if (userIds == null || userIds.isEmpty()) return result;
         long now = System.currentTimeMillis();
-        if (userIds != null) {
-            for (Long uid : userIds) {
-                if (uid != null) {
-                    Long lastSeen = onlineHeartbeats.get(uid);
-                    boolean online = lastSeen != null && (now - lastSeen) < ONLINE_TIMEOUT_MS;
-                    result.put(uid, online);
+        List<Long> missingFromLocal = new ArrayList<>();
+        for (Long uid : userIds) {
+            if (uid != null) {
+                Long localLastSeen = onlineHeartbeats.get(uid);
+                if (localLastSeen != null && (now - localLastSeen) < ONLINE_TIMEOUT_MS) {
+                    result.put(uid, true);
+                } else {
+                    missingFromLocal.add(uid);
                 }
             }
+        }
+        if (!missingFromLocal.isEmpty() && jdbcTemplate != null) {
+            try {
+                String inSql = String.join(",", Collections.nCopies(missingFromLocal.size(), "?"));
+                jdbcTemplate.query(
+                    "SELECT user_id, last_heartbeat FROM user_presence WHERE user_id IN (" + inSql + ")",
+                    rs -> {
+                        long uid = rs.getLong("user_id");
+                        long dbLastSeen = rs.getLong("last_heartbeat");
+                        result.put(uid, (now - dbLastSeen) < ONLINE_TIMEOUT_MS);
+                    },
+                    missingFromLocal.toArray()
+                );
+            } catch (Exception e) {
+                log.warn("Failed batch query user_presence: {}", e.getMessage());
+            }
+        }
+        for (Long uid : missingFromLocal) {
+            result.putIfAbsent(uid, false);
         }
         return result;
     }
@@ -339,10 +400,30 @@ public class ChatService {
         if (user == null) return;
 
         Map<Long, Long> userTypingMap = threadTypingStatus.computeIfAbsent(threadKey, k -> new java.util.concurrent.ConcurrentHashMap<>());
+        long now = System.currentTimeMillis();
         if (isTyping) {
-            userTypingMap.put(user.getId(), System.currentTimeMillis());
+            userTypingMap.put(user.getId(), now);
         } else {
             userTypingMap.remove(user.getId());
+        }
+
+        if (jdbcTemplate != null) {
+            try {
+                if (isTyping) {
+                    jdbcTemplate.update(
+                        "INSERT INTO user_presence (user_id, last_heartbeat, active_thread, last_typing) " +
+                        "VALUES (?, ?, ?, ?) ON CONFLICT (user_id) DO UPDATE SET active_thread = EXCLUDED.active_thread, last_typing = EXCLUDED.last_typing",
+                        user.getId(), now, threadKey, now
+                    );
+                } else {
+                    jdbcTemplate.update(
+                        "UPDATE user_presence SET active_thread = NULL, last_typing = 0 WHERE user_id = ?",
+                        user.getId()
+                    );
+                }
+            } catch (Exception e) {
+                log.warn("Failed to persist typing in user_presence: {}", e.getMessage());
+            }
         }
     }
 
@@ -355,21 +436,44 @@ public class ChatService {
         User currentUser = userRepository.findByEmail(userEmail).orElse(null);
         Long myId = currentUser != null ? currentUser.getId() : null;
 
-        Map<Long, Long> userTypingMap = threadTypingStatus.get(threadKey);
-        if (userTypingMap == null || userTypingMap.isEmpty()) return response;
-
         long now = System.currentTimeMillis();
-        for (Map.Entry<Long, Long> entry : userTypingMap.entrySet()) {
-            Long typistId = entry.getKey();
-            Long timestamp = entry.getValue();
 
-            if (!typistId.equals(myId) && timestamp != null && (now - timestamp) < TYPING_TIMEOUT_MS) {
-                User typist = userRepository.findById(typistId).orElse(null);
-                String typistName = typist != null ? typist.getFullName() : "User";
-                response.put("isTyping", true);
-                response.put("typistId", typistId);
-                response.put("typistName", typistName);
-                return response;
+        // 1. Check local in-memory first
+        Map<Long, Long> userTypingMap = threadTypingStatus.get(threadKey);
+        if (userTypingMap != null && !userTypingMap.isEmpty()) {
+            for (Map.Entry<Long, Long> entry : userTypingMap.entrySet()) {
+                Long typistId = entry.getKey();
+                Long timestamp = entry.getValue();
+
+                if (!typistId.equals(myId) && timestamp != null && (now - timestamp) < TYPING_TIMEOUT_MS) {
+                    User typist = userRepository.findById(typistId).orElse(null);
+                    String typistName = typist != null ? typist.getFullName() : "User";
+                    response.put("isTyping", true);
+                    response.put("typistId", typistId);
+                    response.put("typistName", typistName);
+                    return response;
+                }
+            }
+        }
+
+        // 2. Check cross-service database user_presence
+        if (jdbcTemplate != null) {
+            try {
+                long threshold = now - TYPING_TIMEOUT_MS;
+                List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                    "SELECT u.id, u.full_name FROM user_presence up JOIN users u ON up.user_id = u.id " +
+                    "WHERE up.active_thread = ? AND up.user_id != ? AND up.last_typing > ? LIMIT 1",
+                    threadKey, (myId != null ? myId : -1L), threshold
+                );
+                if (!rows.isEmpty()) {
+                    Map<String, Object> row = rows.get(0);
+                    response.put("isTyping", true);
+                    response.put("typistId", row.get("id"));
+                    response.put("typistName", row.get("full_name"));
+                    return response;
+                }
+            } catch (Exception e) {
+                log.warn("Failed to query thread typing status: {}", e.getMessage());
             }
         }
 
