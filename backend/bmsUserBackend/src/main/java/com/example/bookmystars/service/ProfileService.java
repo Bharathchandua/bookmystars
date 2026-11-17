@@ -120,7 +120,11 @@ public class ProfileService {
                 }
             }
 
-            if (isOwner || isProfessional) {
+            boolean isAdmin = authentication != null && authentication.isAuthenticated() &&
+                    authentication.getAuthorities() != null &&
+                    authentication.getAuthorities().stream().anyMatch(a -> a.getAuthority().toUpperCase().contains("ADMIN"));
+
+            if (isOwner || isProfessional || isAdmin) {
                 accessStatus = "APPROVED";
             } else {
                 ProfileAccessRequest req = null;

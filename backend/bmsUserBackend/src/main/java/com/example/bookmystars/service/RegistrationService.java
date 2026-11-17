@@ -11,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -74,6 +76,7 @@ public class RegistrationService {
                     .projectsCompleted(0)
                     .brandsWorked(0)
                     .magazineFeatures(0)
+                    .memberSince(savedUser.getCreatedAt() != null ? savedUser.getCreatedAt().toLocalDate() : LocalDate.now())
                     .build();
             profileRepository.save(profile);
         } catch (Exception e) {

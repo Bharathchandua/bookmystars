@@ -329,7 +329,7 @@ public class AdminOperationsService {
                         .idVerified(false)
                         .phoneVerified(talent.getMobileNumber() != null && !talent.getMobileNumber().isBlank())
                         .emailVerified(true)
-                        .memberSince(LocalDate.now())
+                        .memberSince(talent.getCreatedAt() != null ? talent.getCreatedAt().toLocalDate() : LocalDate.now())
                         .build();
                 return profileRepository.save(p);
             });
@@ -347,9 +347,18 @@ public class AdminOperationsService {
             String statusBorder = verified ? "#a7f3d0" : "#fde68a";
 
             DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd MMM yyyy");
-            String submittedOn = profile.getMemberSince() != null
-                    ? profile.getMemberSince().format(dtf)
-                    : LocalDate.now().format(dtf);
+            LocalDate joinDate = talent.getCreatedAt() != null
+                    ? talent.getCreatedAt().toLocalDate()
+                    : (profile.getMemberSince() != null ? profile.getMemberSince() : LocalDate.now());
+            String submittedOn = joinDate.format(dtf);
+
+            // Sync profile.memberSince with the permanent talent registration date
+            if (profile.getMemberSince() == null || (talent.getCreatedAt() != null && !talent.getCreatedAt().toLocalDate().equals(profile.getMemberSince()))) {
+                profile.setMemberSince(joinDate);
+                try {
+                    profileRepository.save(profile);
+                } catch (Exception ignored) {}
+            }
 
             String accTypeStr = talent.getAccountType() != null ? talent.getAccountType().name() : "TALENT";
 
@@ -400,7 +409,7 @@ public class AdminOperationsService {
                     .statusBg(statusBg)
                     .statusColor(statusColor)
                     .statusBorder(statusBorder)
-                    .memberSince(profile.getMemberSince())
+                    .memberSince(joinDate)
                     .bio(profile.getAbout())
                     .gender(talent.getGender() != null ? talent.getGender().name() : null)
                     .dateOfBirth(talent.getDateOfBirth())
@@ -423,7 +432,7 @@ public class AdminOperationsService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Talent user not found with ID: " + userId));
 
         Profile profile = profileRepository.findByUser(talent).orElseGet(() -> {
-            Profile p = Profile.builder().user(talent).memberSince(LocalDate.now()).build();
+            Profile p = Profile.builder().user(talent).memberSince(talent.getCreatedAt() != null ? talent.getCreatedAt().toLocalDate() : LocalDate.now()).build();
             return profileRepository.save(p);
         });
 
@@ -495,7 +504,7 @@ public class AdminOperationsService {
                     .idVerified(verify)
                     .phoneVerified(true)
                     .emailVerified(true)
-                    .memberSince(LocalDate.now())
+                    .memberSince(talent.getCreatedAt() != null ? talent.getCreatedAt().toLocalDate() : LocalDate.now())
                     .build();
             return profileRepository.save(p);
         });

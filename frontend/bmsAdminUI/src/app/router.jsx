@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import AdminDashboard from "../pages/Admin/AdminDashboard.jsx";
 import AdminLogin from "../pages/Admin/AdminLogin.jsx";
+import PublicProfile from "../pages/Profile/PublicProfile.jsx";
 import { useAdminAuthContext } from "./providers/AdminAuthProvider.jsx";
 
 export function ScrollToTop() {
@@ -32,6 +33,9 @@ export default function AppRouter() {
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/login" element={<AdminLogin />} />
         <Route path="/admin/dashboard" element={<Navigate to="/" replace />} />
+        {/* Public profile routes accessible directly without requiring admin login */}
+        <Route path="/public-profile/:userId" element={<PublicProfile />} />
+        <Route path="/profile/:userId" element={<PublicProfile />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
