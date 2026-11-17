@@ -18,6 +18,7 @@ import logo from "../../assets/logo.png";
 import signinLeftBg from "../../assets/signin_left_bg.png";
 import CountUpModule from "react-countup";
 import Button from "../common/Button";
+import { CLIENT_PORTAL_URL, PARTNER_PORTAL_URL, ADMIN_PORTAL_URL } from "../../services/apiConfig";
 import { loginUser, logoutUser, getStoredUser } from "../../features/bms/api/auth/authApi";
 import { loginAdminUser } from "../../features/bms/api/admin/adminApi";
 const CountUp = typeof CountUpModule === "function" ? CountUpModule : (CountUpModule.default || CountUpModule);
@@ -48,9 +49,13 @@ export default function SignIn() {
       // 1. Authenticate user across any platform role (Talent, Professional, Client, Partner)
       const authData = await loginUser(email, password, null);
       if (authData?.accountType === "CLIENT") {
-        navigate("/client/dashboard");
+        const ssoUrl = `${CLIENT_PORTAL_URL}/dashboard?sso_token=${encodeURIComponent(authData.token)}&sso_user=${encodeURIComponent(JSON.stringify(authData))}`;
+        window.location.href = ssoUrl;
+        return;
       } else if (authData?.accountType === "PARTNER") {
-        navigate("/partner/dashboard");
+        const ssoUrl = `${PARTNER_PORTAL_URL}/dashboard?sso_token=${encodeURIComponent(authData.token)}&sso_user=${encodeURIComponent(JSON.stringify(authData))}`;
+        window.location.href = ssoUrl;
+        return;
       } else if (authData?.accountType === "PROFESSIONAL") {
         navigate("/professional/dashboard");
       } else {

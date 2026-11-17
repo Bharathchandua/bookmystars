@@ -1,4 +1,4 @@
-/api/*  https://kwinwsproducts.cloudjiffy.net/bmspartner/api/:splat  200!
-/uploads/*  https://kwinwsproducts.cloudjiffy.net/bmspartner/uploads/:splat  200!
-/banners/*  https://kwinwsproducts.cloudjiffy.net/bmspartner/banners/:splat  200!
+/api/*  https://bookmystarsproduct.cloudjiffy.net/bmspartner/api/:splat  200!
+/uploads/*  https://bookmystarsproduct.cloudjiffy.net/bmspartner/uploads/:splat  200!
+/banners/*  https://bookmystarsproduct.cloudjiffy.net/bmspartner/banners/:splat  200!
 /*  /index.html  200

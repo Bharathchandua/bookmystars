@@ -21,7 +21,25 @@ import faviconSrc from "./assets/favicon.png";
 })();
 
 // Universal Safe localStorage Protection & Bloat Sanitizer
-// Universal Safe localStorage Protection & Bloat Sanitizer
+// Universal SSO Handshake: Auto-login when redirected from main platform (bmsuserfront)
+(function handleSSO() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const ssoToken = params.get("sso_token");
+    const ssoUser = params.get("sso_user");
+    if (ssoToken && ssoUser) {
+      sessionStorage.setItem("bms_token", ssoToken);
+      sessionStorage.setItem("bms_user", decodeURIComponent(ssoUser));
+      const url = new URL(window.location.href);
+      url.searchParams.delete("sso_token");
+      url.searchParams.delete("sso_user");
+      window.history.replaceState({}, document.title, url.pathname + (url.search || "") + (url.hash || ""));
+    }
+  } catch (e) {
+    console.warn("[PartnerUI] SSO Handshake note:", e);
+  }
+})();
+
 (function installSafeStorage() {
   try {
     // 1. Purge any bloated keys (Base64 images, banners, deprecated profiles, or cached entries > 15KB)

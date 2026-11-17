@@ -89,12 +89,14 @@ function ProtectedRoute({ children }) {
   if (!user) {
     return <Navigate to="/signin" replace />;
   }
+  const token = sessionStorage.getItem("bms_token");
+  const ssoParam = (token && user) ? `?sso_token=${encodeURIComponent(token)}&sso_user=${encodeURIComponent(JSON.stringify(user))}` : "";
   if (user.accountType === "CLIENT") {
-    window.location.href = `${CLIENT_PORTAL_URL}/dashboard`;
+    window.location.href = `${CLIENT_PORTAL_URL}/dashboard${ssoParam}`;
     return null;
   }
   if (user.accountType === "PARTNER") {
-    window.location.href = `${PARTNER_PORTAL_URL}/dashboard`;
+    window.location.href = `${PARTNER_PORTAL_URL}/dashboard${ssoParam}`;
     return null;
   }
   return children;
@@ -111,11 +113,14 @@ function TalentRoute({ children }) {
 function RedirectToClient() {
   const location = useLocation();
   useEffect(() => {
-    let target = CLIENT_PORTAL_URL;
+    const token = sessionStorage.getItem("bms_token");
+    const user = sessionStorage.getItem("bms_user");
+    const ssoParam = (token && user) ? `?sso_token=${encodeURIComponent(token)}&sso_user=${encodeURIComponent(user)}` : "";
+    let target = `${CLIENT_PORTAL_URL}${ssoParam}`;
     if (location.pathname.includes("signin") || location.pathname.includes("login")) {
       target = `${CLIENT_PORTAL_URL}/signin`;
     } else if (location.pathname.includes("dashboard")) {
-      target = `${CLIENT_PORTAL_URL}/dashboard`;
+      target = `${CLIENT_PORTAL_URL}/dashboard${ssoParam}`;
     }
     window.location.replace(target);
   }, [location]);
@@ -130,11 +135,14 @@ function RedirectToClient() {
 function RedirectToPartner() {
   const location = useLocation();
   useEffect(() => {
-    let target = PARTNER_PORTAL_URL;
+    const token = sessionStorage.getItem("bms_token");
+    const user = sessionStorage.getItem("bms_user");
+    const ssoParam = (token && user) ? `?sso_token=${encodeURIComponent(token)}&sso_user=${encodeURIComponent(user)}` : "";
+    let target = `${PARTNER_PORTAL_URL}${ssoParam}`;
     if (location.pathname.includes("signin") || location.pathname.includes("login")) {
       target = `${PARTNER_PORTAL_URL}/signin`;
     } else if (location.pathname.includes("dashboard")) {
-      target = `${PARTNER_PORTAL_URL}/dashboard`;
+      target = `${PARTNER_PORTAL_URL}/dashboard${ssoParam}`;
     }
     window.location.replace(target);
   }, [location]);
