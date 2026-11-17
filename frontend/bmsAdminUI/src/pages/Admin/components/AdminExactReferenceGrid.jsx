@@ -347,14 +347,17 @@ export default function AdminExactReferenceGrid({
       });
 
       if (confirmed) {
-        await deleteUserAccount(userId);
-        showSuccess("Account Deleted", `The account for "${talentName}" has been permanently deleted from database.`);
-        await refreshKyc();
+        // Optimistically remove user from table immediately so it disappears before/during popup
+        setKycItems(prev => prev.filter(t => t.userId !== userId && t.id !== userId));
         if (selectedTalentForDetails && (selectedTalentForDetails.userId === userId || selectedTalentForDetails.id === userId)) {
           setSelectedTalentForDetails(null);
         }
+        await deleteUserAccount(userId);
+        showSuccess("Account Deleted", `The account for "${talentName}" has been permanently deleted from database.`);
+        await refreshKyc();
       }
     } catch (err) {
+      await refreshKyc();
       showError("Delete Failed", err.message || "Failed to delete account.");
     }
   };

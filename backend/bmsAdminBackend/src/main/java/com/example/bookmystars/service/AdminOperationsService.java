@@ -604,57 +604,64 @@ public class AdminOperationsService {
         safeSqlUpdate("DELETE FROM chat_messages WHERE booking_id IN (SELECT id FROM booking_requests WHERE talent_id = ? OR professional_id = ?)", userId, userId);
         safeSqlUpdate("DELETE FROM chat_messages WHERE opportunity_id IN (SELECT id FROM casting_calls WHERE posted_by_user_id = ?)", userId);
 
-        // 2. Delete peer-to-peer chat connection requests (as sender or recipient)
-        safeSqlUpdate("DELETE FROM chat_connection_requests WHERE sender_id = ? OR recipient_id = ?", userId, userId);
-
-        // 3. Delete casting applications (applied by user, or received on user's casting calls)
+        // 2. Delete casting applications (applied by user, or received on user's casting calls)
         safeSqlUpdate("DELETE FROM casting_applications WHERE applicant_user_id = ?", userId);
         safeSqlUpdate("DELETE FROM casting_applications WHERE casting_call_id IN (SELECT id FROM casting_calls WHERE posted_by_user_id = ?)", userId);
 
-        // 4. Delete casting calls posted by this user
+        // 3. Delete casting calls posted by this user
         safeSqlUpdate("DELETE FROM casting_calls WHERE posted_by_user_id = ?", userId);
 
-        // 5. Delete booking requests (where user is talent or professional)
+        // 4. Delete booking requests (where user is talent or professional)
         safeSqlUpdate("DELETE FROM booking_requests WHERE talent_id = ? OR professional_id = ?", userId, userId);
 
-        // 6. Delete reviews (where user is profile recipient or reviewer)
+        // 5. Delete reviews (where user is profile recipient or reviewer)
         safeSqlUpdate("DELETE FROM reviews WHERE profile_user_id = ? OR reviewer_id = ?", userId, userId);
 
-        // 7. Delete profile access requests (where user is talent or requester)
+        // 6. Delete profile access requests (where user is talent or requester)
         safeSqlUpdate("DELETE FROM profile_access_requests WHERE talent_id = ? OR requester_id = ?", userId, userId);
 
-        // 8. Delete shortlists (where user is shortlist owner or shortlisted talent)
+        // 7. Delete shortlists (where user is shortlist owner or shortlisted talent)
         safeSqlUpdate("DELETE FROM user_shortlists WHERE user_id = ? OR talent_id = ?", userId, userId);
 
-        // 9. Delete showcase items
+        // 8. Delete showcase items
         safeSqlUpdate("DELETE FROM client_partner_showcases WHERE user_id = ?", userId);
 
-        // 10. Delete user profile types collection
+        // 9. Delete user profile types collection
         safeSqlUpdate("DELETE FROM user_profile_types WHERE user_id = ?", userId);
 
-        // 11. Delete talent portfolio items, videos, audios, work experience, documents, measurements, rates, availabilities
-        safeSqlUpdate("DELETE FROM portfolios WHERE user_id = ?", userId);
-        safeSqlUpdate("DELETE FROM portfolio_items WHERE user_id = ?", userId);
+        // 10. Delete rate package features and rate packages
+        safeSqlUpdate("DELETE FROM rate_package_features WHERE rate_package_id IN (SELECT id FROM rate_packages WHERE user_id = ?)", userId);
+        safeSqlUpdate("DELETE FROM rate_packages WHERE user_id = ?", userId);
+
+        // 11. Delete talent portfolio, videos, audios, documents
+        safeSqlUpdate("DELETE FROM portfolio WHERE user_id = ?", userId);
         safeSqlUpdate("DELETE FROM videos WHERE user_id = ?", userId);
         safeSqlUpdate("DELETE FROM audios WHERE user_id = ?", userId);
-        safeSqlUpdate("DELETE FROM work_experiences WHERE user_id = ?", userId);
-        safeSqlUpdate("DELETE FROM work_experience WHERE user_id = ?", userId);
-        safeSqlUpdate("DELETE FROM user_documents WHERE user_id = ?", userId);
-        safeSqlUpdate("DELETE FROM measurements WHERE user_id = ?", userId);
-        safeSqlUpdate("DELETE FROM rate_packages WHERE user_id = ?", userId);
-        safeSqlUpdate("DELETE FROM availabilities WHERE user_id = ?", userId);
+        safeSqlUpdate("DELETE FROM documents WHERE user_id = ?", userId);
 
-        // 12. Delete profile skills & profiles
+        // 12. Delete measurements, availabilities, and work experience
+        safeSqlUpdate("DELETE FROM measurements WHERE user_id = ?", userId);
+        safeSqlUpdate("DELETE FROM availabilities WHERE user_id = ?", userId);
+        safeSqlUpdate("DELETE FROM work_experience WHERE user_id = ?", userId);
+
+        // 13. Delete profile skills & profiles
         safeSqlUpdate("DELETE FROM profile_skills WHERE profile_id IN (SELECT id FROM profiles WHERE user_id = ?)", userId);
         safeSqlUpdate("DELETE FROM profiles WHERE user_id = ?", userId);
-        safeSqlUpdate("DELETE FROM talent_profile WHERE user_id = ?", userId);
 
-        // 13. Delete client / partner / professional profiles
+        // 14. Delete client / partner / professional profiles
         safeSqlUpdate("DELETE FROM client_partner_profiles WHERE user_id = ?", userId);
         safeSqlUpdate("DELETE FROM professional_profiles WHERE user_id = ?", userId);
 
-        // 14. Finally, permanently delete the User record
+        // 15. Finally, permanently delete the User record
         safeSqlUpdate("DELETE FROM users WHERE id = ?", userId);
+        try {
+            if (userRepository.existsById(userId)) {
+                userRepository.deleteById(userId);
+                userRepository.flush();
+            }
+        } catch (Exception ex) {
+            log.warn("JPA deleteById warning for user {}: {}", userId, ex.getMessage());
+        }
 
         log.info("ACCOUNT DELETED: User ID {} ({}) was permanently deleted from PostgreSQL database.",
                 userId, user.getEmail());
