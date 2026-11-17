@@ -34,7 +34,8 @@ import {
   Video,
   Pencil,
   Trash2,
-  Send
+  Send,
+  MessageSquare
 } from "lucide-react";
 import { getStoredUser, logoutUser } from "../../features/bms/api/auth/authApi";
 import { opportunitiesApi } from "../../features/bms/api/opportunities/opportunitiesApi";
@@ -44,6 +45,7 @@ import { bookingsApi } from "../../features/bms/api/bookings/bookingsApi";
 import { showSuccess, showError, confirmDelete } from "../../shared/utils/alert";
 import PartnerProfile from "./PartnerProfile";
 import PartnerTalentSearch from "./PartnerTalentSearch";
+import Messages from "../Messages/Messages";
 import ClientBookingRequests from "../Client/ClientBookingRequests";
 import PartnerPostRequirementModal from "./PartnerPostRequirementModal";
 import ShowcaseWorksView from "./components/ShowcaseWorksView";
@@ -459,6 +461,7 @@ export default function PartnerDashboard() {
               { id: "PROFILE", label: "Academy Profile", icon: Building2, count: null },
               { id: "SHOWCASE", label: "Showcase Works", icon: Sparkles, count: null },
               { id: "SEARCH_TALENT", label: "Scout Talent & Artists", icon: Search, count: null },
+              { id: "MESSAGES", label: "Messages & Inquiries", icon: MessageSquare, count: null },
               { id: "AUDITIONS", label: "Auditions & Requirements", icon: Megaphone, count: requirementsList.length },
               { id: "REQUESTS", label: "Audition Calls & Bookings", icon: Calendar, count: sentRequestsList.length },
               { id: "SHORTLISTED", label: "Shortlisted Candidates", icon: Bookmark, count: shortlistedIds.length }
@@ -549,6 +552,7 @@ export default function PartnerDashboard() {
                 {activeNav === "PROFILE" && "Academy Profile & Batches"}
                 {activeNav === "SHOWCASE" && "Showcase Works & Performance Portfolio"}
                 {activeNav === "SEARCH_TALENT" && "Scout Troupe Performers"}
+                {activeNav === "MESSAGES" && "Messages & Direct Inquiries"}
                 {activeNav === "AUDITIONS" && "Auditions & Intake Calls"}
                 {activeNav === "REQUESTS" && "Audition Calls & Intake Requests"}
                 {activeNav === "SHORTLISTED" && "Shortlisted Candidates"}
@@ -1073,7 +1077,17 @@ export default function PartnerDashboard() {
               onToggleShortlist={toggleShortlist}
               onOpenRequirementModal={() => setShowPostReqModal(true)}
               onOpenRequestsTab={() => setActiveNav("REQUESTS")}
+              onOpenMessages={() => setActiveNav("MESSAGES")}
             />
+          )}
+
+          {/* ─────────────────────────────────────────────────────────── */}
+          {/* TAB 3.5: MESSAGES & DIRECT INQUIRIES                        */}
+          {/* ─────────────────────────────────────────────────────────── */}
+          {activeNav === "MESSAGES" && (
+            <div className="space-y-4">
+              <Messages />
+            </div>
           )}
 
           {/* ─────────────────────────────────────────────────────────── */}

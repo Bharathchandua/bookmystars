@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import ctaChair from "../assets/cta-chair.jpg";
 import Button from "./common/Button";
+import { CLIENT_PORTAL_URL } from "../services/apiConfig";
 
 export default function CTA() {
   return (
@@ -28,9 +29,9 @@ export default function CTA() {
             Create Your Profile
           </Button>
         </Link>
-        <Link to="/become-client" style={{ textDecoration: "none" }}>
+        <a href={CLIENT_PORTAL_URL || "/become-client"} style={{ textDecoration: "none" }}>
           <Button variant="post-casting">Post a Casting Call</Button>
-        </Link>
+        </a>
       </div>
     </section>
   );

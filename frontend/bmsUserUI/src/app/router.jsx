@@ -202,11 +202,11 @@ export default function UserRouter() {
         <Route path="/services/digital-marketing" element={<DigitalMarketing />} />
         <Route path="/media" element={<Media />} />
 
-        {/* Dedicated Client & Partner Pages */}
-        <Route path="/become-client" element={<BecomeClient />} />
-        <Route path="/become-partner" element={<BecomePartner />} />
-        <Route path="/client/*" element={<Navigate to="/become-client" replace />} />
-        <Route path="/partner/*" element={<Navigate to="/become-partner" replace />} />
+        {/* Dedicated Client & Partner Portals */}
+        <Route path="/become-client" element={<RedirectToClient />} />
+        <Route path="/become-partner" element={<RedirectToPartner />} />
+        <Route path="/client/*" element={<RedirectToClient />} />
+        <Route path="/partner/*" element={<RedirectToPartner />} />
         <Route path="/admin/*" element={<RedirectToAdmin />} />
         <Route path="/admin" element={<RedirectToAdmin />} />
 

@@ -6,7 +6,8 @@ import {
   CheckCircle2,
   Clock,
   Eye,
-  Send
+  Send,
+  MessageSquare
 } from "lucide-react";
 
 const FALLBACK_AVATAR = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80";
@@ -17,6 +18,7 @@ export default function TalentCard({
   onToggleShortlist,
   onViewDetails,
   onPrimaryAction,
+  onChatAction,
   primaryActionText = "Direct Invite",
   primaryActionIcon,
   secondaryActionText = "Lookbook",
@@ -138,14 +140,26 @@ export default function TalentCard({
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
+        <div className={`grid ${onChatAction ? "grid-cols-3" : "grid-cols-2"} gap-1.5 pt-2 border-t border-slate-100`}>
           {onViewDetails && (
             <button
               type="button"
               onClick={() => onViewDetails(talent)}
-              className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+              className="px-2 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer truncate"
+              title="View Lookbook & Stats"
             >
               {secondaryActionIcon || <Eye size={13} />} {secondaryActionText}
+            </button>
+          )}
+
+          {onChatAction && (
+            <button
+              type="button"
+              onClick={() => onChatAction(talent)}
+              className="px-2 py-2 rounded-xl bg-pink-50 hover:bg-pink-100 text-pink-700 text-xs font-bold border border-pink-200 transition flex items-center justify-center gap-1 cursor-pointer truncate"
+              title="Message / Connect with Artist"
+            >
+              <MessageSquare size={13} /> Chat
             </button>
           )}
 
@@ -153,9 +167,10 @@ export default function TalentCard({
             <button
               type="button"
               onClick={() => onPrimaryAction(talent)}
-              className={`px-3 py-2 rounded-xl text-white text-xs font-bold shadow-xs transition flex items-center justify-center gap-1 cursor-pointer ${
+              className={`px-2 py-2 rounded-xl text-white text-xs font-bold shadow-xs transition flex items-center justify-center gap-1 cursor-pointer truncate ${
                 primaryBtnTheme[theme] || primaryBtnTheme.pink
-              } ${!onViewDetails ? "col-span-2" : ""}`}
+              } ${!onViewDetails && !onChatAction ? "col-span-2" : ""}`}
+              title="Send Direct Booking Offer"
             >
               {primaryActionIcon || <Send size={12} />} {primaryActionText}
             </button>

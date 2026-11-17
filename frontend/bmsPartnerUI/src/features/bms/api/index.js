@@ -19,6 +19,7 @@ export * from "./talents/talentsApi";
 export * from "./bookings/bookingsApi";
 export * from "./professional/professionalApi";
 export * from "./messages/chatApi";
+export * from "./contacts/contactsApi";
 export { getRecentBookings, dashboardApi } from "./dashboard/dashboardApi";
 export * from "./admin/adminApi";
 export * from "./skills/skillsApi";

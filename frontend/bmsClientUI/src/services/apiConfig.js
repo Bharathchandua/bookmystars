@@ -10,7 +10,7 @@ export const BACKENDS = {
     partnerUi: 'http://localhost:5175',
   },
   cloud: {
-    client: 'https://kwinwsproducts.cloudjiffy.net/bmsclient',
+    client: 'https://bookmystarsproduct.cloudjiffy.net/bmsclient',
     userUi: 'https://bmsuserui.netlify.app',
     partnerUi: 'https://bmspartnerui.netlify.app',
   },

@@ -12,7 +12,9 @@ import {
   Maximize2,
   ChevronLeft,
   ChevronRight,
-  X
+  X,
+  MessageSquare,
+  AlertCircle
 } from "lucide-react";
 import {
   SearchBar,
@@ -26,8 +28,14 @@ import {
 } from "../../shared/common";
 import { talentsApi } from "../../features/bms/api/talents/talentsApi";
 import { BACKEND_SERVER_URL } from "../../shared/services/BaseUrl";
-import { showSuccess } from "../../shared/utils/alert";
+import { showSuccess, showError } from "../../shared/utils/alert";
 import { getStoredUser } from "../../features/bms/api/auth/authApi";
+import {
+  getChatRequestStatus,
+  sendChatRequest,
+  cancelChatRequest,
+  respondToChatRequest
+} from "../../features/bms/api/messages/chatApi";
 import BookingRequestModal from "../Professional/BookingRequestModal";
 import bannerDancePartner from "../../assets/banner_dance_partner.png";
 import bannerClientJewelry from "../../assets/banner_client_jewelry.png";
@@ -59,6 +67,7 @@ export default function PartnerTalentSearch({
   onToggleShortlist,
   onOpenRequirementModal,
   onOpenRequestsTab,
+  onOpenMessages,
   onlyShortlisted = false
 }) {
   const [talents, setTalents] = useState([]);
@@ -69,6 +78,82 @@ export default function PartnerTalentSearch({
   const [activeTalentModal, setActiveTalentModal] = useState(null);
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(null);
   const [bookingTalent, setBookingTalent] = useState(null);
+
+  // Chat Connection Request States
+  const [connectModalTalent, setConnectModalTalent] = useState(null);
+  const [connectMessage, setConnectMessage] = useState("");
+  const [isSendingReq, setIsSendingReq] = useState(false);
+  const [pendingRequestInfo, setPendingRequestInfo] = useState(null);
+  const [incomingRequestInfo, setIncomingRequestInfo] = useState(null);
+
+  const handleInitiateChat = async (talent) => {
+    const targetUserId = talent.userId || talent.id;
+    if (!targetUserId) {
+      showError("Profile Error", "Cannot identify this artist's profile.");
+      return;
+    }
+
+    try {
+      const statusRes = await getChatRequestStatus(targetUserId);
+      const reqStatus = (statusRes?.status || "NONE").toUpperCase();
+
+      if (reqStatus === "ACCEPTED") {
+        if (onOpenMessages) {
+          onOpenMessages(talent);
+        } else {
+          showSuccess("Chat Active", `You are connected with ${talent.name}. Switch to Messages tab to chat.`);
+        }
+      } else if (reqStatus === "OUTGOING_PENDING") {
+        setPendingRequestInfo({ talent, statusRes });
+      } else if (reqStatus === "INCOMING_PENDING") {
+        setIncomingRequestInfo({ talent, statusRes });
+      } else {
+        setConnectModalTalent(talent);
+        setConnectMessage(`Hi ${talent.name}, our academy is casting performers for our upcoming productions and would love to connect with you.`);
+      }
+    } catch (err) {
+      setConnectModalTalent(talent);
+      setConnectMessage(`Hi ${talent.name}, we would like to connect with you regarding our upcoming academy auditions.`);
+    }
+  };
+
+  const handleSendChatRequest = async () => {
+    if (!connectModalTalent || isSendingReq) return;
+    const targetUserId = connectModalTalent.userId || connectModalTalent.id;
+    try {
+      setIsSendingReq(true);
+      await sendChatRequest(targetUserId, connectMessage.trim());
+      showSuccess("Request Sent!", `Your connection request has been sent to ${connectModalTalent.name}. Once accepted, direct chat will unlock.`);
+      setConnectModalTalent(null);
+    } catch (err) {
+      showError("Failed to Send", err.message || "Could not send connection request.");
+    } finally {
+      setIsSendingReq(false);
+    }
+  };
+
+  const handleCancelRequest = async (requestId) => {
+    try {
+      await cancelChatRequest(requestId);
+      showSuccess("Cancelled", "Chat connection request cancelled.");
+      setPendingRequestInfo(null);
+    } catch (err) {
+      showError("Error", err.message || "Could not cancel request.");
+    }
+  };
+
+  const handleRespondIncoming = async (requestId, accept) => {
+    try {
+      await respondToChatRequest(requestId, accept);
+      showSuccess(accept ? "Accepted!" : "Declined", accept ? "Connection accepted! Direct chat unlocked." : "Request declined.");
+      setIncomingRequestInfo(null);
+      if (accept && onOpenMessages) {
+        onOpenMessages(incomingRequestInfo?.talent);
+      }
+    } catch (err) {
+      showError("Error", err.message || "Could not respond to request.");
+    }
+  };
 
   // Fetch real talent data from PostgreSQL database via /api/professional/talents
   useEffect(() => {
@@ -344,6 +429,7 @@ export default function PartnerTalentSearch({
               onToggleShortlist={onToggleShortlist}
               onViewDetails={setActiveTalentModal}
               onPrimaryAction={handleInviteToAudition}
+              onChatAction={handleInitiateChat}
               primaryActionText="Invite"
               secondaryActionText="View Bio"
               theme="purple"
@@ -370,18 +456,33 @@ export default function PartnerTalentSearch({
           theme="purple"
           size="lg"
           footerActions={
-            <Button
-              variant="primary-purple"
-              size="md"
-              onClick={() => {
-                handleInviteToAudition(activeTalentModal);
-                setActiveTalentModal(null);
-                setSelectedPhotoIndex(null);
-              }}
-              icon={<Send size={14} />}
-            >
-              Send Direct Audition Invite
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                size="md"
+                onClick={() => {
+                  const targetTalent = activeTalentModal;
+                  setActiveTalentModal(null);
+                  setSelectedPhotoIndex(null);
+                  handleInitiateChat(targetTalent);
+                }}
+                icon={<MessageSquare size={14} className="text-purple-600" />}
+              >
+                Message Artist
+              </Button>
+              <Button
+                variant="primary-purple"
+                size="md"
+                onClick={() => {
+                  handleInviteToAudition(activeTalentModal);
+                  setActiveTalentModal(null);
+                  setSelectedPhotoIndex(null);
+                }}
+                icon={<Send size={14} />}
+              >
+                Send Direct Audition Invite
+              </Button>
+            </>
           }
         >
           <div className="space-y-4">
@@ -603,6 +704,174 @@ export default function PartnerTalentSearch({
             }
           }}
         />
+      )}
+
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* 1. SEND CHAT CONNECTION REQUEST MODAL                         */}
+      {/* ───────────────────────────────────────────────────────────── */}
+      {connectModalTalent && (
+        <Modal
+          isOpen={Boolean(connectModalTalent)}
+          onClose={() => setConnectModalTalent(null)}
+          title={
+            <div className="flex items-center gap-2">
+              <MessageSquare size={18} className="text-purple-600" />
+              <span>Connect with {connectModalTalent.name}</span>
+            </div>
+          }
+          subtitle="Send an introductory connection request. Once accepted, real-time messaging will unlock."
+          size="md"
+          theme="purple"
+          footerActions={
+            <>
+              <Button
+                variant="outline"
+                size="md"
+                onClick={() => setConnectModalTalent(null)}
+                disabled={isSendingReq}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary-purple"
+                size="md"
+                onClick={handleSendChatRequest}
+                disabled={isSendingReq || !connectMessage.trim()}
+                icon={<Send size={14} />}
+              >
+                {isSendingReq ? "Sending..." : "Send Request"}
+              </Button>
+            </>
+          }
+        >
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 p-3 rounded-2xl bg-purple-50/60 border border-purple-100">
+              <img
+                src={connectModalTalent.image || DEFAULT_AVATARS[0]}
+                alt={connectModalTalent.name}
+                className="w-12 h-12 rounded-xl object-cover object-top border border-purple-200"
+              />
+              <div>
+                <h4 className="text-sm font-black text-slate-900 m-0">{connectModalTalent.name}</h4>
+                <p className="text-xs text-purple-700 font-bold m-0">{connectModalTalent.craft} • {connectModalTalent.location}</p>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                Introductory Note / Audition Inquiry:
+              </label>
+              <textarea
+                rows={4}
+                value={connectMessage}
+                onChange={(e) => setConnectMessage(e.target.value)}
+                placeholder="Write a brief note introducing your academy and production..."
+                className="w-full p-3 rounded-xl border border-slate-200 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 text-xs text-slate-800 resize-none outline-none"
+              />
+              <p className="text-[11px] text-slate-400 mt-1">
+                To protect artists from unsolicited messages, you can send up to 3 connection requests. Direct messaging unlocks immediately upon acceptance.
+              </p>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* 2. PENDING REQUEST STATUS MODAL                               */}
+      {/* ───────────────────────────────────────────────────────────── */}
+      {pendingRequestInfo && (
+        <Modal
+          isOpen={Boolean(pendingRequestInfo)}
+          onClose={() => setPendingRequestInfo(null)}
+          title="⏳ Connection Request Pending"
+          subtitle={`Your request is awaiting acceptance by ${pendingRequestInfo.talent?.name}.`}
+          size="sm"
+          theme="purple"
+          footerActions={
+            <>
+              <Button
+                variant="outline"
+                size="md"
+                onClick={() => setPendingRequestInfo(null)}
+              >
+                Close
+              </Button>
+              {pendingRequestInfo.statusRes?.requestId && (
+                <Button
+                  variant="outline"
+                  size="md"
+                  onClick={() => handleCancelRequest(pendingRequestInfo.statusRes.requestId)}
+                  className="text-red-600 border-red-200 hover:bg-red-50"
+                >
+                  Cancel Request
+                </Button>
+              )}
+            </>
+          }
+        >
+          <div className="text-center py-4 space-y-3">
+            <div className="w-14 h-14 mx-auto rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 text-2xl">
+              ⏳
+            </div>
+            <h4 className="text-sm font-bold text-slate-800 m-0">Waiting for {pendingRequestInfo.talent?.name}</h4>
+            <p className="text-xs text-slate-500 max-w-xs mx-auto">
+              You sent a connection request on BookMyStars. Once the performer accepts, direct messaging unlocks.
+            </p>
+          </div>
+        </Modal>
+      )}
+
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* 3. INCOMING REQUEST ACTION MODAL                              */}
+      {/* ───────────────────────────────────────────────────────────── */}
+      {incomingRequestInfo && (
+        <Modal
+          isOpen={Boolean(incomingRequestInfo)}
+          onClose={() => setIncomingRequestInfo(null)}
+          title="📩 Incoming Connection Request"
+          subtitle={`${incomingRequestInfo.talent?.name} wants to connect with your academy.`}
+          size="sm"
+          theme="purple"
+          footerActions={
+            <>
+              <Button
+                variant="outline"
+                size="md"
+                onClick={() => handleRespondIncoming(incomingRequestInfo.statusRes.requestId, false)}
+                className="text-red-600 border-red-200 hover:bg-red-50"
+              >
+                Decline
+              </Button>
+              <Button
+                variant="primary-purple"
+                size="md"
+                onClick={() => handleRespondIncoming(incomingRequestInfo.statusRes.requestId, true)}
+                icon={<CheckCircle2 size={14} />}
+              >
+                Accept & Chat
+              </Button>
+            </>
+          }
+        >
+          <div className="space-y-3 py-2">
+            <div className="flex items-center gap-3 p-3 rounded-2xl bg-purple-50/60 border border-purple-100">
+              <img
+                src={incomingRequestInfo.talent?.image || DEFAULT_AVATARS[0]}
+                alt={incomingRequestInfo.talent?.name}
+                className="w-12 h-12 rounded-xl object-cover object-top border border-purple-200"
+              />
+              <div>
+                <h4 className="text-sm font-black text-slate-900 m-0">{incomingRequestInfo.talent?.name}</h4>
+                <p className="text-xs text-purple-700 font-bold m-0">{incomingRequestInfo.talent?.craft}</p>
+              </div>
+            </div>
+            {incomingRequestInfo.statusRes?.message && (
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-700 italic">
+                "{incomingRequestInfo.statusRes.message}"
+              </div>
+            )}
+          </div>
+        </Modal>
       )}
     </div>
   );

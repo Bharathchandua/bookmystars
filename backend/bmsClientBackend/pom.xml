@@ -99,6 +99,7 @@
 	</dependencies>
 
 	<build>
+		<finalName>bmsclient</finalName>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -125,7 +126,7 @@
 				<spring.profiles.active>local</spring.profiles.active>
 			</properties>
 			<build>
-				<finalName>${project.artifactId}-local</finalName>
+				<finalName>bmsclient</finalName>
 			</build>
 		</profile>
 

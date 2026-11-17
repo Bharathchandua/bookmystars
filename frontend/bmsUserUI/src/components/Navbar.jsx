@@ -264,16 +264,16 @@ export default function Navbar({ isClientPartnerPage = false }) {
             }
             if (l === "Become a Client") {
               return (
-                <Link key={l} to="/become-client" className="nav-btn-custom">
+                <a key={l} href={CLIENT_PORTAL_URL || "/become-client"} className="nav-btn-custom">
                   {l}
-                </Link>
+                </a>
               );
             }
             if (l === "Become a Partner") {
               return (
-                <Link key={l} to="/become-partner" className="nav-btn-custom">
+                <a key={l} href={PARTNER_PORTAL_URL || "/become-partner"} className="nav-btn-custom">
                   {l}
-                </Link>
+                </a>
               );
             }
             return (
@@ -404,26 +404,26 @@ export default function Navbar({ isClientPartnerPage = false }) {
             }
             if (l === "Become a Client") {
               return (
-                <Link
+                <a
                   key={l}
-                  to="/become-client"
+                  href={CLIENT_PORTAL_URL || "/become-client"}
                   className="nav-btn-custom mobile-btn-custom"
                   onClick={closeAll}
                 >
                   {l}
-                </Link>
+                </a>
               );
             }
             if (l === "Become a Partner") {
               return (
-                <Link
+                <a
                   key={l}
-                  to="/become-partner"
+                  href={PARTNER_PORTAL_URL || "/become-partner"}
                   className="nav-btn-custom mobile-btn-custom"
                   onClick={closeAll}
                 >
                   {l}
-                </Link>
+                </a>
               );
             }
             return (

@@ -28,7 +28,7 @@ public class ChatMessage {
     private String senderName;
 
     @Column(name = "sender_role")
-    private String senderRole; // "DIRECTOR" or "TALENT"
+    private String senderRole; // "DIRECTOR", "TALENT", "CLIENT", "PARTNER"
 
     @Column(name = "recipient_id")
     private Long recipientId;
@@ -44,6 +44,18 @@ public class ChatMessage {
 
     @Column(name = "message_text", columnDefinition = "TEXT", nullable = false)
     private String messageText;
+
+    @Column(name = "media_url", length = 1000)
+    private String mediaUrl;
+
+    @Column(name = "media_type", length = 50)
+    private String mediaType; // "IMAGE", "VIDEO", "AUDIO", "DOCUMENT", "LINK"
+
+    @Column(name = "file_name")
+    private String fileName;
+
+    @Column(name = "file_size")
+    private Long fileSize;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

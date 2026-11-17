@@ -20,5 +20,9 @@ public class ChatMessageDTO {
     private Long opportunityId;
     private String conversationKey;
     private String messageText;
+    private String mediaUrl;
+    private String mediaType;
+    private String fileName;
+    private Long fileSize;
     private LocalDateTime createdAt;
 }

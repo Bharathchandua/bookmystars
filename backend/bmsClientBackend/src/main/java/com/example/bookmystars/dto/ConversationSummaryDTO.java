@@ -26,4 +26,6 @@ public class ConversationSummaryDTO {
     private Long opportunityId;
     private Object bookingRequest;
     private Object accessRequest;
+    private Object chatRequest;
+    private Boolean isOnline;
 }

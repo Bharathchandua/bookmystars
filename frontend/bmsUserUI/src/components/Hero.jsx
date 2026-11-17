@@ -160,7 +160,7 @@ export default function Hero() {
               </Link>
             )}
 
-            <Link to="/become-client" style={{ textDecoration: "none" }}>
+            <a href={CLIENT_PORTAL_URL || "/become-client"} style={{ textDecoration: "none" }}>
               <Button
                 variant="secondary-hero"
                 icon={<Camera size={17} />}
@@ -168,7 +168,7 @@ export default function Hero() {
               >
                 Post a Casting Call
               </Button>
-            </Link>
+            </a>
           </div>
         </div>
 

@@ -33,7 +33,8 @@ import {
   Play,
   Video,
   Pencil,
-  Trash2
+  Trash2,
+  MessageSquare
 } from "lucide-react";
 import { getStoredUser, logoutUser } from "../../features/bms/api/auth/authApi";
 import { opportunitiesApi } from "../../features/bms/api/opportunities/opportunitiesApi";
@@ -43,6 +44,7 @@ import { bookingsApi } from "../../features/bms/api/bookings/bookingsApi";
 import { showSuccess, showError, confirmDelete } from "../../shared/utils/alert";
 import ClientProfile from "./ClientProfile";
 import ClientTalentSearch from "./ClientTalentSearch";
+import Messages from "../Messages/Messages";
 import ClientBookingRequests from "./ClientBookingRequests";
 import ClientPostRequirementModal from "./ClientPostRequirementModal";
 import ShowcaseWorksView from "./components/ShowcaseWorksView";
@@ -455,6 +457,7 @@ export default function ClientDashboard() {
               { id: "PROFILE", label: "Brand Profile", icon: Building2, count: null },
               { id: "SHOWCASE", label: "Showcase Works", icon: Sparkles, count: null },
               { id: "SEARCH_TALENT", label: "Scout Models & Faces", icon: Search, count: null },
+              { id: "MESSAGES", label: "Messages & Inquiries", icon: MessageSquare, count: null },
               { id: "BRIEFS", label: "Shoot Briefs & Ad Posts", icon: Megaphone, count: briefsList.length },
               { id: "REQUESTS", label: "Audition Calls & Bookings", icon: Calendar, count: sentRequestsList.length },
               { id: "SHORTLISTED", label: "Shortlisted Talent", icon: Bookmark, count: shortlistedIds.length }
@@ -545,6 +548,7 @@ export default function ClientDashboard() {
                 {activeNav === "PROFILE" && "Corporate Brand Profile"}
                 {activeNav === "SHOWCASE" && "Showcase Works & Commercial Portfolio"}
                 {activeNav === "SEARCH_TALENT" && "Scout Models & Faces"}
+                {activeNav === "MESSAGES" && "Messages & Direct Inquiries"}
                 {activeNav === "BRIEFS" && "Shoot Briefs & Campaigns"}
                 {activeNav === "REQUESTS" && "Audition Calls & Booking Requests"}
                 {activeNav === "SHORTLISTED" && "Shortlisted Talent"}
@@ -1357,7 +1361,17 @@ export default function ClientDashboard() {
               onToggleShortlist={toggleShortlist}
               onOpenBriefModal={() => setShowPostReqModal(true)}
               onOpenRequestsTab={() => setActiveNav("REQUESTS")}
+              onOpenMessages={() => setActiveNav("MESSAGES")}
             />
+          )}
+
+          {/* ─────────────────────────────────────────────────────────── */}
+          {/* TAB 3.5: MESSAGES & DIRECT INQUIRIES                        */}
+          {/* ─────────────────────────────────────────────────────────── */}
+          {activeNav === "MESSAGES" && (
+            <div className="space-y-4">
+              <Messages />
+            </div>
           )}
 
           {/* ─────────────────────────────────────────────────────────── */}

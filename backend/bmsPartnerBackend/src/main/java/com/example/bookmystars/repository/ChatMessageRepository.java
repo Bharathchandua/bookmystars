@@ -25,4 +25,7 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
 
     @Query("SELECT m FROM ChatMessage m WHERE m.senderId = :userId OR m.recipientId = :userId ORDER BY m.createdAt DESC")
     List<ChatMessage> findAllByUserId(@Param("userId") Long userId);
+
+    @Query("SELECT m FROM ChatMessage m WHERE ((m.senderId = :u1 AND m.recipientId = :u2) OR (m.senderId = :u2 AND m.recipientId = :u1)) AND m.bookingId IS NULL AND m.opportunityId IS NULL ORDER BY m.createdAt ASC")
+    List<ChatMessage> findDirectMessagesBetweenUsers(@Param("u1") Long u1, @Param("u2") Long u2);
 }
