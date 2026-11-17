@@ -11,7 +11,13 @@ import {
   respondToProfileAccessRequest, 
   updateBookingRequestStatus,
   getStoredUser,
-  getFullImageUrl 
+  getFullImageUrl,
+  sendHeartbeat,
+  sendOffline,
+  getUserPresence,
+  getBatchUserPresence,
+  setTypingStatus,
+  getThreadTypingStatus
 } from "../../features/bms/api";
 import { showSuccess, showError } from "../../shared/utils/alert";
 import "./messages.css";
@@ -31,12 +37,45 @@ export default function Messages() {
   const [activeFilter, setActiveFilter] = useState("all");
   const [isMobileChatOpen, setIsMobileChatOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [typingMap, setTypingMap] = useState({});
 
   // Keep a ref to activeChatId for live polling without re-creating interval
   const activeChatIdRef = useRef(activeChatId);
   useEffect(() => {
     activeChatIdRef.current = activeChatId;
   }, [activeChatId]);
+
+  // Real-time Presence Lifecycle: Tracks active status and visibility
+  useEffect(() => {
+    sendHeartbeat();
+    const heartbeatInterval = setInterval(() => {
+      if (!document.hidden) {
+        sendHeartbeat();
+      }
+    }, 12000);
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        sendOffline();
+      } else {
+        sendHeartbeat();
+      }
+    };
+
+    const handleBeforeUnload = () => {
+      sendOffline();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      clearInterval(heartbeatInterval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      sendOffline();
+    };
+  }, []);
 
   // Load all user conversations from database
   const loadConversations = useCallback(async () => {
@@ -74,7 +113,7 @@ export default function Messages() {
           lastMsg: c.lastMsg || "Conversation started",
           time: timeStr,
           unread: c.unreadCount || 0,
-          online: true,
+          online: c.isOnline === true,
           bookingRequest: c.bookingRequest,
           accessRequest: c.accessRequest,
           booking: c.bookingRequest ? {
@@ -123,12 +162,24 @@ export default function Messages() {
               : "Start a conversation",
             time: "Just now",
             unread: 0,
-            online: true
+            online: false
           };
 
           formatted.unshift(newConv);
           targetId = prospectiveKey;
         }
+      }
+
+      const targetUserIds = formatted.map(c => c.targetUserId).filter(Boolean);
+      if (targetUserIds.length > 0) {
+        try {
+          const batchOnline = await getBatchUserPresence(targetUserIds);
+          formatted.forEach(c => {
+            if (c.targetUserId && batchOnline[c.targetUserId] !== undefined) {
+              c.online = Boolean(batchOnline[c.targetUserId]);
+            }
+          });
+        } catch (_) {}
       }
 
       setConversations(formatted);
@@ -239,14 +290,44 @@ export default function Messages() {
     fetchThreadMessages(activeChatId);
   }, [activeChatId, conversations, isProfessional, fetchThreadMessages]);
 
-  // Real-time live polling: update active thread every 3 seconds stably
+  // Real-time live polling: update active thread every 2 seconds stably
   useEffect(() => {
     if (!activeChatId) return;
-    const interval = setInterval(() => {
+    const interval = setInterval(async () => {
+      if (document.hidden) return;
       fetchThreadMessages(activeChatId);
-    }, 3000);
+
+      // 1. Live Typing Status
+      try {
+        const typingRes = await getThreadTypingStatus(activeChatId);
+        const isTyping = Boolean(typingRes?.isTyping);
+        setTypingMap((prev) => {
+          if (prev[activeChatId] === isTyping) return prev;
+          return { ...prev, [activeChatId]: isTyping };
+        });
+      } catch (_) {}
+
+      // 2. Live Presence of Active Conversation Partner
+      const currentConv = conversations.find(c => c.id === activeChatId);
+      if (currentConv?.targetUserId) {
+        try {
+          const presenceRes = await getUserPresence(currentConv.targetUserId);
+          const isTargetOnline = Boolean(presenceRes?.isOnline);
+          setConversations((prev) => {
+            const item = prev.find(c => c.id === activeChatId);
+            if (!item || item.online === isTargetOnline) return prev;
+            return prev.map(c => c.id === activeChatId ? { ...c, online: isTargetOnline } : c);
+          });
+        } catch (_) {}
+      }
+    }, 2000);
     return () => clearInterval(interval);
-  }, [activeChatId, fetchThreadMessages]);
+  }, [activeChatId, fetchThreadMessages, conversations]);
+
+  const handleUserTyping = useCallback((isTyping) => {
+    if (!activeChatId) return;
+    setTypingStatus(activeChatId, isTyping);
+  }, [activeChatId]);
 
   // Handle responding to shoot booking request
   const handleRespondBookingRequest = async (bookingId, accepted) => {
@@ -408,6 +489,11 @@ export default function Messages() {
     return true;
   });
 
+  const conversationsWithTyping = filteredConversations.map((c) => ({
+    ...c,
+    isTyping: Boolean(typingMap[c.id] || typingMap[c.conversationKey]),
+  }));
+
   return (
     <AppLayout
       pageTitle="Messages"
@@ -434,7 +520,7 @@ export default function Messages() {
           <div className={`msg-grid-layout ${isMobileChatOpen ? "mobile-chat-open" : ""}`}>
             {/* Column 1: Chat List */}
             <ChatList
-              conversations={filteredConversations}
+              conversations={conversationsWithTyping}
               activeChatId={activeChatId}
               setActiveChatId={handleChatSelect}
               searchQuery={searchQuery}
@@ -452,6 +538,8 @@ export default function Messages() {
               onOpenSidebar={() => setIsSidebarOpen(true)}
               onRespondAccessRequest={handleRespondAccessRequest}
               onRespondBookingRequest={handleRespondBookingRequest}
+              isOtherUserTyping={Boolean(typingMap[activeChatId])}
+              onTyping={handleUserTyping}
             />
 
             {/* Column 3: Contact Details Sidebar */}

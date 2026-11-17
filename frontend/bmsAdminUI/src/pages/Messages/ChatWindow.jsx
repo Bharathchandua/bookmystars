@@ -51,18 +51,42 @@ export default function ChatWindow({
   onBack, 
   onOpenSidebar, 
   onRespondAccessRequest,
-  onRespondBookingRequest
+  onRespondBookingRequest,
+  isOtherUserTyping = false,
+  onTyping
 }) {
   const [inputText, setInputText] = useState("");
   const messagesEndRef = useRef(null);
+  const typingDebounceRef = useRef(null);
 
   // Auto-scroll to bottom of chat
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const handleInputChange = (e) => {
+    const val = e.target.value;
+    setInputText(val);
+    if (onTyping) {
+      onTyping(true);
+      if (typingDebounceRef.current) clearTimeout(typingDebounceRef.current);
+      typingDebounceRef.current = setTimeout(() => {
+        onTyping(false);
+      }, 2500);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (typingDebounceRef.current) clearTimeout(typingDebounceRef.current);
+      if (onTyping) onTyping(false);
+    };
+  }, [activeChat?.id, onTyping]);
+
   const handleSend = () => {
     if (!inputText.trim()) return;
+    if (typingDebounceRef.current) clearTimeout(typingDebounceRef.current);
+    if (onTyping) onTyping(false);
     onSendMessage(inputText.trim());
     setInputText("");
   };
@@ -102,9 +126,16 @@ export default function ChatWindow({
           </div>
           <div className="msg-header-text">
             <h3>{activeChat.name}</h3>
-            <p>
-              {activeChat.role} {activeChat.company && `· ${activeChat.company}`}
-            </p>
+            {isOtherUserTyping ? (
+              <p style={{ color: "#10b981", fontWeight: 700, fontStyle: "italic", margin: 0 }}>
+                typing...
+              </p>
+            ) : (
+              <p>
+                {activeChat.role} {activeChat.company && `· ${activeChat.company}`}
+                {activeChat.online && <span style={{ color: "#10b981", marginLeft: 6, fontWeight: 700 }}>• Online</span>}
+              </p>
+            )}
           </div>
         </div>
 
@@ -540,6 +571,14 @@ export default function ChatWindow({
 
       {/* Chat Composer Footer */}
       <div className="msg-chat-composer">
+        {/* Live Typing Indicator */}
+        {isOtherUserTyping && (
+          <div style={{ padding: "4px 14px", fontSize: "12px", color: "#059669", background: "rgba(16, 185, 129, 0.12)", borderRadius: "20px", display: "inline-flex", alignItems: "center", gap: "6px", margin: "0 0 6px 12px", fontWeight: 700, width: "fit-content" }}>
+            <span style={{ fontSize: "9px" }}>●</span>
+            <span>{activeChat.name} is typing...</span>
+          </div>
+        )}
+
         {/* WhatsApp-style Input Capsule (White Section) */}
         <div className="msg-composer-capsule">
           {/* Smiley Icon on Left */}
@@ -552,7 +591,11 @@ export default function ChatWindow({
             type="text"
             placeholder="Message"
             value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
+            onChange={handleInputChange}
+            onBlur={() => {
+              if (typingDebounceRef.current) clearTimeout(typingDebounceRef.current);
+              if (onTyping) onTyping(false);
+            }}
             onKeyDown={handleKeyDown}
             className="msg-capsule-input"
           />

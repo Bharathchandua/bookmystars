@@ -1084,8 +1084,8 @@ public class ChatService {
     // REAL-TIME PRESENCE & TYPING METHODS
     // =========================================================================
 
-    private final Map<Long, Long> onlineHeartbeats = new java.util.concurrent.ConcurrentHashMap<>();
-    private final Map<String, Map<Long, Long>> threadTypingStatus = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final Map<Long, Long> onlineHeartbeats = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final Map<String, Map<Long, Long>> threadTypingStatus = new java.util.concurrent.ConcurrentHashMap<>();
 
     private static final long ONLINE_TIMEOUT_MS = 25_000L;
     private static final long TYPING_TIMEOUT_MS = 4_500L;

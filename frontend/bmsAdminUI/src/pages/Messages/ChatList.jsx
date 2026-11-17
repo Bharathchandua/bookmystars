@@ -93,7 +93,13 @@ export default function ChatList({
                 </div>
 
                 <div className="msg-conv-preview-row">
-                  <p className="msg-conv-preview">{conv.lastMsg}</p>
+                  {conv.isTyping ? (
+                    <p className="msg-conv-preview" style={{ color: "#10b981", fontWeight: 700, fontStyle: "italic" }}>
+                      typing...
+                    </p>
+                  ) : (
+                    <p className="msg-conv-preview">{conv.lastMsg}</p>
+                  )}
                   {conv.starred && (
                     <Star size={13} className="msg-star-icon filled" />
                   )}

@@ -675,7 +675,7 @@ export default function Messages() {
       }
     };
 
-    const interval = setInterval(poll, 4000);
+    const interval = setInterval(poll, 2000);
     return () => clearInterval(interval);
   }, [activeChatId, currentUserId]);
 

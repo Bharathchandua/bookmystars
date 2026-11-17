@@ -268,6 +268,15 @@ public class ChatService {
             }
         }
 
+        // Populate isOnline status
+        for (ConversationSummaryDTO conv : convMap.values()) {
+            if (conv.getTargetUserId() != null) {
+                conv.setIsOnline(isUserOnline(conv.getTargetUserId()));
+            } else {
+                conv.setIsOnline(false);
+            }
+        }
+
         // Sort conversations by latest message / update time descending
         return convMap.values().stream()
                 .sorted((a, b) -> {
@@ -276,6 +285,95 @@ public class ChatService {
                     return t2.compareTo(t1);
                 })
                 .collect(Collectors.toList());
+    }
+
+    // =========================================================================
+    // REAL-TIME PRESENCE & TYPING SYSTEM
+    // =========================================================================
+
+    private static final Map<Long, Long> onlineHeartbeats = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final Map<String, Map<Long, Long>> threadTypingStatus = new java.util.concurrent.ConcurrentHashMap<>();
+
+    private static final long ONLINE_TIMEOUT_MS = 25_000L;
+    private static final long TYPING_TIMEOUT_MS = 4_500L;
+
+    public void recordHeartbeat(String userEmail) {
+        User user = userRepository.findByEmail(userEmail).orElse(null);
+        if (user != null) {
+            onlineHeartbeats.put(user.getId(), System.currentTimeMillis());
+        }
+    }
+
+    public void recordOffline(String userEmail) {
+        User user = userRepository.findByEmail(userEmail).orElse(null);
+        if (user != null) {
+            onlineHeartbeats.remove(user.getId());
+        }
+    }
+
+    public boolean isUserOnline(Long userId) {
+        if (userId == null) return false;
+        Long lastSeen = onlineHeartbeats.get(userId);
+        if (lastSeen == null) return false;
+        return (System.currentTimeMillis() - lastSeen) < ONLINE_TIMEOUT_MS;
+    }
+
+    public Map<Long, Boolean> getBatchUserOnlineStatus(List<Long> userIds) {
+        Map<Long, Boolean> result = new HashMap<>();
+        long now = System.currentTimeMillis();
+        if (userIds != null) {
+            for (Long uid : userIds) {
+                if (uid != null) {
+                    Long lastSeen = onlineHeartbeats.get(uid);
+                    boolean online = lastSeen != null && (now - lastSeen) < ONLINE_TIMEOUT_MS;
+                    result.put(uid, online);
+                }
+            }
+        }
+        return result;
+    }
+
+    public void setTypingStatus(String userEmail, String threadKey, boolean isTyping) {
+        if (threadKey == null || threadKey.trim().isEmpty()) return;
+        User user = userRepository.findByEmail(userEmail).orElse(null);
+        if (user == null) return;
+
+        Map<Long, Long> userTypingMap = threadTypingStatus.computeIfAbsent(threadKey, k -> new java.util.concurrent.ConcurrentHashMap<>());
+        if (isTyping) {
+            userTypingMap.put(user.getId(), System.currentTimeMillis());
+        } else {
+            userTypingMap.remove(user.getId());
+        }
+    }
+
+    public Map<String, Object> getThreadTypingStatus(String userEmail, String threadKey) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("isTyping", false);
+        response.put("threadKey", threadKey);
+
+        if (threadKey == null || threadKey.trim().isEmpty()) return response;
+        User currentUser = userRepository.findByEmail(userEmail).orElse(null);
+        Long myId = currentUser != null ? currentUser.getId() : null;
+
+        Map<Long, Long> userTypingMap = threadTypingStatus.get(threadKey);
+        if (userTypingMap == null || userTypingMap.isEmpty()) return response;
+
+        long now = System.currentTimeMillis();
+        for (Map.Entry<Long, Long> entry : userTypingMap.entrySet()) {
+            Long typistId = entry.getKey();
+            Long timestamp = entry.getValue();
+
+            if (!typistId.equals(myId) && timestamp != null && (now - timestamp) < TYPING_TIMEOUT_MS) {
+                User typist = userRepository.findById(typistId).orElse(null);
+                String typistName = typist != null ? typist.getFullName() : "User";
+                response.put("isTyping", true);
+                response.put("typistId", typistId);
+                response.put("typistName", typistName);
+                return response;
+            }
+        }
+
+        return response;
     }
 
     private String getUserPhotoUrl(User user) {

@@ -84,4 +84,53 @@ public class ChatController {
         }
         return ResponseEntity.ok(chatService.sendMessage(bookingId, email, text.trim()));
     }
+
+    // =========================================================================
+    // REAL-TIME PRESENCE & TYPING ENDPOINTS
+    // =========================================================================
+
+    @PostMapping("/presence/heartbeat")
+    public ResponseEntity<Map<String, Object>> recordHeartbeat(Authentication authentication) {
+        String email = authentication.getName();
+        chatService.recordHeartbeat(email);
+        return ResponseEntity.ok(Map.of("status", "ONLINE", "timestamp", System.currentTimeMillis()));
+    }
+
+    @PostMapping("/presence/offline")
+    public ResponseEntity<Map<String, Object>> recordOffline(Authentication authentication) {
+        String email = authentication.getName();
+        chatService.recordOffline(email);
+        return ResponseEntity.ok(Map.of("status", "OFFLINE"));
+    }
+
+    @GetMapping("/presence/status/{targetUserId}")
+    public ResponseEntity<Map<String, Object>> getUserPresence(@PathVariable Long targetUserId) {
+        boolean online = chatService.isUserOnline(targetUserId);
+        return ResponseEntity.ok(Map.of("userId", targetUserId, "isOnline", online));
+    }
+
+    @PostMapping("/presence/batch-status")
+    public ResponseEntity<Map<Long, Boolean>> getBatchUserPresence(@RequestBody List<Long> userIds) {
+        return ResponseEntity.ok(chatService.getBatchUserOnlineStatus(userIds));
+    }
+
+    @PostMapping("/thread/{threadKey}/typing")
+    public ResponseEntity<Map<String, Object>> setTypingStatus(
+            @PathVariable String threadKey,
+            @RequestParam(defaultValue = "true") boolean isTyping,
+            Authentication authentication
+    ) {
+        String email = authentication.getName();
+        chatService.setTypingStatus(email, threadKey, isTyping);
+        return ResponseEntity.ok(Map.of("success", true, "isTyping", isTyping));
+    }
+
+    @GetMapping("/thread/{threadKey}/typing")
+    public ResponseEntity<Map<String, Object>> getThreadTypingStatus(
+            @PathVariable String threadKey,
+            Authentication authentication
+    ) {
+        String email = authentication.getName();
+        return ResponseEntity.ok(chatService.getThreadTypingStatus(email, threadKey));
+    }
 }
