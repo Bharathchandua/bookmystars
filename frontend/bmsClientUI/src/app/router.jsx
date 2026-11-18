@@ -15,7 +15,7 @@ function ClientRoot() {
   if (currentUser && (currentUser.accountType || "").toUpperCase() === "CLIENT") {
     return <Navigate to="/dashboard" replace />;
   }
-  // Directly display the Branding / Requirements Become Client Page
+  // Directly render the Branding / Requirements Become Client Page (Photo 2)
   return <BecomeClient />;
 }
 
@@ -34,12 +34,12 @@ function ProtectedClientRoute({ children }) {
 export default function ClientRouter() {
   return (
     <Routes>
-      {/* Root path displays the Branding / Requirements Become Client Page */}
+      {/* Root path displays the Brand Registration Page directly (no landing home page) */}
       <Route path="/" element={<ClientRoot />} />
       <Route path="/become-client" element={<ClientRoot />} />
       <Route path="/client" element={<ClientRoot />} />
 
-      {/* Standalone Registration Form */}
+      {/* Brand Registration */}
       <Route path="/join" element={<ClientRegisterPage />} />
       <Route path="/signup" element={<ClientRegisterPage />} />
       <Route path="/register" element={<ClientRegisterPage />} />
