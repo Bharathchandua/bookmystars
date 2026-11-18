@@ -18,6 +18,7 @@ import logo from "../../assets/logo.png";
 import CountUpModule from "react-countup";
 import { loginUser, logoutUser } from "../../features/bms/api/auth/authApi";
 import { usePartnerAuth } from "../../app/providers/PartnerAuthProvider";
+import { USER_PORTAL_URL } from "../../services/apiConfig";
 const CountUp = typeof CountUpModule === "function" ? CountUpModule : (CountUpModule.default || CountUpModule);
 
 export default function PartnerSignIn() {
@@ -83,9 +84,9 @@ export default function PartnerSignIn() {
       {/* Global Top White Header Bar */}
       <header className="auth-header">
         <div className="container-fluid px-4 px-lg-5 nav-inner" style={{ width: "100%" }}>
-          <Link to="/" className="logo text-decoration-none">
+          <a href={USER_PORTAL_URL || "/"} className="logo text-decoration-none" title="Go to BookMyStars Homepage">
             <img src={logo} alt="Book My Stars" className="navbar-logo" />
-          </Link>
+          </a>
           <div className="header-link" style={{ display: "flex", alignItems: "center", gap: "14px" }}>
             <span>New Academy Partner? <Link to="/become-partner#partner-registration-section" style={{ color: "#ec008c", fontWeight: "800" }}>Register Partner</Link></span>
             <span style={{ color: "#cbd5e1" }}>|</span>
@@ -263,10 +264,16 @@ export default function PartnerSignIn() {
         >
           <div style={{ maxWidth: "460px", width: "100%" }}>
             
-            {/* Back Button */}
+            {/* Back Button to BMS User Homepage */}
             <button
               type="button"
-              onClick={() => navigate("/")}
+              onClick={() => {
+                if (USER_PORTAL_URL) {
+                  window.location.href = USER_PORTAL_URL;
+                } else {
+                  navigate("/");
+                }
+              }}
               style={{
                 background: "none",
                 border: "none",

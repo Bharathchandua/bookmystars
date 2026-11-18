@@ -86,9 +86,9 @@ export default function Navbar({ isClientPartnerPage = false }) {
   return (
     <nav className="navbar-wrap" ref={navRef}>
       <div className="container-fluid px-4 px-lg-5 nav-inner">
-        <Link to="/" className="logo text-decoration-none" onClick={closeAll}>
-          <img src={logo} alt="Book My Stars Client Portal" className="navbar-logo" />
-        </Link>
+        <a href={USER_PORTAL_URL || "/"} className="logo text-decoration-none" onClick={closeAll} title="Go to BookMyStars Homepage">
+          <img src={logo} alt="Book My Stars" className="navbar-logo" />
+        </a>
 
         {/* Desktop Nav Links */}
         <div className="nav-links">
