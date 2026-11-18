@@ -10,7 +10,7 @@ export const BACKENDS = {
   },
   cloud: {
     partner: 'https://bookmystarsproduct.cloudjiffy.net/bmspartner',
-    userUi: 'https://bmsuserfront.netlify.app',
+    userUi: 'https://userbms.netlify.app',
   },
 };
 

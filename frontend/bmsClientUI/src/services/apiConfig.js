@@ -11,7 +11,7 @@ export const BACKENDS = {
   },
   cloud: {
     client: 'https://bookmystarsproduct.cloudjiffy.net/bmsclient',
-    userUi: 'https://bmsuserfront.netlify.app',
+    userUi: 'https://userbms.netlify.app',
     partnerUi: 'https://bmspartnerui.netlify.app',
   },
 };
