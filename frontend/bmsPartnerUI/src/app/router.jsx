@@ -3,8 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { usePartnerAuth } from "./providers/PartnerAuthProvider";
 import { getStoredUser } from "../features/bms/api/auth/authApi";
 
-// Original Partner Components from bmsUserUI
-import BecomePartner from "../components/ClientPartner/BecomePartner/BecomePartner.jsx";
+// Partner Components
 import PartnerSignIn from "../pages/Partner/PartnerSignIn.jsx";
 import PartnerDashboard from "../pages/Partner/PartnerDashboard.jsx";
 import PartnerRegisterPage from "../pages/Auth/PartnerRegisterPage.jsx";
@@ -15,7 +14,8 @@ function PartnerRoot() {
   if (currentUser && (currentUser.accountType || "").toUpperCase() === "PARTNER") {
     return <Navigate to="/dashboard" replace />;
   }
-  return <BecomePartner />;
+  // Directly display the Partner Academy Registration Page (homepage removed per requirement)
+  return <PartnerRegisterPage />;
 }
 
 function ProtectedPartnerRoute({ children }) {
@@ -33,10 +33,10 @@ function ProtectedPartnerRoute({ children }) {
 export default function PartnerRouter() {
   return (
     <Routes>
-      {/* Root path displays dedicated Become Partner onboarding */}
+      {/* Root path displays dedicated Partner Academy Registration directly */}
       <Route path="/" element={<PartnerRoot />} />
 
-      {/* Partner Academy Registration Structure (Select Academy Category + Org Details Form) */}
+      {/* Partner Academy Registration Paths */}
       <Route path="/join" element={<PartnerRegisterPage />} />
       <Route path="/signup" element={<PartnerRegisterPage />} />
       <Route path="/register" element={<PartnerRegisterPage />} />
@@ -44,10 +44,8 @@ export default function PartnerRouter() {
       <Route path="/partner/register" element={<PartnerRegisterPage />} />
       <Route path="/partner/join" element={<PartnerRegisterPage />} />
       <Route path="/client-partner/join" element={<PartnerRegisterPage />} />
-
-      {/* Become Partner Landing Page (includes the Academy Registration Form) */}
-      <Route path="/become-partner" element={<BecomePartner />} />
-      <Route path="/partner" element={<BecomePartner />} />
+      <Route path="/become-partner" element={<PartnerRegisterPage />} />
+      <Route path="/partner" element={<PartnerRegisterPage />} />
 
       {/* Partner Sign In */}
       <Route path="/signin" element={<PartnerSignIn />} />

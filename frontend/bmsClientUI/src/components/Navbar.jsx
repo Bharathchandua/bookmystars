@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { ChevronDown, Menu, X, LogOut } from "lucide-react";
+import { Menu, X, LogOut } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import logo from "../assets/logo.png";
 import Button from "./common/Button";
@@ -58,61 +58,30 @@ export default function Navbar({ isClientPartnerPage = false }) {
     navigate("/client/signin");
   };
 
-  const handleRegisterClick = (e) => {
-    if (e) e.preventDefault();
-    closeAll();
-    if (location.pathname === "/" || location.pathname === "/become-client" || location.pathname === "/client") {
-      const el = document.getElementById("client-registration-section");
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth" });
-        return;
-      }
-    }
-    navigate("/client/join");
-  };
-
-  const scrollToSection = (id) => {
-    closeAll();
-    if (location.pathname !== "/" && location.pathname !== "/become-client" && location.pathname !== "/client") {
-      navigate(`/#${id}`);
-      return;
-    }
-    const el = document.getElementById(id);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth" });
-    }
-  };
-
   return (
     <nav className="navbar-wrap" ref={navRef}>
       <div className="container-fluid px-4 px-lg-5 nav-inner">
+        {/* Top-Left BookMyStars Logo strictly returns to BMS User Homepage */}
         <a href={USER_PORTAL_URL || "/"} className="logo text-decoration-none" onClick={closeAll} title="Go to BookMyStars Homepage">
           <img src={logo} alt="Book My Stars" className="navbar-logo" />
         </a>
 
         {/* Desktop Nav Links */}
         <div className="nav-links">
-          <button
-            onClick={() => scrollToSection("client-services-section")}
-            className="nav-link-custom bg-transparent border-0"
-            style={{ cursor: "pointer" }}
+          <Link
+            to="/client/register"
+            className="nav-link-custom text-decoration-none"
+            onClick={closeAll}
           >
-            Solutions
-          </button>
-          <button
-            onClick={() => scrollToSection("client-provides-section")}
-            className="nav-link-custom bg-transparent border-0"
-            style={{ cursor: "pointer" }}
+            Register Brand
+          </Link>
+          <Link
+            to="/client/signin"
+            className="nav-link-custom text-decoration-none"
+            onClick={closeAll}
           >
-            What We Provide
-          </button>
-          <button
-            onClick={handleRegisterClick}
-            className="nav-link-custom bg-transparent border-0"
-            style={{ cursor: "pointer" }}
-          >
-            Post Requirements
-          </button>
+            Client Sign In
+          </Link>
           {USER_PORTAL_URL && (
             <a
               href={USER_PORTAL_URL}
@@ -143,16 +112,13 @@ export default function Navbar({ isClientPartnerPage = false }) {
               </Button>
             </div>
           ) : (
-            <>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               <Link to="/client/signin">
                 <Button variant="signin" icon={<i className="bi bi-person"></i>} iconPosition="left">
                   Client Sign In
                 </Button>
               </Link>
-              <Button variant="join" onClick={handleRegisterClick}>
-                Register Brand
-              </Button>
-            </>
+            </div>
           )}
 
           <button
@@ -168,28 +134,24 @@ export default function Navbar({ isClientPartnerPage = false }) {
       {/* Mobile Menu */}
       {menuOpen && (
         <div className="mobile-menu">
-          <button
-            onClick={() => scrollToSection("client-services-section")}
-            className="text-left w-100 bg-transparent border-0 py-2 text-dark font-weight-bold"
+          <Link
+            to="/client/register"
+            className="text-left w-100 bg-transparent border-0 py-2 text-dark font-weight-bold text-decoration-none d-block"
+            onClick={closeAll}
           >
-            Solutions
-          </button>
-          <button
-            onClick={() => scrollToSection("client-provides-section")}
-            className="text-left w-100 bg-transparent border-0 py-2 text-dark font-weight-bold"
+            Register Brand
+          </Link>
+          <Link
+            to="/client/signin"
+            className="text-left w-100 bg-transparent border-0 py-2 text-dark font-weight-bold text-decoration-none d-block"
+            onClick={closeAll}
           >
-            What We Provide
-          </button>
-          <button
-            onClick={handleRegisterClick}
-            className="text-left w-100 bg-transparent border-0 py-2 text-dark font-weight-bold"
-          >
-            Post Requirements
-          </button>
+            Client Sign In
+          </Link>
           {USER_PORTAL_URL && (
             <a
               href={USER_PORTAL_URL}
-              className="d-block py-2 text-dark font-weight-bold"
+              className="d-block py-2 text-dark font-weight-bold text-decoration-none"
             >
               Talent Platform &rarr;
             </a>
@@ -214,16 +176,11 @@ export default function Navbar({ isClientPartnerPage = false }) {
                 </Button>
               </>
             ) : (
-              <>
-                <Link to="/client/signin" onClick={closeAll}>
-                  <Button variant="signin" className="w-100" icon={<i className="bi bi-person"></i>} iconPosition="left">
-                    Client Sign In
-                  </Button>
-                </Link>
-                <Button variant="join" className="w-100" onClick={handleRegisterClick}>
-                  Register Brand
+              <Link to="/client/signin" onClick={closeAll}>
+                <Button variant="signin" className="w-100" icon={<i className="bi bi-person"></i>} iconPosition="left">
+                  Client Sign In
                 </Button>
-              </>
+              </Link>
             )}
           </div>
         </div>
