@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Users, Search } from "lucide-react";
 import heroImg from "../../../assets/become-client-hero.jpg";
 import Button from "../../common/Button";
+import { USER_PORTAL_URL } from "../../../services/apiConfig";
 
 export default function AgencyHero() {
   const scrollToRegistration = () => {
@@ -18,7 +19,7 @@ export default function AgencyHero() {
         <div className="agency-hero-left">
           {/* Breadcrumb */}
           <nav className="agency-breadcrumb">
-            <Link to="/">Home</Link>
+            <a href={USER_PORTAL_URL || "/"}>Home</a>
             <span>/</span>
             <Link to="/become-partner">Agencies</Link>
             <span>/</span>

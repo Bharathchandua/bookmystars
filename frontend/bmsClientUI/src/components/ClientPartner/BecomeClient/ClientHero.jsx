@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { UsersRound, ShieldCheck } from "lucide-react";
 import CountUpModule from "react-countup";
 import heroImg from "../../../assets/client-hero.png";
+import { USER_PORTAL_URL } from "../../../services/apiConfig";
 
 const CountUp = typeof CountUpModule === "function" ? CountUpModule : (CountUpModule.default || CountUpModule);
 
@@ -24,7 +25,7 @@ export default function ClientHero() {
         <div className="bc-hero-copy">
           {/* Breadcrumb */}
           <nav className="bc-breadcrumb">
-            <Link to="/">Home</Link>
+            <a href={USER_PORTAL_URL || "/"}>Home</a>
             <span>/</span>
             <Link to="/become-client">Agencies</Link>
             <span>/</span>

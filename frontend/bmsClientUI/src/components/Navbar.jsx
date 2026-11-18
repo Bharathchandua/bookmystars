@@ -58,6 +58,17 @@ export default function Navbar({ isClientPartnerPage = false }) {
     navigate("/client/signin");
   };
 
+  const handleJoinClick = (e) => {
+    if (e) e.preventDefault();
+    closeAll();
+    const el = document.getElementById("client-registration-section");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth" });
+    } else {
+      navigate("/client/join");
+    }
+  };
+
   return (
     <nav className="navbar-wrap" ref={navRef}>
       <div className="container-fluid px-4 px-lg-5 nav-inner">
@@ -66,34 +77,7 @@ export default function Navbar({ isClientPartnerPage = false }) {
           <img src={logo} alt="Book My Stars" className="navbar-logo" />
         </a>
 
-        {/* Desktop Nav Links */}
-        <div className="nav-links">
-          <Link
-            to="/client/register"
-            className="nav-link-custom text-decoration-none"
-            onClick={closeAll}
-          >
-            Register Brand
-          </Link>
-          <Link
-            to="/client/signin"
-            className="nav-link-custom text-decoration-none"
-            onClick={closeAll}
-          >
-            Client Sign In
-          </Link>
-          {USER_PORTAL_URL && (
-            <a
-              href={USER_PORTAL_URL}
-              className="nav-link-custom text-decoration-none"
-              title="Switch to Main Talent Platform"
-            >
-              Talent Platform &rarr;
-            </a>
-          )}
-        </div>
-
-        {/* Desktop Actions */}
+        {/* Desktop Actions: Sign In + Join Free matching exact page design */}
         <div className="nav-actions">
           {isClientRole ? (
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
@@ -112,12 +96,15 @@ export default function Navbar({ isClientPartnerPage = false }) {
               </Button>
             </div>
           ) : (
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
               <Link to="/client/signin">
                 <Button variant="signin" icon={<i className="bi bi-person"></i>} iconPosition="left">
-                  Client Sign In
+                  Sign In
                 </Button>
               </Link>
+              <Button variant="join" onClick={handleJoinClick}>
+                Join Free
+              </Button>
             </div>
           )}
 
@@ -134,30 +121,7 @@ export default function Navbar({ isClientPartnerPage = false }) {
       {/* Mobile Menu */}
       {menuOpen && (
         <div className="mobile-menu">
-          <Link
-            to="/client/register"
-            className="text-left w-100 bg-transparent border-0 py-2 text-dark font-weight-bold text-decoration-none d-block"
-            onClick={closeAll}
-          >
-            Register Brand
-          </Link>
-          <Link
-            to="/client/signin"
-            className="text-left w-100 bg-transparent border-0 py-2 text-dark font-weight-bold text-decoration-none d-block"
-            onClick={closeAll}
-          >
-            Client Sign In
-          </Link>
-          {USER_PORTAL_URL && (
-            <a
-              href={USER_PORTAL_URL}
-              className="d-block py-2 text-dark font-weight-bold text-decoration-none"
-            >
-              Talent Platform &rarr;
-            </a>
-          )}
-
-          <div style={{ marginTop: "16px", display: "flex", flexDirection: "column", gap: "10px" }}>
+          <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "10px" }}>
             {isClientRole ? (
               <>
                 <Link to="/client/dashboard" onClick={closeAll}>
@@ -176,11 +140,24 @@ export default function Navbar({ isClientPartnerPage = false }) {
                 </Button>
               </>
             ) : (
-              <Link to="/client/signin" onClick={closeAll}>
-                <Button variant="signin" className="w-100" icon={<i className="bi bi-person"></i>} iconPosition="left">
-                  Client Sign In
+              <>
+                <Link to="/client/signin" onClick={closeAll}>
+                  <Button variant="signin" className="w-100" icon={<i className="bi bi-person"></i>} iconPosition="left">
+                    Sign In
+                  </Button>
+                </Link>
+                <Button variant="join" className="w-100" onClick={handleJoinClick}>
+                  Join Free
                 </Button>
-              </Link>
+              </>
+            )}
+            {USER_PORTAL_URL && (
+              <a
+                href={USER_PORTAL_URL}
+                className="d-block py-2 text-dark font-weight-bold text-decoration-none text-center"
+              >
+                &larr; Return to Talent Platform
+              </a>
             )}
           </div>
         </div>

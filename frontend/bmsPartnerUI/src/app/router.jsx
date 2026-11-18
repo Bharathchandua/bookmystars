@@ -4,6 +4,7 @@ import { usePartnerAuth } from "./providers/PartnerAuthProvider";
 import { getStoredUser } from "../features/bms/api/auth/authApi";
 
 // Partner Components
+import BecomePartner from "../components/ClientPartner/BecomePartner/BecomePartner.jsx";
 import PartnerSignIn from "../pages/Partner/PartnerSignIn.jsx";
 import PartnerDashboard from "../pages/Partner/PartnerDashboard.jsx";
 import PartnerRegisterPage from "../pages/Auth/PartnerRegisterPage.jsx";
@@ -14,8 +15,8 @@ function PartnerRoot() {
   if (currentUser && (currentUser.accountType || "").toUpperCase() === "PARTNER") {
     return <Navigate to="/dashboard" replace />;
   }
-  // Directly display the Partner Academy Registration Page (homepage removed per requirement)
-  return <PartnerRegisterPage />;
+  // Displays the Original Become Partner Landing & Onboarding Page
+  return <BecomePartner />;
 }
 
 function ProtectedPartnerRoute({ children }) {
@@ -33,10 +34,12 @@ function ProtectedPartnerRoute({ children }) {
 export default function PartnerRouter() {
   return (
     <Routes>
-      {/* Root path displays dedicated Partner Academy Registration directly */}
+      {/* Root path displays the Original Become Partner Page */}
       <Route path="/" element={<PartnerRoot />} />
+      <Route path="/become-partner" element={<PartnerRoot />} />
+      <Route path="/partner" element={<PartnerRoot />} />
 
-      {/* Partner Academy Registration Paths */}
+      {/* Standalone Registration Form */}
       <Route path="/join" element={<PartnerRegisterPage />} />
       <Route path="/signup" element={<PartnerRegisterPage />} />
       <Route path="/register" element={<PartnerRegisterPage />} />
@@ -44,8 +47,6 @@ export default function PartnerRouter() {
       <Route path="/partner/register" element={<PartnerRegisterPage />} />
       <Route path="/partner/join" element={<PartnerRegisterPage />} />
       <Route path="/client-partner/join" element={<PartnerRegisterPage />} />
-      <Route path="/become-partner" element={<PartnerRegisterPage />} />
-      <Route path="/partner" element={<PartnerRegisterPage />} />
 
       {/* Partner Sign In */}
       <Route path="/signin" element={<PartnerSignIn />} />

@@ -4,6 +4,7 @@ import { useClientAuth } from "./providers/ClientAuthProvider";
 import { getStoredUser } from "../features/bms/api/auth/authApi";
 
 // Client Components
+import BecomeClient from "../components/ClientPartner/BecomeClient/BecomeClient.jsx";
 import ClientSignIn from "../pages/Client/ClientSignIn.jsx";
 import ClientDashboard from "../pages/Client/ClientDashboard.jsx";
 import ClientRegisterPage from "../pages/Auth/ClientRegisterPage.jsx";
@@ -14,8 +15,8 @@ function ClientRoot() {
   if (currentUser && (currentUser.accountType || "").toUpperCase() === "CLIENT") {
     return <Navigate to="/dashboard" replace />;
   }
-  // Directly display the Client Brand Registration Page (homepage removed per requirement)
-  return <ClientRegisterPage />;
+  // Directly display the Branding / Requirements Become Client Page
+  return <BecomeClient />;
 }
 
 function ProtectedClientRoute({ children }) {
@@ -33,10 +34,12 @@ function ProtectedClientRoute({ children }) {
 export default function ClientRouter() {
   return (
     <Routes>
-      {/* Root path displays dedicated Client Brand Registration directly */}
+      {/* Root path displays the Branding / Requirements Become Client Page */}
       <Route path="/" element={<ClientRoot />} />
+      <Route path="/become-client" element={<ClientRoot />} />
+      <Route path="/client" element={<ClientRoot />} />
 
-      {/* Client Brand Registration Paths */}
+      {/* Standalone Registration Form */}
       <Route path="/join" element={<ClientRegisterPage />} />
       <Route path="/signup" element={<ClientRegisterPage />} />
       <Route path="/register" element={<ClientRegisterPage />} />
@@ -44,8 +47,6 @@ export default function ClientRouter() {
       <Route path="/client/register" element={<ClientRegisterPage />} />
       <Route path="/client/join" element={<ClientRegisterPage />} />
       <Route path="/client-partner/join" element={<ClientRegisterPage />} />
-      <Route path="/become-client" element={<ClientRegisterPage />} />
-      <Route path="/client" element={<ClientRegisterPage />} />
 
       {/* Client Sign In */}
       <Route path="/signin" element={<ClientSignIn />} />
