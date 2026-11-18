@@ -18,9 +18,9 @@ export const BACKENDS = {
     admin: 'https://bookmystarsproduct.cloudjiffy.net/bmsadmin',
     partner: 'https://bookmystarsproduct.cloudjiffy.net/bmspartner',
     client: 'https://bookmystarsproduct.cloudjiffy.net/bmsclient',
-    clientUi: 'https://bmsclientui.netlify.app',
-    partnerUi: 'https://bmspartnerui.netlify.app',
-    adminUi: 'https://bmsadminui.netlify.app',
+    clientUi: 'https://clientbms.netlify.app',
+    partnerUi: 'https://partnerbms.netlify.app',
+    adminUi: 'https://adminbms.netlify.app',
   },
 };
 
