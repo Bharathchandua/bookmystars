@@ -4,17 +4,14 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import logo from "../assets/logo.png";
 import Button from "./common/Button";
 import { getStoredUser, logoutUser } from "../features/bms/api/auth/authApi";
-import { CLIENT_PORTAL_URL, PARTNER_PORTAL_URL, USER_PORTAL_URL } from "../services/apiConfig";
+import { USER_PORTAL_URL } from "../services/apiConfig";
 
 export default function Navbar({ isClientPartnerPage = false }) {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(() => getStoredUser());
   const [menuOpen, setMenuOpen] = useState(false);
-  const [servicesDropdownOpen, setServicesDropdownOpen] = useState(false);
   const location = useLocation();
-  const servicesDropdownRef = useRef(null);   // desktop services wrapper
-  const mobileServicesRef = useRef(null);     // mobile services wrapper
-  const navRef = useRef(null);               // entire nav element
+  const navRef = useRef(null);
 
   useEffect(() => {
     const handleAuthChange = () => {
@@ -22,466 +19,213 @@ export default function Navbar({ isClientPartnerPage = false }) {
     };
     window.addEventListener("auth_changed", handleAuthChange);
     window.addEventListener("storage", handleAuthChange);
+    window.addEventListener("bms_client_auth_changed", handleAuthChange);
     return () => {
       window.removeEventListener("auth_changed", handleAuthChange);
       window.removeEventListener("storage", handleAuthChange);
+      window.removeEventListener("bms_client_auth_changed", handleAuthChange);
     };
   }, []);
 
-  const links = isClientPartnerPage
-    ? []
-    : ["Home", "Services", "Media", "Become a Client", "Become a Partner"];
-
-  const servicesList = [
-    "Podcast",
-    "Opportunities",
-    "Media & Entertainment",
-    "MakeOver",
-    "Post Production",
-    "Promotion",
-    "Digital Marketing",
-  ];
-
-  // Click-outside: only mousedown — no touchstart or scroll listeners
-  // (touchstart fires before click on mobile and breaks link navigation)
+  // Close menu on click outside
   useEffect(() => {
     function handleClickOutside(event) {
-      const target = event.target;
-
-      // Close desktop services dropdown when clicking outside BOTH
-      // the desktop wrapper AND the mobile wrapper (so mobile tap doesn't
-      // close it via the desktop ref check, then re-open it on click)
-      const outsideDesktop =
-        servicesDropdownRef.current &&
-        !servicesDropdownRef.current.contains(target);
-      const outsideMobile =
-        !mobileServicesRef.current ||
-        !mobileServicesRef.current.contains(target);
-
-      if (outsideDesktop && outsideMobile) {
-        setServicesDropdownOpen(false);
-      }
-
-      // Close mobile menu when tapping outside the entire nav
-      if (navRef.current && !navRef.current.contains(target)) {
+      if (navRef.current && !navRef.current.contains(event.target)) {
         setMenuOpen(false);
       }
     }
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Close everything on route change (handles navigation via Link clicks)
+  // Close mobile menu on route change
   useEffect(() => {
     setMenuOpen(false);
-    setServicesDropdownOpen(false);
   }, [location.pathname]);
 
   const closeAll = () => {
     setMenuOpen(false);
-    setServicesDropdownOpen(false);
   };
 
-  const isClientPage = location.pathname === "/become-client";
-  const isPartnerPage = location.pathname === "/become-partner";
-
-  const getSignInPath = () => {
-    if (isClientPage) return "/client/signin";
-    if (isPartnerPage) return "/partner/signin";
-    return "/signin";
-  };
-
-  const getDashboardPath = () => {
-    if (!currentUser) return "/signin";
-    if (currentUser.accountType === "CLIENT") return "/client/dashboard";
-    if (currentUser.accountType === "PARTNER") return "/partner/dashboard";
-    if (currentUser.accountType === "PROFESSIONAL") return "/professional/dashboard";
-    return "/dashboard";
-  };
-
-  const getDashboardLabel = () => {
-    if (!currentUser) return "Dashboard";
-    if (currentUser.accountType === "CLIENT") return "Client Dashboard";
-    if (currentUser.accountType === "PARTNER") return "Partner Dashboard";
-    return "Dashboard";
-  };
+  const isClientRole = (currentUser?.accountType || "").toUpperCase() === "CLIENT";
 
   const handleSignOut = () => {
     logoutUser();
     setCurrentUser(null);
     closeAll();
     window.dispatchEvent(new Event("auth_changed"));
-    window.location.href = "/";
+    window.dispatchEvent(new Event("bms_client_auth_changed"));
+    navigate("/client/signin");
   };
 
-  // If on /become-client and user is not a CLIENT, show client signin
-  const isClientRole = currentUser?.accountType === "CLIENT";
-  const isPartnerRole = currentUser?.accountType === "PARTNER";
-
-  const showGuestButtonsOnPortal =
-    (isClientPage && !isClientRole) ||
-    (isPartnerPage && !isPartnerRole);
-
-  const shouldShowLoggedIn = currentUser && !showGuestButtonsOnPortal;
-
-  const handleJoinClick = (e) => {
-    if (isClientPage) {
-      if (e) e.preventDefault();
-      closeAll();
+  const handleRegisterClick = (e) => {
+    if (e) e.preventDefault();
+    closeAll();
+    if (location.pathname === "/" || location.pathname === "/become-client" || location.pathname === "/client") {
       const el = document.getElementById("client-registration-section");
       if (el) {
         el.scrollIntoView({ behavior: "smooth" });
+        return;
       }
-    } else if (isPartnerPage) {
-      if (e) e.preventDefault();
-      closeAll();
-      const el = document.getElementById("partner-registration-section");
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth" });
-      }
-    } else {
-      closeAll();
     }
+    navigate("/client/join");
   };
 
-  const getServiceId = (item) => {
-    if (item === "Podcast") return "podcast";
-    if (item === "Opportunities") return "opportunities";
-    if (item === "Media & Entertainment") return "media-entertainment";
-    if (item === "MakeOver") return "makeover";
-    if (item === "Post Production") return "post-production";
-    if (item === "Promotion") return "promotion";
-    if (item === "Digital Marketing") return "digital-marketing";
-    return "";
-  };
-
-  const handleServiceClick = (e, item) => {
-    e.preventDefault();
+  const scrollToSection = (id) => {
     closeAll();
-
-    const id = getServiceId(item);
-    if (window.location.pathname !== "/") {
-      window.location.href = `/#${id}`;
-    } else {
-      const element = document.getElementById(id);
-      if (element) {
-        const navbarHeight = 95;
-        const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
-        const offsetPosition = elementPosition - navbarHeight;
-        window.scrollTo({ top: offsetPosition, behavior: "smooth" });
-        window.history.pushState(null, null, `#${id}`);
-        window.dispatchEvent(new HashChangeEvent("hashchange"));
-      }
+    if (location.pathname !== "/" && location.pathname !== "/become-client" && location.pathname !== "/client") {
+      navigate(`/#${id}`);
+      return;
     }
-  };
-
-  const handleHomeClick = (e) => {
-    if (window.location.pathname === "/") {
-      e.preventDefault();
-      setMenuOpen(false);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      window.history.pushState(null, null, "/");
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth" });
     }
-  };
-
-  const handleMediaClick = (e) => {
-    closeAll();
   };
 
   return (
     <nav className="navbar-wrap" ref={navRef}>
       <div className="container-fluid px-4 px-lg-5 nav-inner">
-        <Link to="/" className="logo text-decoration-none">
-          <img src={logo} alt="Book My Stars" className="navbar-logo" />
+        <Link to="/" className="logo text-decoration-none" onClick={closeAll}>
+          <img src={logo} alt="Book My Stars Client Portal" className="navbar-logo" />
         </Link>
 
-        {/* ── Desktop nav links ── */}
+        {/* Desktop Nav Links */}
         <div className="nav-links">
-          {links.map((l) => {
-            if (l === "Services") {
-              return (
-                <div
-                  key={l}
-                  className="nav-dropdown-wrapper"
-                  ref={servicesDropdownRef}
-                  onMouseEnter={() => setServicesDropdownOpen(true)}
-                  onMouseLeave={() => setServicesDropdownOpen(false)}
-                >
-                  <button
-                    onClick={() => setServicesDropdownOpen(!servicesDropdownOpen)}
-                    className="nav-dropdown-trigger"
-                  >
-                    <span className="nav-link-custom">{l}</span>
-                    <ChevronDown
-                      size={14}
-                      className={`nav-dropdown-chevron ${servicesDropdownOpen ? "rotate-180" : ""}`}
-                    />
-                  </button>
-                  {servicesDropdownOpen && (
-                    <div className="nav-dropdown-menu animate-fadeIn">
-                      {servicesList.map((item) =>
-                        item === "Podcast" || item === "Opportunities" || item === "Media & Entertainment" || item === "MakeOver" || item === "Post Production" || item === "Promotion" || item === "Digital Marketing" ? (
-                          <Link
-                            key={item}
-                            to={
-                              item === "Podcast" ? "/podcast"
-                              : item === "Opportunities" ? "/services/opportunities"
-                              : item === "Media & Entertainment" ? "/services/media-entertainment"
-                              : item === "MakeOver" ? "/services/makeover"
-                              : item === "Post Production" ? "/services/post-production"
-                              : item === "Promotion" ? "/services/promotion"
-                              : "/services/digital-marketing"
-                            }
-                            onClick={closeAll}
-                            className="nav-dropdown-item"
-                          >
-                            {item}
-                          </Link>
-                        ) : (
-                          <a
-                            key={item}
-                            href={`#${getServiceId(item)}`}
-                            onClick={(e) => handleServiceClick(e, item)}
-                            className="nav-dropdown-item"
-                          >
-                            {item}
-                          </a>
-                        )
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            }
-            if (l === "Media") {
-              return (
-                <Link
-                  key={l}
-                  to="/media"
-                  onClick={handleMediaClick}
-                  className="nav-link-custom"
-                >
-                  {l}
-                </Link>
-              );
-            }
-            if (l === "Become a Client") {
-              return (
-                <a key={l} href={CLIENT_PORTAL_URL || "/become-client"} className="nav-btn-custom">
-                  {l}
-                </a>
-              );
-            }
-            if (l === "Become a Partner") {
-              return (
-                <a key={l} href={PARTNER_PORTAL_URL || "/become-partner"} className="nav-btn-custom">
-                  {l}
-                </a>
-              );
-            }
-            return (
-              <Link
-                key={l}
-                to={l === "Home" ? "/" : "#"}
-                onClick={l === "Home" ? handleHomeClick : undefined}
-                className="nav-link-custom"
-              >
-                {l}
-              </Link>
-            );
-          })}
+          <button
+            onClick={() => scrollToSection("client-services-section")}
+            className="nav-link-custom bg-transparent border-0"
+            style={{ cursor: "pointer" }}
+          >
+            Solutions
+          </button>
+          <button
+            onClick={() => scrollToSection("client-provides-section")}
+            className="nav-link-custom bg-transparent border-0"
+            style={{ cursor: "pointer" }}
+          >
+            What We Provide
+          </button>
+          <button
+            onClick={handleRegisterClick}
+            className="nav-link-custom bg-transparent border-0"
+            style={{ cursor: "pointer" }}
+          >
+            Post Requirements
+          </button>
+          {USER_PORTAL_URL && (
+            <a
+              href={USER_PORTAL_URL}
+              className="nav-link-custom text-decoration-none"
+              title="Switch to Main Talent Platform"
+            >
+              Talent Platform &rarr;
+            </a>
+          )}
         </div>
 
+        {/* Desktop Actions */}
         <div className="nav-actions">
-          {shouldShowLoggedIn ? (
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <Link to={getDashboardPath()}>
+          {isClientRole ? (
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <Link to="/client/dashboard">
                 <Button variant="signin" icon={<i className="bi bi-grid-fill"></i>} iconPosition="left">
-                  {getDashboardLabel()}
+                  Client Dashboard
                 </Button>
               </Link>
-              {currentUser.accountType !== "CLIENT" && currentUser.accountType !== "PARTNER" && (
-                <Link to="/profile">
-                  <Button variant="join" icon={<i className="bi bi-person-circle"></i>} iconPosition="left">
-                    {currentUser.fullName ? currentUser.fullName.split(" ")[0] : "Profile"}
-                  </Button>
-                </Link>
-              )}
+              <Button
+                variant="outline"
+                onClick={handleSignOut}
+                icon={<LogOut size={16} />}
+                iconPosition="left"
+              >
+                Sign Out
+              </Button>
             </div>
           ) : (
             <>
-              <Link to={getSignInPath()}>
+              <Link to="/client/signin">
                 <Button variant="signin" icon={<i className="bi bi-person"></i>} iconPosition="left">
-                  Sign In
+                  Client Sign In
                 </Button>
               </Link>
-
-              {isClientPage || isPartnerPage ? (
-                <Button variant="join" onClick={handleJoinClick}>
-                  Join Free
-                </Button>
-              ) : USER_PORTAL_URL ? (
-                <a href={`${USER_PORTAL_URL}/join`} style={{ textDecoration: "none" }}>
-                  <Button variant="join">Join Free</Button>
-                </a>
-              ) : (
-                <Link to="/join">
-                  <Button variant="join">Join Free</Button>
-                </Link>
-              )}
+              <Button variant="join" onClick={handleRegisterClick}>
+                Register Brand
+              </Button>
             </>
           )}
 
           <button
             className="mobile-menu-btn"
             onClick={() => setMenuOpen(!menuOpen)}
+            aria-label="Toggle Navigation"
           >
             {menuOpen ? <X size={28} /> : <Menu size={28} />}
           </button>
         </div>
       </div>
 
-      {/* ── Mobile menu ── */}
+      {/* Mobile Menu */}
       {menuOpen && (
         <div className="mobile-menu">
-          {links.map((l) => {
-            if (l === "Services") {
-              return (
-                <div key={l} className="mobile-dropdown-wrapper" ref={mobileServicesRef}>
-                  <button
-                    onClick={() => setServicesDropdownOpen((prev) => !prev)}
-                    className="mobile-dropdown-trigger"
-                  >
-                    {l}{" "}
-                    <ChevronDown
-                      size={16}
-                      className={`mobile-dropdown-chevron ${servicesDropdownOpen ? "rotate-180" : ""}`}
-                    />
-                  </button>
-                  {servicesDropdownOpen && (
-                    <div className="mobile-dropdown-menu">
-                      {servicesList.map((item) =>
-                        item === "Podcast" || item === "Opportunities" || item === "Media & Entertainment" || item === "MakeOver" || item === "Post Production" || item === "Promotion" || item === "Digital Marketing" ? (
-                          <Link
-                            key={item}
-                            to={
-                              item === "Podcast" ? "/podcast"
-                              : item === "Opportunities" ? "/services/opportunities"
-                              : item === "Media & Entertainment" ? "/services/media-entertainment"
-                              : item === "MakeOver" ? "/services/makeover"
-                              : item === "Post Production" ? "/services/post-production"
-                              : item === "Promotion" ? "/services/promotion"
-                              : "/services/digital-marketing"
-                            }
-                            onClick={closeAll}
-                            className="mobile-dropdown-item"
-                          >
-                            {item}
-                          </Link>
-                        ) : (
-                          <a
-                            key={item}
-                            href={`#${getServiceId(item)}`}
-                            onClick={(e) => handleServiceClick(e, item)}
-                            className="mobile-dropdown-item"
-                          >
-                            {item}
-                          </a>
-                        )
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            }
-            if (l === "Media") {
-              return (
-                <Link
-                  key={l}
-                  to="/media"
-                  onClick={handleMediaClick}
-                >
-                  {l}
-                </Link>
-              );
-            }
-            if (l === "Become a Client") {
-              return (
-                <a
-                  key={l}
-                  href={CLIENT_PORTAL_URL || "/become-client"}
-                  className="nav-btn-custom mobile-btn-custom"
-                  onClick={closeAll}
-                >
-                  {l}
-                </a>
-              );
-            }
-            if (l === "Become a Partner") {
-              return (
-                <a
-                  key={l}
-                  href={PARTNER_PORTAL_URL || "/become-partner"}
-                  className="nav-btn-custom mobile-btn-custom"
-                  onClick={closeAll}
-                >
-                  {l}
-                </a>
-              );
-            }
-            return (
-              <Link
-                key={l}
-                to={l === "Home" ? "/" : "#"}
-                onClick={l === "Home" ? handleHomeClick : () => setMenuOpen(false)}
-              >
-                {l}
-              </Link>
-            );
-          })}
+          <button
+            onClick={() => scrollToSection("client-services-section")}
+            className="text-left w-100 bg-transparent border-0 py-2 text-dark font-weight-bold"
+          >
+            Solutions
+          </button>
+          <button
+            onClick={() => scrollToSection("client-provides-section")}
+            className="text-left w-100 bg-transparent border-0 py-2 text-dark font-weight-bold"
+          >
+            What We Provide
+          </button>
+          <button
+            onClick={handleRegisterClick}
+            className="text-left w-100 bg-transparent border-0 py-2 text-dark font-weight-bold"
+          >
+            Post Requirements
+          </button>
+          {USER_PORTAL_URL && (
+            <a
+              href={USER_PORTAL_URL}
+              className="d-block py-2 text-dark font-weight-bold"
+            >
+              Talent Platform &rarr;
+            </a>
+          )}
 
-          {shouldShowLoggedIn ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%", marginTop: "12px" }}>
-              <Link to={getDashboardPath()} onClick={closeAll}>
-                <Button variant="signin" className="mobile-btn" icon={<i className="bi bi-grid-fill"></i>} iconPosition="left">
-                  {getDashboardLabel()}
-                </Button>
-              </Link>
-              {currentUser.accountType !== "CLIENT" && currentUser.accountType !== "PARTNER" && (
-                <Link to="/profile" onClick={closeAll}>
-                  <Button variant="join" className="mobile-btn" icon={<i className="bi bi-person-circle"></i>} iconPosition="left">
-                    My Profile & Portfolio
+          <div style={{ marginTop: "16px", display: "flex", flexDirection: "column", gap: "10px" }}>
+            {isClientRole ? (
+              <>
+                <Link to="/client/dashboard" onClick={closeAll}>
+                  <Button variant="signin" className="w-100" icon={<i className="bi bi-grid-fill"></i>} iconPosition="left">
+                    Client Dashboard
                   </Button>
                 </Link>
-              )}
-            </div>
-          ) : (
-            <>
-              <Link to={getSignInPath()} onClick={closeAll}>
                 <Button
-                  variant="signin"
-                  className="mobile-btn"
-                  icon={<i className="bi bi-person"></i>}
+                  variant="outline"
+                  className="w-100"
+                  onClick={handleSignOut}
+                  icon={<LogOut size={16} />}
                   iconPosition="left"
                 >
-                  Sign In
+                  Sign Out
                 </Button>
-              </Link>
-
-              {isClientPage || isPartnerPage ? (
-                <Button variant="join" className="mobile-btn" onClick={handleJoinClick}>
-                  Join Free
-                </Button>
-              ) : (
-                <Link to="/join" onClick={closeAll}>
-                  <Button variant="join" className="mobile-btn">
-                    Join Free
+              </>
+            ) : (
+              <>
+                <Link to="/client/signin" onClick={closeAll}>
+                  <Button variant="signin" className="w-100" icon={<i className="bi bi-person"></i>} iconPosition="left">
+                    Client Sign In
                   </Button>
                 </Link>
-              )}
-            </>
-          )}
+                <Button variant="join" className="w-100" onClick={handleRegisterClick}>
+                  Register Brand
+                </Button>
+              </>
+            )}
+          </div>
         </div>
       )}
     </nav>

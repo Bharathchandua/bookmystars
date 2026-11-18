@@ -10,8 +10,8 @@ export const BACKENDS = {
     admin: 'http://localhost:8081',
   },
   cloud: {
-    users: 'https://kwinwsproducts.cloudjiffy.net/bmsuser',
-    admin: 'https://kwinwsproducts.cloudjiffy.net/bmsadmin',
+    users: 'https://bookmystarsproduct.cloudjiffy.net/bmsuser',
+    admin: 'https://bookmystarsproduct.cloudjiffy.net/bmsadmin',
   },
 };
 
