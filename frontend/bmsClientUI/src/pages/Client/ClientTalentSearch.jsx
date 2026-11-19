@@ -217,8 +217,8 @@ export default function ClientTalentSearch({
               const bio = artist.about || artist.bio || `${fullName} is a professional commercial face and model available for print, lookbook, and campaign shoots.`;
               const skills = Array.isArray(artist.skills) ? artist.skills : [craft, "Jewelry Shoot", "Editorial"];
 
-              const artistRating = artist.rating ? Number(artist.rating) : Number((4.8 + ((numId % 3) * 0.1)).toFixed(1));
-              const artistReviews = artist.reviewsCount || artist.reviewCount || (14 + ((numId * 4) % 18));
+              const artistRating = artist.rating ? Number(artist.rating) : null;
+              const artistReviews = artist.reviewsCount || artist.reviewCount || null;
 
               return {
                 id: uId,

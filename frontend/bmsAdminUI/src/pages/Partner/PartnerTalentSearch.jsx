@@ -116,8 +116,8 @@ export default function PartnerTalentSearch({
                 ? item.portfolioPhotos.map(p => resolvePhotoUrl(p, idx)).filter(Boolean)
                 : (item.profilePhoto ? [resolvePhotoUrl(item.profilePhoto, idx)] : []);
 
-              const artistRating = item.rating ? Number(item.rating) : Number((4.8 + ((numId % 3) * 0.1)).toFixed(1));
-              const artistReviews = item.reviewsCount || item.reviewCount || (15 + ((numId * 5) % 25));
+              const artistRating = item.rating ? Number(item.rating) : null;
+              const artistReviews = item.reviewsCount || item.reviewCount || null;
 
               return {
                 id: uId,

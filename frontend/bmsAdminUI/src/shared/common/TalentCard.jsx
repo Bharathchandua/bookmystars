@@ -36,8 +36,8 @@ export default function TalentCard({
     purple: "text-pink-700"
   };
 
-  const ratingValue = typeof talent.rating === "number" ? talent.rating.toFixed(1) : talent.rating || "4.8";
-  const reviewsCount = talent.reviewsCount ?? talent.reviews ?? 12;
+  const ratingValue = talent.rating ? Number(talent.rating) : null;
+  const reviewsCount = talent.reviewsCount ?? talent.reviews ?? null;
 
   return (
     <div
@@ -96,9 +96,11 @@ export default function TalentCard({
             <span className="flex items-center gap-1">
               <MapPin size={11} className="text-pink-400" /> {talent.location || "Mumbai"}
             </span>
-            <span className="flex items-center gap-1 font-bold text-amber-300">
-              <Star size={11} fill="currentColor" /> {ratingValue} ({reviewsCount})
-            </span>
+            {ratingValue && ratingValue > 0 ? (
+              <span className="flex items-center gap-1 font-bold text-amber-300">
+                <Star size={11} fill="currentColor" /> {ratingValue.toFixed(1)} {reviewsCount ? `(${reviewsCount})` : ""}
+              </span>
+            ) : null}
           </div>
         </div>
       </div>
