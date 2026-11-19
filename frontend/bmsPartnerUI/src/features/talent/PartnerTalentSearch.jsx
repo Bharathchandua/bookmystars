@@ -40,11 +40,28 @@ const DEFAULT_AVATARS = [
   "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=600&q=80"
 ];
 
+const CLOUD_USER_BACKEND = "https://bookmystarsproduct.cloudjiffy.net/bmsuser";
+
 function resolvePhotoUrl(photo, index = 0) {
   if (!photo) return DEFAULT_AVATARS[index % DEFAULT_AVATARS.length];
-  if (photo.startsWith("http://") || photo.startsWith("https://")) return photo;
-  if (photo.startsWith("/")) return `${BACKEND_SERVER_URL}${photo}`;
-  return `${BACKEND_SERVER_URL}/${photo}`;
+  if (typeof photo !== "string") {
+    if (photo.photoUrl) photo = photo.photoUrl;
+    else if (photo.imageUrl) photo = photo.imageUrl;
+    else if (photo.url) photo = photo.url;
+    else return DEFAULT_AVATARS[index % DEFAULT_AVATARS.length];
+  }
+  if (photo.startsWith("data:") || photo.startsWith("blob:")) return photo;
+  if (photo.startsWith("http://") || photo.startsWith("https://")) {
+    if (import.meta.env.PROD && photo.includes("localhost")) {
+      return photo.replace(/https?:\/\/localhost(:\d+)?/, CLOUD_USER_BACKEND);
+    }
+    return photo;
+  }
+  const cleanPath = photo.startsWith("/") ? photo : `/${photo}`;
+  if (import.meta.env.PROD) {
+    return `${CLOUD_USER_BACKEND}${cleanPath}`;
+  }
+  return `${BACKEND_SERVER_URL}${cleanPath}`;
 }
 
 export default function PartnerTalentSearch({

@@ -43,12 +43,29 @@ import {
 } from "../../features/bms/api/messages/chatApi";
 import BookingRequestModal from "../Professional/BookingRequestModal";
 
-const BACKEND_URL = "http://localhost:8080";
+const CLOUD_USER_BACKEND = "https://bookmystarsproduct.cloudjiffy.net/bmsuser";
+const LOCAL_USER_BACKEND = "http://localhost:8080";
 
 function resolvePhotoUrl(path) {
   if (!path) return null;
-  if (path.startsWith("http://") || path.startsWith("https://")) return path;
-  return `${BACKEND_URL}${path.startsWith("/") ? "" : "/"}${path}`;
+  if (typeof path !== "string") {
+    if (path.photoUrl) path = path.photoUrl;
+    else if (path.imageUrl) path = path.imageUrl;
+    else if (path.url) path = path.url;
+    else return null;
+  }
+  if (path.startsWith("data:") || path.startsWith("blob:")) return path;
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    if (import.meta.env.PROD && path.includes("localhost")) {
+      return path.replace(/https?:\/\/localhost(:\d+)?/, CLOUD_USER_BACKEND);
+    }
+    return path;
+  }
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  if (import.meta.env.PROD) {
+    return `${CLOUD_USER_BACKEND}${cleanPath}`;
+  }
+  return `${LOCAL_USER_BACKEND}${cleanPath}`;
 }
 
 const DEFAULT_AVATARS = [
@@ -232,6 +249,8 @@ export default function ClientTalentSearch({
                 reviewsCount: artistReviews,
                 location: `${city}, India`,
                 image: profileImg,
+                rawPhotoPath: artist.profilePhoto || (artist.portfolioPhotos && artist.portfolioPhotos[0]) || null,
+                fallbackImage: DEFAULT_AVATARS[idx % DEFAULT_AVATARS.length],
                 availability: artist.availability || (numId % 2 === 0 ? "Immediate Shoot Ready" : "Available in 3 Days"),
                 dailyRate: artist.dayRate ? `₹${artist.dayRate}` : `₹${(25000 + ((numId % 4) * 5000)).toLocaleString("en-IN")} / Day`,
                 bio: bio,

@@ -71,9 +71,16 @@ export function getFullImageUrl(url) {
     }
   }
   if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:") || url.startsWith("blob:")) {
+    if (import.meta.env.PROD && url.includes("localhost")) {
+      return url.replace(/https?:\/\/localhost(:\d+)?/, "https://bookmystarsproduct.cloudjiffy.net/bmsuser");
+    }
     return url;
   }
-  return url.startsWith("/") ? url : `/${url}`;
+  const cleanPath = url.startsWith("/") ? url : `/${url}`;
+  if (import.meta.env.PROD) {
+    return `https://bookmystarsproduct.cloudjiffy.net/bmsuser${cleanPath}`;
+  }
+  return cleanPath;
 }
 
 export const portfolioApi = {

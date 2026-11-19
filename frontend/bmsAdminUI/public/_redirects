@@ -1,4 +1,4 @@
 /api/*  https://bookmystarsproduct.cloudjiffy.net/bmsadmin/api/:splat  200!
-/uploads/*  https://bookmystarsproduct.cloudjiffy.net/bmsadmin/uploads/:splat  200!
-/banners/*  https://bookmystarsproduct.cloudjiffy.net/bmsadmin/banners/:splat  200!
+/uploads/*  https://bookmystarsproduct.cloudjiffy.net/bmsuser/uploads/:splat  200!
+/banners/*  https://bookmystarsproduct.cloudjiffy.net/bmsuser/banners/:splat  200!
 /*  /index.html  200

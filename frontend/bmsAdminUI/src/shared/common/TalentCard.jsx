@@ -46,11 +46,17 @@ export default function TalentCard({
       {/* Photo & Top Badge Overlay */}
       <div className="relative h-64 bg-slate-100 overflow-hidden">
         <img
-          src={talent.image || FALLBACK_AVATAR}
+          src={talent.image || talent.fallbackImage || FALLBACK_AVATAR}
           alt={talent.name}
           className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
           onError={(e) => {
-            e.currentTarget.src = FALLBACK_AVATAR;
+            e.currentTarget.onerror = null;
+            if (talent.rawPhotoPath && !e.currentTarget.src.includes("cloudjiffy.net")) {
+              const clean = talent.rawPhotoPath.startsWith("/") ? talent.rawPhotoPath : `/${talent.rawPhotoPath}`;
+              e.currentTarget.src = `https://bookmystarsproduct.cloudjiffy.net/bmsuser${clean}`;
+              return;
+            }
+            e.currentTarget.src = talent.fallbackImage || FALLBACK_AVATAR;
           }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/20 to-transparent" />

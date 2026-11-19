@@ -50,14 +50,26 @@ const DEFAULT_AVATARS = [
   "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=600&q=80"
 ];
 
+const CLOUD_USER_BACKEND = "https://bookmystarsproduct.cloudjiffy.net/bmsuser";
+
 function resolvePhotoUrl(photo, index = 0) {
   if (!photo) return DEFAULT_AVATARS[index % DEFAULT_AVATARS.length];
   if (typeof photo === "string") {
     if (photo.includes("banner_dance_partner.png")) return bannerDancePartner;
     if (photo.includes("banner_client_jewelry.png")) return bannerClientJewelry;
-    if (photo.startsWith("http://") || photo.startsWith("https://") || photo.startsWith("data:") || photo.startsWith("blob:")) return photo;
+    if (photo.startsWith("data:") || photo.startsWith("blob:")) return photo;
+    if (photo.startsWith("http://") || photo.startsWith("https://")) {
+      if (import.meta.env.PROD && photo.includes("localhost")) {
+        return photo.replace(/https?:\/\/localhost(:\d+)?/, CLOUD_USER_BACKEND);
+      }
+      return photo;
+    }
     if (photo.startsWith("/banners/")) return photo;
-    return `${BACKEND_SERVER_URL}${photo.startsWith("/") ? "" : "/"}${photo}`;
+    const cleanPath = photo.startsWith("/") ? photo : `/${photo}`;
+    if (import.meta.env.PROD) {
+      return `${CLOUD_USER_BACKEND}${cleanPath}`;
+    }
+    return `${BACKEND_SERVER_URL}${cleanPath}`;
   }
   return DEFAULT_AVATARS[index % DEFAULT_AVATARS.length];
 }

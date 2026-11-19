@@ -18,13 +18,23 @@ import { Modal, Button, Badge, Spinner, EmptyState } from "../../shared/common";
 import { applicationsApi } from "../../features/bms/api/applications/applicationsApi";
 import { showSuccess, showError } from "../../shared/utils/alert";
 
-const BACKEND_URL = "http://localhost:8080";
+const CLOUD_USER_BACKEND = "https://bookmystarsproduct.cloudjiffy.net/bmsuser";
+const LOCAL_USER_BACKEND = "http://localhost:8080";
 
 function resolvePhoto(url) {
   if (!url) return "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80";
-  if (url.startsWith("http://") || url.startsWith("https://")) return url;
-  if (url.startsWith("/")) return `${BACKEND_URL}${url}`;
-  return `${BACKEND_URL}/${url}`;
+  if (url.startsWith("data:") || url.startsWith("blob:")) return url;
+  if (url.startsWith("http://") || url.startsWith("https://")) {
+    if (import.meta.env.PROD && url.includes("localhost")) {
+      return url.replace(/https?:\/\/localhost(:\d+)?/, CLOUD_USER_BACKEND);
+    }
+    return url;
+  }
+  const cleanPath = url.startsWith("/") ? url : `/${url}`;
+  if (import.meta.env.PROD) {
+    return `${CLOUD_USER_BACKEND}${cleanPath}`;
+  }
+  return `${LOCAL_USER_BACKEND}${cleanPath}`;
 }
 
 export default function ApplicantReviewModal({
